@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Tracker | Liquid Glass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #fbfbfb;
+            --text-primary: #000000;
+            --text-secondary: #555555;
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+            --accent: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier Prime', monospace;
+        }
+
+        body {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Liquid Background Elements */
+        .liquid-blob {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,240,240,1) 100%);
+            filter: blur(80px);
+            z-index: -1;
+            border-radius: 50%;
+            animation: move 20s infinite alternate cubic-bezier(0.45, 0, 0.55, 1);
+        }
+
+        @keyframes move {
+            0% { transform: translate(-10%, -10%) rotate(0deg) scale(1); }
+            100% { transform: translate(10%, 10%) rotate(360deg) scale(1.3); }
+        }
+
+        /* Auth Screen */
+        #auth-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: radial-gradient(circle at center, #ffffff 0%, #f0f0f0 100%);
+            z-index: 100;
+        }
+
+        .auth-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 4rem;
+            width: 440px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .auth-card:hover { border-color: #000; }
+
+        .auth-card h1 {
+            margin-bottom: 2.5rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.6rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #eeeeee;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            outline: none;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+
+        input:focus { border-color: #000; }
+
+        button {
+            width: 100%;
+            padding: 1.2rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        button:active { transform: translateY(0); }
+
+        button.google-btn {
+            background: #ffffff;
+            color: #000000;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        /* App Layout */
+        #app-screen {
+            display: none;
+            flex-direction: row;
+            height: 100vh;
+            background: transparent;
+        }
+
+        #app-screen.visible { display: flex; }
+
+        sidebar {
+            width: 280px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            border-right: 1px solid var(--glass-border);
+            padding: 3rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 10;
+        }
+
+        .nav-item {
+            padding: 1.2rem;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #000;
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        main {
+            flex: 1;
+            padding: 4rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        #tab-title {
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 3rem;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        th {
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .pivot-cell {
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 500px;
+            max-width: 90vw;
+        }
+
+        .hidden { display: none !important; }
+
+        .loader {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: black;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            #app-screen { flex-direction: column; }
+            sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="liquid-blob" style="width: 400px; height: 400px; top: -100px; left: -100px;"></div>
+    <div class="liquid-blob" style="width: 300px; height: 300px; bottom: -50px; right: -50px; animation-delay: -5s;"></div>
+
+    <div id="loader" class="loader">SYNCING...</div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h1>Tracker</h1>
+            <div id="email-login-form">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="email@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••">
+                </div>
+                <button onclick="loginWithEmail()">Login</button>
+                <div style="margin: 1rem 0; font-size: 0.7rem; color: #666;">OR</div>
+                <button class="google-btn" onclick="loginWithGoogle()">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/component/google.svg" width="18" alt="G">
+                    Sign in with Google
+                </button>
+                <p style="margin-top: 1.5rem; font-size: 0.7rem;">
+                    Don't have an account? <a href="#" onclick="toggleAuthMode()">Sign Up</a>
+                </p>
+            </div>
+            <div id="email-signup-form" class="hidden">
+                 <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="signup-email" placeholder="email@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-password" placeholder="••••••••">
+                </div>
+                <button onclick="signupWithEmail()">Create Account</button>
+                <p style="margin-top: 1.5rem; font-size: 0.7rem;">
+                    Already have an account? <a href="#" onclick="toggleAuthMode()">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Screen -->
+    <div id="app-screen">
+        <sidebar>
+            <div style="font-weight: bold; font-size: 1.2rem; margin-bottom: 2rem; letter-spacing: 2px;">INV.TRACK</div>
+            <div class="nav-item active" onclick="switchTab('portfolio')">Portfolio</div>
+            <div class="nav-item" onclick="switchTab('transactions')">Transactions</div>
+            <div class="nav-item" onclick="switchTab('stocks')">Stock Prices</div>
+            <div style="margin-top: auto;">
+                <div class="nav-item" onclick="logout()" style="color: #990000;">Logout</div>
+            </div>
+        </sidebar>
+
+        <main>
+            <header>
+                <h2 id="tab-title">Portfolio</h2>
+                <div id="user-info" style="font-size: 0.8rem; color: #666;"></div>
+            </header>
+
+            <!-- Portfolio Tab -->
+            <div id="tab-portfolio" class="tab-content">
+                <div class="glass-panel">
+                    <div style="overflow-x: auto;">
+                        <table id="portfolio-pivot">
+                            <!-- Populated via JS -->
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Tab -->
+            <div id="tab-transactions" class="tab-content hidden">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button style="width: auto; padding: 0.5rem 1.5rem;" onclick="showModal('tx-modal')">+ Add Transaction</button>
+                    <button style="width: auto; padding: 0.5rem 1.5rem; background: white; color: black; border: 1px solid black;" onclick="triggerFile('tx-csv')">Import CSV</button>
+                    <input type="file" id="tx-csv" class="hidden" accept=".csv" onchange="importTransactions(this)">
+                </div>
+                <div class="glass-panel">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Person</th>
+                                <th>Stock</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tx-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Stocks Tab -->
+            <div id="tab-stocks" class="tab-content hidden">
+                 <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                    <button style="width: auto; padding: 0.5rem 1.5rem; background: white; color: black; border: 1px solid black;" onclick="triggerFile('stock-csv')">Update Prices CSV</button>
+                    <input type="file" id="stock-csv" class="hidden" accept=".csv" onchange="importStockPrices(this)">
+                </div>
+                <div class="glass-panel">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Stock Name</th>
+                                <th>Current Price</th>
+                                <th>Last Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="tx-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1.5rem;">New Transaction</h3>
+            <div class="input-group">
+                <label>Date</label>
+                <input type="date" id="tx-date">
+            </div>
+            <div class="input-group">
+                <label>Person</label>
+                <input type="text" id="tx-person" placeholder="e.g. NILKESH">
+            </div>
+            <div class="input-group">
+                <label>Stock Name</label>
+                <input type="text" id="tx-stock" placeholder="e.g. ADANI POWER">
+            </div>
+            <div class="input-group">
+                <label>Quantity</label>
+                <input type="number" id="tx-qty" placeholder="Positive for Buy, Negative for Sell">
+            </div>
+            <div class="input-group">
+                <label>Price</label>
+                <input type="number" id="tx-price" step="0.01">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="saveTransaction()">Save</button>
+                <button onclick="closeModal('tx-modal')" style="background: #ccc; color: black;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, onSnapshot, doc, setDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyuj-wMRRSu5craUeB_dVbsDoM0rO-ceE",
+            authDomain: "finance-tracker-70d81.firebaseapp.com",
+            projectId: "finance-tracker-70d81",
+            storageBucket: "finance-tracker-70d81.firebasestorage.app",
+            messagingSenderId: "191924832332",
+            appId: "1:191924832332:web:900b00ffc5325545df4ce9",
+            measurementId: "G-0NG1NBP31K"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let transactions = [];
+        let stocks = {}; // stockName -> { price, lastUpdated }
+
+        // --- AUTH LOGIC ---
+        window.loginWithEmail = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            try { await signInWithEmailAndPassword(auth, email, pass); } catch (e) { alert(e.message); }
+        };
+
+        window.signupWithEmail = async () => {
+            const email = document.getElementById('signup-email').value;
+            const pass = document.getElementById('signup-password').value;
+            try { await createUserWithEmailAndPassword(auth, email, pass); } catch (e) { alert(e.message); }
+        };
+
+        window.loginWithGoogle = async () => {
+            try { await signInWithPopup(auth, provider); } catch (e) { alert(e.message); }
+        };
+
+        window.logout = () => signOut(auth);
+
+        window.toggleAuthMode = () => {
+            document.getElementById('email-login-form').classList.toggle('hidden');
+            document.getElementById('email-signup-form').classList.toggle('hidden');
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-screen').classList.add('visible');
+                document.getElementById('user-info').innerText = user.email;
+                initDataListeners();
+            } else {
+                currentUser = null;
+                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('app-screen').classList.remove('visible');
+            }
+        });
+
+        // --- DATA LOGIC ---
+        function initDataListeners() {
+            const txRef = collection(db, "transactions");
+            const txQuery = query(txRef, where("userId", "==", currentUser.uid));
+            onSnapshot(txQuery, (snapshot) => {
+                transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTransactions();
+                updatePortfolio();
+            });
+
+            const stockRef = collection(db, "stocks");
+            const stockQuery = query(stockRef, where("userId", "==", currentUser.uid));
+            onSnapshot(stockQuery, (snapshot) => {
+                stocks = {};
+                snapshot.docs.forEach(doc => {
+                    stocks[doc.data().stockName] = doc.data();
+                });
+                renderStocks();
+                updatePortfolio();
+            });
+        }
+
+        window.saveTransaction = async () => {
+            const data = {
+                date: document.getElementById('tx-date').value || new Date().toISOString().split('T')[0],
+                person: document.getElementById('tx-person').value.toUpperCase(),
+                stockName: document.getElementById('tx-stock').value.toUpperCase(),
+                qty: parseFloat(document.getElementById('tx-qty').value),
+                price: parseFloat(document.getElementById('tx-price').value),
+                userId: currentUser.uid,
+                createdAt: new Date()
+            };
+            if(!data.person || !data.stockName || isNaN(data.qty)) return alert("Please fill all fields");
+            
+            showLoader();
+            await addDoc(collection(db, "transactions"), data);
+            closeModal('tx-modal');
+            hideLoader();
+        };
+
+        window.deleteTransaction = async (id) => {
+            if(confirm("Delete this transaction?")) {
+                showLoader();
+                await deleteDoc(doc(db, "transactions", id));
+                hideLoader();
+            }
+        };
+
+        // --- FIFO & PORTFOLIO ENGINE ---
+        function updatePortfolio() {
+            if (!transactions.length) return;
+            
+            const results = runFIFOEngine(transactions);
+            renderPivotTable(results);
+        }
+
+        function runFIFOEngine(txs) {
+            const sorted = txs.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
+            const holdings = {}; // person -> stock -> lots[]
+
+            sorted.forEach(tx => {
+                const { person, stockName, qty, price } = tx;
+                if (!holdings[person]) holdings[person] = {};
+                if (!holdings[person][stockName]) holdings[person][stockName] = [];
+
+                if (qty > 0) {
+                    holdings[person][stockName].push({ qty, price });
+                } else if (qty < 0) {
+                    let sellQty = Math.abs(qty);
+                    while (sellQty > 0 && holdings[person][stockName].length > 0) {
+                        let lot = holdings[person][stockName][0];
+                        let used = Math.min(lot.qty, sellQty);
+                        lot.qty -= used;
+                        sellQty -= used;
+                        if (lot.qty <= 0) holdings[person][stockName].shift();
+                    }
+                }
+            });
+
+            return holdings;
+        }
+
+        function renderPivotTable(holdings) {
+            const table = document.getElementById('portfolio-pivot');
+            const persons = Object.keys(holdings).sort();
+            const stocksInHoldings = new Set();
+            
+            Object.values(holdings).forEach(personStocks => {
+                Object.keys(personStocks).forEach(s => {
+                    const totalQty = personStocks[s].reduce((sum, l) => sum + l.qty, 0);
+                    if(totalQty > 0) stocksInHoldings.add(s);
+                });
+            });
+
+            const stockList = Array.from(stocksInHoldings).sort();
+
+            let html = `<thead><tr><th>STOCK</th>`;
+            persons.forEach(p => html += `<th>${p}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            stockList.forEach(stock => {
+                html += `<tr><td><strong>${stock}</strong></td>`;
+                persons.forEach(person => {
+                    const lots = holdings[person][stock] || [];
+                    const qty = lots.reduce((sum, l) => sum + l.qty, 0);
+                    if (qty > 0) {
+                        const totalCost = lots.reduce((sum, l) => sum + (l.qty * l.price), 0);
+                        const avgPrice = totalCost / qty;
+                        const currentPrice = stocks[stock]?.price || 0;
+                        const currentValue = qty * currentPrice;
+                        const gain = currentValue ? currentValue - totalCost : 0;
+                        const gainPct = totalCost ? (gain / totalCost * 100).toFixed(2) : 0;
+
+                        html += `<td class="pivot-cell">` +
+                                `QTY  : ${qty.toFixed(2)}\n` +
+                                `AVG  : ₹${avgPrice.toFixed(2)}\n` +
+                                `INVEST: ₹${totalCost.toLocaleString()}\n` +
+                                `CURR  : ₹${currentValue.toLocaleString()}\n` +
+                                `<span style="color:${gain >= 0 ? 'green' : 'red'}">GAIN : ₹${gain.toLocaleString()} (${gainPct}%)</span>` +
+                                `</td>`;
+                    } else {
+                        html += `<td>-</td>`;
+                    }
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody>`;
+            table.innerHTML = html;
+        }
+
+        // --- UI HELPERS ---
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.querySelector(`.nav-item[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById('tab-title').innerText = tab.charAt(0).toUpperCase() + tab.slice(1);
+        };
+
+        window.showModal = (id) => {
+            document.getElementById(id).style.display = 'flex';
+            if(id === 'tx-modal') {
+                document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+            }
+        };
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        window.triggerFile = (id) => document.getElementById(id).click();
+
+        function renderTransactions() {
+            const list = document.getElementById('tx-list');
+            list.innerHTML = transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).map(tx => `
+                <tr>
+                    <td>${tx.date}</td>
+                    <td>${tx.person}</td>
+                    <td>${tx.stockName}</td>
+                    <td style="color:${tx.qty >= 0 ? 'green' : 'red'}">${tx.qty}</td>
+                    <td>₹${tx.price}</td>
+                    <td><button onclick="deleteTransaction('${tx.id}')" style="padding:5px; margin:0; width:auto; background:none; color:red;">[X]</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderStocks() {
+            const list = document.getElementById('stock-list');
+            list.innerHTML = Object.keys(stocks).map(name => `
+                <tr>
+                    <td><strong>${name}</strong></td>
+                    <td>₹${stocks[name].price}</td>
+                    <td style="font-size:0.7rem;">${stocks[name].lastUpdated || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // --- CSV IMPORT ---
+        window.importTransactions = async (input) => {
+            const file = input.files[0];
+            if(!file) return;
+            showLoader();
+            const text = await file.text();
+            const rows = text.split('\n').slice(1); // skip header
+            for(let row of rows) {
+                const [date, person, stock, qty, price] = row.split(',').map(s => s.trim());
+                if(date && person && stock && qty && price) {
+                    await addDoc(collection(db, "transactions"), {
+                        date, person: person.toUpperCase(), stockName: stock.toUpperCase(),
+                        qty: parseFloat(qty), price: parseFloat(price),
+                        userId: currentUser.uid, createdAt: new Date()
+                    });
+                }
+            }
+            hideLoader();
+            alert("Import complete");
+        };
+
+        window.importStockPrices = async (input) => {
+            const file = input.files[0];
+            if(!file) return;
+            showLoader();
+            const text = await file.text();
+            const rows = text.split('\n').slice(1);
+            for(let row of rows) {
+                const [stock, price] = row.split(',').map(s => s.trim());
+                if(stock && price) {
+                    const name = stock.toUpperCase();
+                    await setDoc(doc(db, "stocks", `${currentUser.uid}_${name}`), {
+                        stockName: name,
+                        price: parseFloat(price),
+                        userId: currentUser.uid,
+                        lastUpdated: new Date().toLocaleString()
+                    });
+                }
+            }
+            hideLoader();
+            alert("Prices updated");
+        };
+
+        function showLoader() { document.getElementById('loader').style.display = 'block'; }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+    </script>
+</body>
+</html>
