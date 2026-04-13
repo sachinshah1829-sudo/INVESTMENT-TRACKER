@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Investment Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap"
     rel="stylesheet">
@@ -13,23 +13,26 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg: #f5f4f0;
-      --surface: #fff;
-      --sidebar-bg: #1a1a1a;
-      --sidebar-text: #e8e6e0;
-      --sidebar-muted: #888;
-      --sidebar-active: #fff;
-      --sidebar-active-bg: #333;
-      --border: #e0ddd5;
-      --text: #1a1a1a;
-      --text-muted: #666;
-      --green: #2d6a2d;
-      --green-bg: #e8f5e8;
-      --red: #8b1a1a;
-      --red-bg: #fceaea;
-      --amber: #7a5c00;
-      --amber-bg: #fff8e1;
-      --input-bg: #fafaf7;
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --sidebar-bg: #0f172a;
+      --sidebar-text: #f8fafc;
+      --sidebar-muted: #94a3b8;
+      --sidebar-active: #ffffff;
+      --sidebar-active-bg: #1e293b;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --green: #15803d;
+      --green-bg: #f0fdf4;
+      --red: #b91c1c;
+      --red-bg: #fef2f2;
+      --amber: #b45309;
+      --amber-bg: #fffbeb;
+      --input-bg: #ffffff;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --radius: 0px; /* Keeping it sharp for the monochrome look */
     }
 
     * {
@@ -339,28 +342,36 @@
     /* STATS */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-      gap: 1px;
-      background: var(--border);
-      margin-bottom: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
     }
 
     .stat-card {
       background: var(--surface);
-      padding: 1.25rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      box-shadow: var(--shadow-md);
     }
 
     .stat-label {
-      font-size: 10px;
+      font-size: 11px;
       letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: .35rem;
+      margin-bottom: .5rem;
+      font-weight: 700;
     }
 
     .stat-val {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     .pos {
@@ -375,29 +386,65 @@
     .table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      position: relative;
+      background: var(--surface);
     }
+
+    /* Horizontal Scroll Indicator Fade */
+    .table-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 30px;
+      background: linear-gradient(90deg, transparent, rgba(0,0,0,0.03));
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .table-wrap:has(table:not([style*="width: 100%"]))::after { opacity: 1; }
 
     table {
       width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 14px;
     }
 
     th {
-      font-size: 10px;
+      font-size: 11px;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--text-muted);
       text-align: left;
-      padding: .5rem .75rem;
-      border-bottom: 1px solid var(--border);
-      font-weight: 400;
+      padding: 1rem .75rem;
+      border-bottom: 2px solid var(--border);
+      font-weight: 700;
       white-space: nowrap;
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     td {
-      padding: .5rem .75rem;
+      padding: 1rem .75rem;
       border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    /* Sticky First Column on Mobile */
+    @media(max-width: 768px) {
+      th:first-child, td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background: var(--surface);
+        box-shadow: 4px 0 4px -4px rgba(0,0,0,0.1);
+      }
+      th:first-child { z-index: 11; }
     }
 
     tr:last-child td {
@@ -405,7 +452,7 @@
     }
 
     tr.clickable:hover td {
-      background: var(--bg);
+      background: #f8fafc;
       cursor: pointer;
     }
 
@@ -826,6 +873,7 @@
     @media(max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
+        box-shadow: 10px 0 30px rgba(0,0,0,0.2);
       }
 
       .sidebar.open {
@@ -834,10 +882,13 @@
 
       .sidebar-overlay.open {
         display: block;
+        backdrop-filter: blur(2px);
       }
 
       .menu-toggle {
         display: flex;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: var(--shadow-md);
       }
 
       .sidebar-brand {
@@ -849,12 +900,13 @@
       }
 
       .page {
-        padding: .75rem;
-        padding-top: 3.25rem;
+        padding: 1rem;
+        padding-top: 4rem;
       }
 
       .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
       }
 
       .charts-row {
@@ -862,40 +914,44 @@
       }
 
       .form-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
       }
 
       .chart-wrap {
-        height: 220px;
+        height: 250px;
       }
 
       .modal {
-        padding: 1.25rem;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr;
+        padding: 1.5rem;
+        margin: 0.5rem;
+        width: auto;
       }
 
       table {
-        font-size: 11px;
+        font-size: 12px;
       }
 
       th {
-        font-size: 9px;
-        padding: .35rem .4rem;
+        font-size: 10px;
+        padding: .75rem .5rem;
       }
 
       td {
-        padding: .35rem .4rem;
+        padding: .75rem .5rem;
       }
 
       .stat-val {
-        font-size: 18px;
+        font-size: 20px;
       }
 
       .page-title {
-        font-size: 18px;
+        font-size: 20px;
+      }
+      
+      .btn-primary, .btn-secondary {
+        padding: 0.75rem 1rem;
+        font-size: 14px;
       }
     }
   </style>
@@ -1940,6 +1996,8 @@
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
+      const ignoreSwipe = useRef(false);
+
       const navItems = [
         { key: 'dashboard', label: 'Dashboard', icon: '▦' },
         { key: 'transactions', label: 'Transactions', icon: '↕' },
@@ -1954,9 +2012,14 @@
         const onTS = e => {
           touchStartX.current = e.touches[0].clientX;
           touchStartY.current = e.touches[0].clientY;
+          // Check if touch started inside a table or table-wrap
+          ignoreSwipe.current = !!e.target.closest('.table-wrap');
         };
         const onTE = e => {
-          if (touchStartX.current === null) return;
+          if (touchStartX.current === null || ignoreSwipe.current) {
+            touchStartX.current = null;
+            return;
+          }
           const dx = e.changedTouches[0].clientX - touchStartX.current;
           const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
           if (Math.abs(dx) < dy * 0.7) { touchStartX.current = null; return; }
