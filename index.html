@@ -93,7 +93,7 @@
     tr:last-child td { border-bottom: none; }
     tr.clickable:hover td { background: var(--bg); cursor: pointer; }
 
-    /* MOBILE CARDS (card list view for tables on mobile) */
+    /* MOBILE CARDS */
     .mobile-card-list { display: none; }
     .m-card { background: var(--surface); border: 1px solid var(--border); padding: .85rem 1rem; margin-bottom: .5rem; cursor: pointer; transition: background .15s; position: relative; }
     .m-card:hover { background: var(--bg); }
@@ -184,11 +184,8 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .charts-row { grid-template-columns: 1fr; }
       .form-row { grid-template-columns: 1fr 1fr; }
-
-      /* Hide desktop tables, show mobile cards */
       .desktop-table { display: none !important; }
       .mobile-card-list { display: block; }
-
       .chart-wrap { height: 220px; }
       .modal { padding: 1.25rem; }
       .form-row { grid-template-columns: 1fr; }
@@ -222,7 +219,6 @@
     const fmt = n => n == null || isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     const fmtPct = n => n == null || isNaN(n) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
 
-    // Format number in Indian words (crore/lakh/thousand)
     const fmtWords = (n) => {
       if (n == null || isNaN(n)) return '—';
       const abs = Math.abs(n);
@@ -410,7 +406,7 @@
     // ── EDIT TX MODAL ─────────────────────────────────────────
     function EditTxModal({tx, persons, onSave, onDelete, onClose}) {
       const [form,setForm]=useState({date:tx.date||todayISO(),person:tx.person||'',stock:tx.stock||'',qty:Math.abs(tx.qty)||'',price:tx.price||'',type:tx.qty<0?'SELL':'BUY'});
-      const [saveState,setSaveState]=useState('idle'); // idle | saving | saved
+      const [saveState,setSaveState]=useState('idle');
       const set=(k,v)=>setForm(f=>({...f,[k]:v}));
       const handleSave=async()=>{
         if(!form.date||!form.person||!form.stock||!form.qty||!form.price) return;
@@ -477,7 +473,6 @@
         byPerson[r.person].invested+=r.investedVal;
         byPerson[r.person].current+=(r.currentVal||r.investedVal);
       });
-      // Sort descending by current value
       const sortedPersons = Object.entries(byPerson).sort((a,b)=>b[1].current-a[1].current);
 
       const pLabels = sortedPersons.map(([p])=>p);
@@ -670,7 +665,8 @@
                     <tbody>{preview.map((r,i)=><tr key={i} className={r.ok?'preview-ok':'preview-err'}><td>{r.date||'—'}</td><td>{r.person||'—'}</td><td>{r.stock||r.raw}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok?'✓':r.err}</td></tr>)}</tbody>
                   </table>
                 </div>
-                {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={importCSV} disabled={saving}>{saving?'...`:`IMPORT ${preview.filter(r=>r.ok).length} ROWS`}</button>}
+                {/* ✅ FIX 1: was {saving?'...`:`IMPORT ...`} — broken backtick after '...' */}
+                {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={importCSV} disabled={saving}>{saving?'...':`IMPORT ${preview.filter(r=>r.ok).length} ROWS`}</button>}
               </>}
             </div>
           )}
@@ -779,7 +775,6 @@
             <select value={filterStock} onChange={e=>setFilterStock(e.target.value)}>{stocks.map(s=><option key={s}>{s}</option>)}</select>
             <span style={{fontSize:12,color:'var(--text-muted)'}}>{filtered.length} rows</span>
           </div>
-          {/* Desktop */}
           <div className="card desktop-table" style={{padding:0}}>
             <div className="table-wrap">
               <table>
@@ -802,7 +797,6 @@
               </table>
             </div>
           </div>
-          {/* Mobile */}
           <div className="mobile-card-list">
             {filtered.length===0&&<div className="empty">No data</div>}
             {filtered.map((r,i)=>(
@@ -1054,7 +1048,8 @@
                   <tbody>{preview.map((r,i)=><tr key={i} className={r.ok?'preview-ok':'preview-err'}><td>{r.stock||r.raw}</td><td>{r.ok?fmt(r.price):'—'}</td><td>{r.ok?'✓':r.err}</td></tr>)}</tbody>
                 </table>
               </div>
-              {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={doImport} disabled={saving}>{saving?'...`:`UPDATE ${preview.filter(r=>r.ok).length} PRICES`}</button>}
+              {/* ✅ FIX 2: was {saving?'...`:`UPDATE ...`} — broken backtick after '...' */}
+              {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={doImport} disabled={saving}>{saving?'...':`UPDATE ${preview.filter(r=>r.ok).length} PRICES`}</button>}
             </>}
           </div>
 
@@ -1269,7 +1264,6 @@
       const [sidebarOpen,setSidebarOpen]=useState(false);
       const [loading,setLoading]=useState(true);
 
-      // Touch swipe for sidebar + tab switching
       const touchStartX=useRef(null);
       const touchStartY=useRef(null);
       const navItems=[
@@ -1291,18 +1285,15 @@
           if(touchStartX.current===null) return;
           const dx=e.changedTouches[0].clientX-touchStartX.current;
           const dy=Math.abs(e.changedTouches[0].clientY-touchStartY.current);
-          // Only horizontal swipes
           if(Math.abs(dx)<dy*0.7){touchStartX.current=null;return;}
           if(dx>60&&touchStartX.current<40){setSidebarOpen(true);}
           else if(dx<-60&&sidebarOpen){setSidebarOpen(false);}
           else if(dx<-60&&!sidebarOpen){
-            // Swipe left to go to next tab
             setTab(prev=>{
               const idx=navItems.findIndex(n=>n.key===prev);
               return idx<navItems.length-1?navItems[idx+1].key:prev;
             });
           } else if(dx>60&&touchStartX.current>=40&&!sidebarOpen){
-            // Swipe right to go to prev tab
             setTab(prev=>{
               const idx=navItems.findIndex(n=>n.key===prev);
               return idx>0?navItems[idx-1].key:prev;
