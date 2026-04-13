@@ -1192,7 +1192,18 @@
         const currentVal = cp ? s.totalQty * cp : null;
         const absGain = currentVal != null ? currentVal - s.investedVal : null;
         const absGainPct = absGain != null ? (absGain / s.investedVal) * 100 : null;
-        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct };
+        
+        let weightedAgeSum = 0; const now = new Date();
+        Object.values(s.persons).forEach(p => {
+          p.lots.forEach(l => {
+            const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
+            weightedAgeSum += (l.qty * l.price) * age;
+          });
+        });
+        const stockAvgAge = s.investedVal > 0 ? weightedAgeSum / s.investedVal : 0;
+        const cagr = (currentVal != null && s.investedVal > 0 && stockAvgAge > 0) ? (Math.pow(currentVal / s.investedVal, 1 / stockAvgAge) - 1) * 100 : null;
+
+        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct, cagr };
       });
     }
 
@@ -1567,14 +1578,14 @@
               <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Combined Net CAGR</div>
-              <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
-              <div className="stat-sub">Realized + Unrealized</div>
-            </div>
-            <div className="stat-card">
               <div className="stat-label">Unrealized Net CAGR</div>
               <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
               <div className="stat-sub">Active holdings only</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Combined Net CAGR</div>
+              <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
+              <div className="stat-sub">Realized + Unrealized</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Net Realized</div>
@@ -1871,9 +1882,9 @@
           <div className="card" style={{ padding: 0 }}>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Stock</th><th>Total Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Holdings</th></tr></thead>
+                <thead><tr><th>Stock</th><th>Total Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th></tr></thead>
                 <tbody>
-                  {stocks.length === 0 && <tr><td colSpan="9"><div className="empty">No data</div></td></tr>}
+                  {stocks.length === 0 && <tr><td colSpan="10"><div className="empty">No data</div></td></tr>}
                   {stocks.map((s, i) => {
                     const aggregated = {};
                     Object.values(s.persons || {}).forEach(d => {
@@ -1890,6 +1901,7 @@
                         <td style={{ whiteSpace: 'nowrap' }}>{s.currentVal ? fmt(s.currentVal) : '—'}</td>
                         <td className={s.absGain != null ? (s.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{s.absGain != null ? fmt(s.absGain) : '—'}</td>
                         <td className={s.absGainPct != null ? (s.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{s.absGainPct != null ? fmtPct(s.absGainPct) : '—'}</td>
+                        <td className={s.cagr != null ? (s.cagr >= 0 ? 'pos' : 'neg') : ''}>{s.cagr != null ? fmtPct(s.cagr) : '—'}</td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{hText}</td>
                       </tr>
                     );
