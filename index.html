@@ -1500,18 +1500,23 @@
 
     // ── DASHBOARD ─────────────────────────────────────────────
     function DashboardTab({ transactions, stockPrices, personColors, onPersonClick }) {
+      const [filterPersons, setFilterPersons] = useState(['All']);
       const { sells, holdings } = computeFIFO(transactions);
-      const portfolio = buildPortfolio(holdings, stockPrices);
+      const allPortfolio = buildPortfolio(holdings, stockPrices);
+      
+      const persons = [...new Set([...allPortfolio.map(r => r.person), ...sells.map(r => r.person)])].sort();
+      const portfolio = allPortfolio.filter(r => filterPersons.includes('All') || filterPersons.includes(r.person));
+      const filteredSells = sells.filter(r => filterPersons.includes('All') || filterPersons.includes(r.person));
+
       const totalInvested = portfolio.reduce((s, r) => s + r.investedVal, 0);
       const totalCurrent = portfolio.reduce((s, r) => s + (r.currentVal || r.investedVal), 0);
       const totalGain = totalCurrent - totalInvested;
       const gainPct = totalInvested > 0 ? (totalGain / totalInvested) * 100 : 0;
 
       const totalWeightedAgeSum = portfolio.reduce((s, r) => s + (r.weightedAge || 0), 0);
-      
-      const realizedCostSum = sells.reduce((s, r) => s + (r.qty * r.buyPrice), 0);
-      const realizedValueSum = sells.reduce((s, r) => s + (r.qty * r.sellPrice), 0);
-      const realizedWeightedAgeSum = sells.reduce((s, r) => s + (r.qty * r.buyPrice * (r.yrs || 0)), 0);
+      const realizedCostSum = filteredSells.reduce((s, r) => s + (r.qty * r.buyPrice), 0);
+      const realizedValueSum = filteredSells.reduce((s, r) => s + (r.qty * r.sellPrice), 0);
+      const realizedWeightedAgeSum = filteredSells.reduce((s, r) => s + (r.qty * r.buyPrice * (r.yrs || 0)), 0);
 
       const totalCostCombined = totalInvested + realizedCostSum;
       const totalValueCombined = totalCurrent + realizedValueSum;
@@ -1525,24 +1530,18 @@
 
       const [showAllocation, setShowAllocation] = useState(false);
 
-      const stockRows = buildStockSheet(holdings, stockPrices);
-      const withGain = [...stockRows].filter(s => s.absGain != null);
-      const topGainer = [...withGain].sort((a, b) => b.absGain - a.absGain)[0];
-      const topLoser = [...withGain].sort((a, b) => a.absGain - b.absGain)[0];
-
-      const byPerson = {};
-      portfolio.forEach(r => {
-        if (!byPerson[r.person]) byPerson[r.person] = { invested: 0, current: 0 };
-        byPerson[r.person].invested += r.investedVal;
-        byPerson[r.person].current += (r.currentVal || r.investedVal);
+      // We still build the stock sheet data based on filtered portfolio for charts
+      const stockGroups = {};
+      portfolio.forEach(r => { 
+        if (!stockGroups[r.stock]) stockGroups[r.stock] = { stock: r.stock, totalQty: 0, investedVal: 0, absGain: 0, currentVal: 0 };
+        stockGroups[r.stock].totalQty += r.totalQty;
+        stockGroups[r.stock].investedVal += r.investedVal;
+        stockGroups[r.stock].currentVal += (r.currentVal || r.investedVal);
+        stockGroups[r.stock].absGain += (r.absGain || 0);
       });
-      const sortedPersons = Object.entries(byPerson).sort((a, b) => b[1].current - a[1].current);
-
-      const pLabels = sortedPersons.map(([p]) => p);
-      const barDatasets = [
-        { label: 'Current Value', data: pLabels.map(p => byPerson[p].current), backgroundColor: '#87BFDB', borderWidth: 0 },
-        { label: 'Invested Value', data: pLabels.map(p => byPerson[p].invested), backgroundColor: '#2B5F7A', borderWidth: 0 }
-      ];
+      const stockRows = Object.values(stockGroups);
+      const topGainer = [...stockRows].sort((a, b) => b.absGain - a.absGain)[0];
+      const topLoser = [...stockRows].sort((a, b) => a.absGain - b.absGain)[0];
 
       const byStock = {};
       portfolio.forEach(r => { if (!byStock[r.stock]) byStock[r.stock] = 0; byStock[r.stock] += (r.currentVal || r.investedVal); });
@@ -1565,9 +1564,14 @@
       return (
         <div className="page">
           {showAllocation && <StockAllocationModal stockEntries={stockEntries} totalValue={totalCurrent} onClose={() => setShowAllocation(false)} />}
-          <div className="page-header">
-            <div className="page-title">Dashboard</div>
-            <div className="page-sub">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
+          <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <div className="page-title">Dashboard</div>
+              <div className="page-sub">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
+            </div>
+            <div style={{ minWidth: 200 }}>
+              <MultiSelect label="Filter Persons" options={persons} selected={filterPersons} onChange={setFilterPersons} />
+            </div>
           </div>
           <div className="stats-grid">
             <div className="stat-card"><div className="stat-label">Invested Value</div><div className="stat-val">{fmt(totalInvested)}</div></div>
@@ -1580,12 +1584,10 @@
             <div className="stat-card">
               <div className="stat-label">Unrealized Net CAGR</div>
               <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
-              <div className="stat-sub">Active holdings only</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Combined Net CAGR</div>
               <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
-              <div className="stat-sub">Realized + Unrealized</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Net Realized</div>
@@ -1598,47 +1600,32 @@
             {topLoser && topLoser.stock !== (topGainer?.stock) && <div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{ fontWeight: 700 }}>{topLoser.stock}</div><div className="neg" style={{ fontSize: 20 }}>{fmt(topLoser.absGain)}</div></div>}
           </div>
 
-          {pLabels.length > 0 && (
-            <div className="charts-row">
-              <div className="chart-card">
-                <div className="card-title">Current vs Invested Value by Person</div>
-                <div className="chart-wrap"><BarChart labels={pLabels} datasets={barDatasets} /></div>
-              </div>
-              <div className="chart-card">
-                <div className="card-title clickable" onClick={() => setShowAllocation(true)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                  <span>Portfolio by Stock</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>View all ↗</span>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 220 }}><PieChart labels={pieLabels} data={pieData} colors={pieColors} hideLegend /></div>
-                  <div style={{ flex: '1 1 150px' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, marginBottom: '.5rem', color: 'var(--text-muted)' }}>TOP 5 ALLOCATION</div>
-                    {top5List.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '.3rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                        <span style={{ color: 'var(--amber)', fontWeight: 700, marginLeft: '.5rem' }}>{item.pct}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="card">
-            <div className="card-title">Portfolio by Person (sorted by value)</div>
-            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-              {sortedPersons.map(([p, v]) => (
-                <div key={p} 
-                  className="clickable"
-                  onClick={() => onPersonClick(p)}
-                  style={{ background: personColor(p, personColors), padding: '.5rem .9rem', fontSize: 13, minWidth: 120, cursor: 'pointer' }}
-                >
-                  <span style={{ fontWeight: 700 }}>{p}</span><br />
-                  <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v.current)}</span><br />
-                  <span style={{ fontSize: 11, opacity: .7 }}>{fmt(v.current)}</span>
-                </div>
-              ))}
+          <div className="card" style={{ padding: 0 }}>
+            <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Portfolio Breakdown</div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Person</th><th>Stock</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain</th><th style={{ textAlign: 'right' }}>CAGR</th></tr></thead>
+                <tbody>
+                  {portfolio.length === 0 && <tr><td colSpan="7"><div className="empty">No data for selected filter</div></td></tr>}
+                  {portfolio.sort((a, b) => b.currentVal - a.currentVal).map((r, i) => (
+                    <tr key={i}>
+                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>
+                      <td style={{ fontWeight: 700 }}>{r.stock}</td>
+                      <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.avgBuy)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
+                        <div style={{ fontSize: 10, opacity: .7 }}>{fmt(r.currentPrice)}</div>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmtWords(r.absGain)}</div>
+                        <div className={r.absGainPct >= 0 ? 'pos' : 'neg'} style={{ fontSize: 10 }}>{fmtPct(r.absGainPct)}</div>
+                      </td>
+                      <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
