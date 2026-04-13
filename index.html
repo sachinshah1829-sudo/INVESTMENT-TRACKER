@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>Investment Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@
     .auth-tab.active { color: var(--text); border-bottom-color: var(--text); }
     .form-group { margin-bottom: 1rem; }
     .form-label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: .4rem; }
-    .form-input { width: 100%; padding: .6rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 14px; color: var(--text); outline: none; transition: border-color .15s; }
+    .form-input { width: 100%; padding: .6rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 16px; color: var(--text); outline: none; transition: border-color .15s; }
     .form-input:focus { border-color: var(--text); }
     .btn-primary { width: 100%; padding: .65rem; background: var(--text); color: #fff; border: none; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: .05em; transition: opacity .15s; }
     .btn-primary:hover { opacity: .85; }
@@ -93,19 +93,6 @@
     tr:last-child td { border-bottom: none; }
     tr.clickable:hover td { background: var(--bg); cursor: pointer; }
 
-    /* MOBILE CARDS */
-    .mobile-card-list { display: none; }
-    .m-card { background: var(--surface); border: 1px solid var(--border); padding: .85rem 1rem; margin-bottom: .5rem; cursor: pointer; transition: background .15s; position: relative; }
-    .m-card:hover { background: var(--bg); }
-    .m-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .4rem; }
-    .m-card-title { font-weight: 700; font-size: 14px; }
-    .m-card-sub { font-size: 11px; color: var(--text-muted); }
-    .m-card-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-top: .25rem; }
-    .m-card-label { color: var(--text-muted); font-size: 11px; }
-    .m-card-val { font-weight: 700; }
-    .m-card-check { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); }
-    .m-card.selectable { padding-left: 2.5rem; }
-
     /* TAGS */
     .tag { display: inline-block; padding: 1px 8px; font-size: 11px; border-radius: 2px; font-weight: 700; }
     .badge-green { background: var(--green-bg); color: var(--green); }
@@ -113,7 +100,7 @@
 
     /* FORMS */
     .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin-bottom: .75rem; }
-    .select-input { width: 100%; padding: .55rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 13px; color: var(--text); outline: none; appearance: none; cursor: pointer; }
+    .select-input { width: 100%; padding: .55rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 16px; color: var(--text); outline: none; appearance: none; cursor: pointer; }
     .select-input:focus { border-color: var(--text); }
     .textarea-input { width: 100%; padding: .6rem .75rem; min-height: 120px; resize: vertical; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 12px; color: var(--text); outline: none; }
     .textarea-input:focus { border-color: var(--text); }
@@ -170,8 +157,17 @@
     /* CHECKBOX */
     input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--text); }
 
+    /* COLOR PICKER */
+    .color-swatch { width: 22px; height: 22px; border: 2px solid rgba(0,0,0,.18); cursor: pointer; border-radius: 3px; display: inline-block; flex-shrink: 0; transition: transform .1s; }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-popup { position: absolute; z-index: 300; background: var(--surface); border: 1px solid var(--border); padding: 10px; top: 28px; left: 0; width: 176px; box-shadow: 0 6px 20px rgba(0,0,0,.14); }
+    .color-preset-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px; }
+    .color-preset { width: 100%; aspect-ratio: 1; cursor: pointer; border-radius: 2px; border: 1px solid rgba(0,0,0,.1); transition: transform .1s; }
+    .color-preset:hover { transform: scale(1.15); }
+    .color-preset.selected { border: 2px solid var(--text); }
+
     /* MOBILE TOGGLE */
-    .menu-toggle { display: none; position: fixed; top: 1rem; left: 1rem; z-index: 200; background: var(--sidebar-bg); color: #fff; border: none; width: 36px; height: 36px; font-size: 18px; cursor: pointer; align-items: center; justify-content: center; }
+    .menu-toggle { display: none; position: fixed; top: .75rem; left: .75rem; z-index: 200; background: var(--sidebar-bg); color: #fff; border: none; width: 36px; height: 36px; font-size: 18px; cursor: pointer; align-items: center; justify-content: center; border-radius: 4px; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 90; }
 
     @media(max-width: 768px) {
@@ -179,16 +175,20 @@
       .sidebar.open { transform: translateX(0); }
       .sidebar-overlay.open { display: block; }
       .menu-toggle { display: flex; }
+      .sidebar-brand { padding-left: 3.75rem; }
       .main { margin-left: 0; }
-      .page { padding: 1rem; padding-top: 3.5rem; }
+      .page { padding: .75rem; padding-top: 3.25rem; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .charts-row { grid-template-columns: 1fr; }
       .form-row { grid-template-columns: 1fr 1fr; }
-      .desktop-table { display: none !important; }
-      .mobile-card-list { display: block; }
       .chart-wrap { height: 220px; }
       .modal { padding: 1.25rem; }
       .form-row { grid-template-columns: 1fr; }
+      table { font-size: 11px; }
+      th { font-size: 9px; padding: .35rem .4rem; }
+      td { padding: .35rem .4rem; }
+      .stat-val { font-size: 18px; }
+      .page-title { font-size: 18px; }
     }
   </style>
 </head>
@@ -242,14 +242,23 @@
     const fmtDate = d => { try { const dt = toJSDate(d); return isNaN(dt) ? '—' : dt.toLocaleDateString('en-IN'); } catch { return '—'; } };
     const isValidDate = d => { try { const dt = toJSDate(d); return d && !isNaN(dt); } catch { return false; } };
 
-    const PERSON_COLORS = {
+    const DEFAULT_PERSON_COLORS = {
       NILESH:'#c8e6c9',HITESH:'#bbdefb',REKHA:'#f8bbd9',RASHMI:'#ffe0b2',HEENA:'#e1bee7',
       PRATIK:'#b3e0f7',JITESH:'#fff9c4',NIDHI:'#d7ccc8',DHARA:'#f0f4c3',
       'NILESH HUF':'#a5d6a7','HITESH HUF':'#90caf9','DHANVANTRAI HUF':'#ce93d8'
     };
-    const personColor = name => {
+
+    const PRESET_COLORS = [
+      '#c8e6c9','#bbdefb','#f8bbd9','#ffe0b2','#e1bee7',
+      '#b3e0f7','#fff9c4','#d7ccc8','#f0f4c3','#a5d6a7',
+      '#90caf9','#ce93d8','#ffcdd2','#b2dfdb','#fff3e0',
+      '#fce4ec','#e8eaf6','#e0f2f1','#e6ee9c','#80deea'
+    ];
+
+    const personColor = (name, customColors = {}) => {
       const u = (name||'').toUpperCase().trim();
-      if (PERSON_COLORS[u]) return PERSON_COLORS[u];
+      if (customColors && customColors[u]) return customColors[u];
+      if (DEFAULT_PERSON_COLORS[u]) return DEFAULT_PERSON_COLORS[u];
       let h = 0; for (let i=0; i<u.length; i++) h = u.charCodeAt(i)+((h<<5)-h);
       return `hsl(${Math.abs(h)%360},50%,80%)`;
     };
@@ -323,6 +332,57 @@
         const absGainPct = absGain!=null?(absGain/s.investedVal)*100:null;
         return {...s,avgBuy:s.investedVal/s.totalQty,currentPrice:cp,currentVal,absGain,absGainPct};
       });
+    }
+
+    // ── COLOR PICKER ──────────────────────────────────────────
+    function ColorPicker({name, color, onChange}) {
+      const [open, setOpen] = useState(false);
+      const ref = useRef(null);
+
+      useEffect(() => {
+        if (!open) return;
+        const handle = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handle);
+        document.addEventListener('touchstart', handle);
+        return () => { document.removeEventListener('mousedown', handle); document.removeEventListener('touchstart', handle); };
+      }, [open]);
+
+      return (
+        <div style={{position:'relative',display:'inline-block'}} ref={ref}>
+          <div
+            className="color-swatch"
+            style={{background: color}}
+            onClick={e => { e.stopPropagation(); setOpen(o=>!o); }}
+            title="Change color"
+          />
+          {open && (
+            <div className="color-popup" onClick={e=>e.stopPropagation()}>
+              <div style={{fontSize:9,letterSpacing:'.1em',color:'var(--text-muted)',marginBottom:5,textTransform:'uppercase'}}>Presets</div>
+              <div className="color-preset-grid">
+                {PRESET_COLORS.map(c=>(
+                  <div
+                    key={c}
+                    className={`color-preset${color===c?' selected':''}`}
+                    style={{background:c}}
+                    onClick={()=>{ onChange(name,c); setOpen(false); }}
+                  />
+                ))}
+              </div>
+              <div style={{fontSize:9,letterSpacing:'.1em',color:'var(--text-muted)',marginBottom:4,textTransform:'uppercase'}}>Custom</div>
+              <input
+                type="color"
+                value={color.startsWith('hsl')?'#aaaaaa':color}
+                onChange={e=>onChange(name,e.target.value)}
+                style={{width:'100%',height:28,border:'1px solid var(--border)',cursor:'pointer',padding:0,background:'none'}}
+              />
+              <button
+                onClick={()=>setOpen(false)}
+                style={{marginTop:5,width:'100%',background:'none',border:'1px solid var(--border)',fontSize:10,padding:'3px',cursor:'pointer',fontFamily:'inherit',color:'var(--text-muted)'}}
+              >CLOSE</button>
+            </div>
+          )}
+        </div>
+      );
     }
 
     // ── CHART COMPONENTS ──────────────────────────────────────
@@ -414,7 +474,7 @@
         const qty=form.type==='SELL'?-Math.abs(Number(form.qty)):Math.abs(Number(form.qty));
         await onSave(tx.id,{date:form.date,person:form.person.toUpperCase(),stock:form.stock.toUpperCase(),qty,price:Number(form.price)});
         setSaveState('saved');
-        setTimeout(()=>onClose(),800);
+        setTimeout(()=>onClose(),400);
       };
       const handleDelete=async()=>{if(!confirm('Delete this transaction?')) return; await onDelete(tx.id); onClose();};
       return (
@@ -455,7 +515,7 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({transactions, stockPrices}) {
+    function DashboardTab({transactions, stockPrices, personColors}) {
       const {sells, holdings} = computeFIFO(transactions);
       const portfolio = buildPortfolio(holdings, stockPrices);
       const totalInvested = portfolio.reduce((s,r)=>s+r.investedVal,0);
@@ -525,7 +585,7 @@
             <div className="card-title">Portfolio by Person (sorted by value)</div>
             <div style={{display:'flex',gap:'.5rem',flexWrap:'wrap'}}>
               {sortedPersons.map(([p,v])=>(
-                <div key={p} style={{background:personColor(p),padding:'.5rem .9rem',fontSize:13,minWidth:120}}>
+                <div key={p} style={{background:personColor(p,personColors),padding:'.5rem .9rem',fontSize:13,minWidth:120}}>
                   <span style={{fontWeight:700}}>{p}</span><br/>
                   <span style={{fontSize:13,fontWeight:700}}>{fmtWords(v.current)}</span><br/>
                   <span style={{fontSize:11,opacity:.7}}>{fmt(v.current)}</span>
@@ -538,7 +598,7 @@
     }
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({transactions, persons, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson}) {
+    function TransactionsTab({transactions, persons, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors}) {
       const [form,setForm]=useState({date:todayISO(),person:'',stock:'',qty:'',price:'',type:'BUY'});
       const [csvMode,setCsvMode]=useState(false);
       const [csvText,setCsvText]=useState('');
@@ -596,9 +656,7 @@
       const valid=transactions.filter(t=>isValidDate(t.date)&&t.stock&&t.person);
       const filtered=valid.filter(t=>!search||t.person?.toLowerCase().includes(search.toLowerCase())||t.stock?.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>toJSDate(b.date)-toJSDate(a.date));
 
-      const toggleSelect=(id)=>{
-        setSelected(prev=>{const n=new Set(prev);n.has(id)?n.delete(id):n.add(id);return n;});
-      };
+      const toggleSelect=(id)=>{ setSelected(prev=>{const n=new Set(prev);n.has(id)?n.delete(id):n.add(id);return n;}); };
       const selectAll=()=>{ if(selected.size===filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map(t=>t.id))); };
       const deleteSelected=async()=>{
         if(!confirm(`Delete ${selected.size} transaction(s)?`)) return;
@@ -630,7 +688,7 @@
                 <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e=>set('qty',e.target.value)} placeholder="100"/></div>
                 <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e=>set('price',e.target.value)} placeholder="250.00"/></div>
               </div>
-              <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem'}}>
+              <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem',flexWrap:'wrap'}}>
                 <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleAdd} disabled={saving}>{saving?'...':'+ ADD TRANSACTION'}</button>
                 <button className="btn-secondary" onClick={()=>setCsvMode(true)}>IMPORT CSV</button>
               </div>
@@ -659,13 +717,12 @@
               {preview&&!importProgress&&<>
                 <hr className="section-divider"/>
                 <div className="card-title">Preview — {preview.filter(r=>r.ok).length} valid, {preview.filter(r=>!r.ok).length} errors</div>
-                <div className="table-wrap desktop-table">
+                <div className="table-wrap">
                   <table className="preview-table">
                     <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
                     <tbody>{preview.map((r,i)=><tr key={i} className={r.ok?'preview-ok':'preview-err'}><td>{r.date||'—'}</td><td>{r.person||'—'}</td><td>{r.stock||r.raw}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok?'✓':r.err}</td></tr>)}</tbody>
                   </table>
                 </div>
-                {/* ✅ FIX 1: was {saving?'...`:`IMPORT ...`} — broken backtick after '...' */}
                 {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={importCSV} disabled={saving}>{saving?'...':`IMPORT ${preview.filter(r=>r.ok).length} ROWS`}</button>}
               </>}
             </div>
@@ -673,12 +730,10 @@
 
           <div className="card">
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.75rem',flexWrap:'wrap',gap:'.5rem'}}>
-              <div>
-                <span className="card-title" style={{margin:0}}>All Transactions ({filtered.length})</span>
-              </div>
+              <span className="card-title" style={{margin:0}}>All Transactions ({filtered.length})</span>
               <div style={{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}}>
-                <input className="form-input" style={{width:180,fontSize:12}} placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/>
-                <button className="btn-sm" onClick={()=>{setSelectMode(s=>!s);setSelected(new Set());}}>{selectMode?'CANCEL SELECT':'SELECT'}</button>
+                <input className="form-input" style={{width:160,fontSize:12}} placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/>
+                <button className="btn-sm" onClick={()=>{setSelectMode(s=>!s);setSelected(new Set());}}>{selectMode?'CANCEL':'SELECT'}</button>
               </div>
             </div>
 
@@ -690,8 +745,7 @@
               </div>
             )}
 
-            {/* Desktop Table */}
-            <div className="table-wrap desktop-table">
+            <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
@@ -704,52 +758,17 @@
                   {filtered.map(tx=>(
                     <tr key={tx.id} className="clickable" onClick={()=>selectMode?toggleSelect(tx.id):setEditTx(tx)} style={selected.has(tx.id)?{background:'#fffde7'}:{}}>
                       {selectMode&&<td onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.has(tx.id)} onChange={()=>toggleSelect(tx.id)}/></td>}
-                      <td>{fmtDate(tx.date)}</td>
-                      <td><span className="tag" style={{background:personColor(tx.person),color:'#1a1a1a'}}>{tx.person}</span></td>
-                      <td style={{fontWeight:700}}>{tx.stock}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmtDate(tx.date)}</td>
+                      <td><span className="tag" style={{background:personColor(tx.person,personColors),color:'#1a1a1a',whiteSpace:'nowrap'}}>{tx.person}</span></td>
+                      <td style={{fontWeight:700,whiteSpace:'nowrap'}}>{tx.stock}</td>
                       <td className={tx.qty>0?'pos':'neg'}>{tx.qty>0?'+':''}{tx.qty}</td>
-                      <td>{fmt(tx.price)}</td>
-                      <td>{fmt(Math.abs(tx.qty)*tx.price)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmt(tx.price)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmt(Math.abs(tx.qty)*tx.price)}</td>
                       <td><span className={`tag ${tx.qty>0?'badge-green':'badge-red'}`}>{tx.qty>0?'BUY':'SELL'}</span></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-
-            {/* Mobile Card List */}
-            <div className="mobile-card-list">
-              {selectMode&&(
-                <div style={{marginBottom:'.5rem',display:'flex',gap:'.5rem',alignItems:'center'}}>
-                  <button className="btn-sm" onClick={selectAll}>{selected.size===filtered.length?'DESELECT ALL':'SELECT ALL'}</button>
-                </div>
-              )}
-              {filtered.length===0&&<div className="empty">No transactions</div>}
-              {filtered.map(tx=>(
-                <div key={tx.id} className={`m-card${selectMode?' selectable':''}`} style={selected.has(tx.id)?{background:'#fffde7',borderColor:'#ffe082'}:{}} onClick={()=>selectMode?toggleSelect(tx.id):setEditTx(tx)}>
-                  {selectMode&&<span className="m-card-check"><input type="checkbox" checked={selected.has(tx.id)} onChange={()=>toggleSelect(tx.id)} onClick={e=>e.stopPropagation()}/></span>}
-                  <div className="m-card-header">
-                    <span className="m-card-title">{tx.stock}</span>
-                    <span className={`tag ${tx.qty>0?'badge-green':'badge-red'}`}>{tx.qty>0?'BUY':'SELL'}</span>
-                  </div>
-                  <div className="m-card-row">
-                    <span className="m-card-label">Person</span>
-                    <span className="tag" style={{background:personColor(tx.person),color:'#1a1a1a'}}>{tx.person}</span>
-                  </div>
-                  <div className="m-card-row">
-                    <span className="m-card-label">Date</span>
-                    <span>{fmtDate(tx.date)}</span>
-                  </div>
-                  <div className="m-card-row">
-                    <span className="m-card-label">Qty × Price</span>
-                    <span className={tx.qty>0?'pos':'neg'}>{tx.qty>0?'+':''}{tx.qty} × {fmt(tx.price)}</span>
-                  </div>
-                  <div className="m-card-row">
-                    <span className="m-card-label">Value</span>
-                    <span className="m-card-val">{fmt(Math.abs(tx.qty)*tx.price)}</span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -759,7 +778,7 @@
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({transactions, stockPrices}) {
+    function PortfolioTab({transactions, stockPrices, personColors}) {
       const [filterPerson,setFilterPerson]=useState('All');
       const [filterStock,setFilterStock]=useState('All');
       const {holdings}=computeFIFO(transactions);
@@ -775,7 +794,7 @@
             <select value={filterStock} onChange={e=>setFilterStock(e.target.value)}>{stocks.map(s=><option key={s}>{s}</option>)}</select>
             <span style={{fontSize:12,color:'var(--text-muted)'}}>{filtered.length} rows</span>
           </div>
-          <div className="card desktop-table" style={{padding:0}}>
+          <div className="card" style={{padding:0}}>
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Holdings</th></tr></thead>
@@ -783,47 +802,32 @@
                   {filtered.length===0&&<tr><td colSpan="10"><div className="empty">No data</div></td></tr>}
                   {filtered.map((r,i)=>(
                     <tr key={i}>
-                      <td><span className="tag" style={{background:personColor(r.person),color:'#1a1a1a'}}>{r.person}</span></td>
-                      <td style={{fontWeight:700}}>{r.stock}</td>
-                      <td>{r.totalQty}</td><td>{fmt(r.avgBuy)}</td><td>{fmt(r.investedVal)}</td>
-                      <td>{r.currentPrice?fmt(r.currentPrice):'—'}</td>
-                      <td>{r.currentVal?fmt(r.currentVal):'—'}</td>
-                      <td className={r.absGain!=null?(r.absGain>=0?'pos':'neg'):''}>{r.absGain!=null?fmt(r.absGain):'—'}</td>
+                      <td><span className="tag" style={{background:personColor(r.person,personColors),color:'#1a1a1a',whiteSpace:'nowrap'}}>{r.person}</span></td>
+                      <td style={{fontWeight:700,whiteSpace:'nowrap'}}>{r.stock}</td>
+                      <td>{r.totalQty}</td><td style={{whiteSpace:'nowrap'}}>{fmt(r.avgBuy)}</td><td style={{whiteSpace:'nowrap'}}>{fmt(r.investedVal)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{r.currentPrice?fmt(r.currentPrice):'—'}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{r.currentVal?fmt(r.currentVal):'—'}</td>
+                      <td className={r.absGain!=null?(r.absGain>=0?'pos':'neg'):''} style={{whiteSpace:'nowrap'}}>{r.absGain!=null?fmt(r.absGain):'—'}</td>
                       <td className={r.absGainPct!=null?(r.absGainPct>=0?'pos':'neg'):''}>{r.absGainPct!=null?fmtPct(r.absGainPct):'—'}</td>
-                      <td style={{fontSize:11,color:'var(--text-muted)',maxWidth:180}}>{r.breakup}</td>
+                      <td style={{fontSize:11,color:'var(--text-muted)',maxWidth:150,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.breakup}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-          <div className="mobile-card-list">
-            {filtered.length===0&&<div className="empty">No data</div>}
-            {filtered.map((r,i)=>(
-              <div key={i} className="m-card">
-                <div className="m-card-header">
-                  <span className="m-card-title">{r.stock}</span>
-                  <span className="tag" style={{background:personColor(r.person),color:'#1a1a1a'}}>{r.person}</span>
-                </div>
-                <div className="m-card-row"><span className="m-card-label">Invested</span><span>{fmt(r.investedVal)}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Current</span><span>{r.currentVal?fmt(r.currentVal):'—'}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Gain</span><span className={r.absGain!=null?(r.absGain>=0?'pos':'neg'):''}>{r.absGain!=null?fmt(r.absGain):'—'} {r.absGainPct!=null?`(${fmtPct(r.absGainPct)})`:''}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Qty / Avg</span><span>{r.totalQty} @ {fmt(r.avgBuy)}</span></div>
-              </div>
-            ))}
-          </div>
         </div>
       );
     }
 
     // ── STOCKS ────────────────────────────────────────────────
-    function StocksTab({transactions, stockPrices}) {
+    function StocksTab({transactions, stockPrices, personColors}) {
       const {holdings}=computeFIFO(transactions);
       const stocks=buildStockSheet(holdings,stockPrices);
       return (
         <div className="page">
           <div className="page-header"><div className="page-title">Stocks</div><div className="page-sub">All persons merged per stock</div></div>
-          <div className="card desktop-table" style={{padding:0}}>
+          <div className="card" style={{padding:0}}>
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Stock</th><th>Total Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Persons</th></tr></thead>
@@ -831,39 +835,27 @@
                   {stocks.length===0&&<tr><td colSpan="9"><div className="empty">No data</div></td></tr>}
                   {stocks.map((s,i)=>(
                     <tr key={i}>
-                      <td style={{fontWeight:700}}>{s.stock}</td><td>{s.totalQty}</td><td>{fmt(s.avgBuy)}</td><td>{fmt(s.investedVal)}</td>
-                      <td>{s.currentPrice?fmt(s.currentPrice):'—'}</td><td>{s.currentVal?fmt(s.currentVal):'—'}</td>
-                      <td className={s.absGain!=null?(s.absGain>=0?'pos':'neg'):''}>{s.absGain!=null?fmt(s.absGain):'—'}</td>
+                      <td style={{fontWeight:700,whiteSpace:'nowrap'}}>{s.stock}</td>
+                      <td>{s.totalQty}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmt(s.avgBuy)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmt(s.investedVal)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{s.currentPrice?fmt(s.currentPrice):'—'}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{s.currentVal?fmt(s.currentVal):'—'}</td>
+                      <td className={s.absGain!=null?(s.absGain>=0?'pos':'neg'):''} style={{whiteSpace:'nowrap'}}>{s.absGain!=null?fmt(s.absGain):'—'}</td>
                       <td className={s.absGainPct!=null?(s.absGainPct>=0?'pos':'neg'):''}>{s.absGainPct!=null?fmtPct(s.absGainPct):'—'}</td>
-                      <td style={{fontSize:11}}>{Object.keys(s.persons).map(p=><span key={p} className="tag" style={{background:personColor(p),color:'#1a1a1a',marginRight:2}}>{p}</span>)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{Object.keys(s.persons).map(p=><span key={p} className="tag" style={{background:personColor(p,personColors),color:'#1a1a1a',marginRight:2}}>{p}</span>)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-          <div className="mobile-card-list">
-            {stocks.length===0&&<div className="empty">No data</div>}
-            {stocks.map((s,i)=>(
-              <div key={i} className="m-card">
-                <div className="m-card-header">
-                  <span className="m-card-title">{s.stock}</span>
-                  <span style={{fontSize:11}}>Qty: {s.totalQty}</span>
-                </div>
-                <div className="m-card-row"><span className="m-card-label">Invested</span><span>{fmt(s.investedVal)}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Current</span><span>{s.currentVal?fmt(s.currentVal):'—'}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Gain</span><span className={s.absGain!=null?(s.absGain>=0?'pos':'neg'):''}>{s.absGain!=null?fmt(s.absGain):'—'} {s.absGainPct!=null?`(${fmtPct(s.absGainPct)})`:''}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Avg Buy</span><span>{fmt(s.avgBuy)}</span></div>
-                <div style={{marginTop:'.4rem',display:'flex',gap:3,flexWrap:'wrap'}}>{Object.keys(s.persons).map(p=><span key={p} className="tag" style={{background:personColor(p),color:'#1a1a1a'}}>{p}</span>)}</div>
-              </div>
-            ))}
-          </div>
         </div>
       );
     }
 
     // ── FIFO RESULTS ──────────────────────────────────────────
-    function FIFOTab({transactions}) {
+    function FIFOTab({transactions, personColors}) {
       const {sells}=computeFIFO(transactions);
       const [filterPerson,setFilterPerson]=useState('All');
       const persons=['All',...new Set(sells.map(r=>r.person))];
@@ -876,41 +868,28 @@
             <select value={filterPerson} onChange={e=>setFilterPerson(e.target.value)}>{persons.map(p=><option key={p}>{p}</option>)}</select>
             <span style={{fontSize:13,fontWeight:700,marginLeft:'auto'}}>Total Realized: <span className={totalProfit>=0?'pos':'neg'}>{fmt(totalProfit)}</span></span>
           </div>
-          <div className="card desktop-table" style={{padding:0}}>
+          <div className="card" style={{padding:0}}>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Buy Date</th><th>Buy Price</th><th>Sell Date</th><th>Sell Price</th><th>Qty</th><th>Profit</th><th>CAGR %</th></tr></thead>
+                <thead><tr><th>Person</th><th>Stock</th><th>Buy Date</th><th>Buy ₹</th><th>Sell Date</th><th>Sell ₹</th><th>Qty</th><th>Profit</th><th>CAGR</th></tr></thead>
                 <tbody>
                   {filtered.length===0&&<tr><td colSpan="9"><div className="empty">No realized trades yet</div></td></tr>}
                   {filtered.map((r,i)=>(
                     <tr key={i}>
-                      <td><span className="tag" style={{background:personColor(r.person),color:'#1a1a1a'}}>{r.person}</span></td>
-                      <td style={{fontWeight:700}}>{r.stock}</td>
-                      <td>{fmtDate(r.buyDate)}</td><td>{fmt(r.buyPrice)}</td>
-                      <td>{fmtDate(r.sellDate)}</td><td>{fmt(r.sellPrice)}</td>
+                      <td><span className="tag" style={{background:personColor(r.person,personColors),color:'#1a1a1a',whiteSpace:'nowrap'}}>{r.person}</span></td>
+                      <td style={{fontWeight:700,whiteSpace:'nowrap'}}>{r.stock}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmtDate(r.buyDate)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmt(r.buyPrice)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmtDate(r.sellDate)}</td>
+                      <td style={{whiteSpace:'nowrap'}}>{fmt(r.sellPrice)}</td>
                       <td>{r.qty}</td>
-                      <td className={r.profit>=0?'pos':'neg'}>{fmt(r.profit)}</td>
+                      <td className={r.profit>=0?'pos':'neg'} style={{whiteSpace:'nowrap'}}>{fmt(r.profit)}</td>
                       <td className={r.cagr!=null?(r.cagr>=0?'pos':'neg'):''}>{r.cagr!=null?fmtPct(r.cagr):'—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
-          <div className="mobile-card-list">
-            {filtered.length===0&&<div className="empty">No realized trades yet</div>}
-            {filtered.map((r,i)=>(
-              <div key={i} className="m-card">
-                <div className="m-card-header">
-                  <span className="m-card-title">{r.stock}</span>
-                  <span className="tag" style={{background:personColor(r.person),color:'#1a1a1a'}}>{r.person}</span>
-                </div>
-                <div className="m-card-row"><span className="m-card-label">Buy</span><span>{fmtDate(r.buyDate)} @ {fmt(r.buyPrice)}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Sell</span><span>{fmtDate(r.sellDate)} @ {fmt(r.sellPrice)}</span></div>
-                <div className="m-card-row"><span className="m-card-label">Qty / Profit</span><span className={r.profit>=0?'pos':'neg'}>{r.qty} → {fmt(r.profit)}</span></div>
-                <div className="m-card-row"><span className="m-card-label">CAGR</span><span className={r.cagr!=null?(r.cagr>=0?'pos':'neg'):''}>{r.cagr!=null?fmtPct(r.cagr):'—'}</span></div>
-              </div>
-            ))}
           </div>
         </div>
       );
@@ -927,7 +906,7 @@
         setSaveState('saving');
         await onSave(stock,s,p);
         setSaveState('saved');
-        setTimeout(()=>onClose(),800);
+        setTimeout(()=>onClose(),400);
       };
       const handleDelete=async()=>{
         if(!confirm(`Delete price and data for "${stock}"?`)) return;
@@ -1048,7 +1027,6 @@
                   <tbody>{preview.map((r,i)=><tr key={i} className={r.ok?'preview-ok':'preview-err'}><td>{r.stock||r.raw}</td><td>{r.ok?fmt(r.price):'—'}</td><td>{r.ok?'✓':r.err}</td></tr>)}</tbody>
                 </table>
               </div>
-              {/* ✅ FIX 2: was {saving?'...`:`UPDATE ...`} — broken backtick after '...' */}
               {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={doImport} disabled={saving}>{saving?'...':`UPDATE ${preview.filter(r=>r.ok).length} PRICES`}</button>}
             </>}
           </div>
@@ -1073,41 +1051,28 @@
             )}
 
             {entries.length===0?<div className="empty">No prices loaded yet</div>:(
-              <>
-                <div className="table-wrap desktop-table">
-                  <table>
-                    <thead><tr>
-                      {selectMode&&<th><input type="checkbox" checked={selected.size===entries.length&&entries.length>0} onChange={selectAll}/></th>}
-                      <th>Stock</th><th>Price</th><th></th>
-                    </tr></thead>
-                    <tbody>
-                      {entries.map(([s,p])=>(
-                        <tr key={s} className="clickable" style={selected.has(s)?{background:'#fffde7'}:{}} onClick={()=>selectMode?toggleSelect(s):setEditEntry({stock:s,price:p})}>
-                          {selectMode&&<td onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.has(s)} onChange={()=>toggleSelect(s)}/></td>}
-                          <td style={{fontWeight:700}}>{s}</td>
-                          <td>{fmt(p)}</td>
-                          <td style={{textAlign:'right'}}>
-                            <button className="btn-sm" onClick={e=>{e.stopPropagation();setEditEntry({stock:s,price:p});}}>EDIT</button>
-                            {' '}
-                            <button className="btn-sm-danger" onClick={e=>{e.stopPropagation();if(confirm(`Delete "${s}"?`)) handleDelete(s);}}>DELETE</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="mobile-card-list">
-                  {entries.map(([s,p])=>(
-                    <div key={s} className={`m-card${selectMode?' selectable':''}`} style={selected.has(s)?{background:'#fffde7',borderColor:'#ffe082'}:{}} onClick={()=>selectMode?toggleSelect(s):setEditEntry({stock:s,price:p})}>
-                      {selectMode&&<span className="m-card-check"><input type="checkbox" checked={selected.has(s)} onChange={()=>toggleSelect(s)} onClick={e=>e.stopPropagation()}/></span>}
-                      <div className="m-card-header">
-                        <span className="m-card-title">{s}</span>
-                        <span style={{fontWeight:700}}>{fmt(p)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr>
+                    {selectMode&&<th><input type="checkbox" checked={selected.size===entries.length&&entries.length>0} onChange={selectAll}/></th>}
+                    <th>Stock</th><th>Price</th><th style={{textAlign:'right'}}>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {entries.map(([s,p])=>(
+                      <tr key={s} className="clickable" style={selected.has(s)?{background:'#fffde7'}:{}} onClick={()=>selectMode?toggleSelect(s):setEditEntry({stock:s,price:p})}>
+                        {selectMode&&<td onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.has(s)} onChange={()=>toggleSelect(s)}/></td>}
+                        <td style={{fontWeight:700}}>{s}</td>
+                        <td style={{whiteSpace:'nowrap'}}>{fmt(p)}</td>
+                        <td style={{textAlign:'right',whiteSpace:'nowrap'}}>
+                          <button className="btn-sm" onClick={e=>{e.stopPropagation();setEditEntry({stock:s,price:p});}}>EDIT</button>
+                          {' '}
+                          <button className="btn-sm-danger" onClick={e=>{e.stopPropagation();if(confirm(`Delete "${s}"?`)) handleDelete(s);}}>DEL</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
@@ -1124,7 +1089,7 @@
         if(!name.trim()) return; setSaveState('saving');
         await onSave(person.id,{name:name.toUpperCase().trim()},person.name);
         setSaveState('saved');
-        setTimeout(()=>onClose(),800);
+        setTimeout(()=>onClose(),400);
       };
       const handleDelete=async()=>{
         if(!confirm(`Delete "${person.name}"?\nThis won't delete their transactions.`)) return;
@@ -1155,7 +1120,7 @@
     }
 
     // ── PERSONS TAB ───────────────────────────────────────────
-    function PersonsTab({persons, onAdd, onUpdate, onDelete}) {
+    function PersonsTab({persons, onAdd, onUpdate, onDelete, personColors, onColorChange}) {
       const [newName,setNewName]=useState('');
       const [saving,setSaving]=useState(false);
       const [editPerson,setEditPerson]=useState(null);
@@ -1184,7 +1149,7 @@
 
       return (
         <div className="page">
-          <div className="page-header"><div className="page-title">Persons</div><div className="page-sub">Manage investor profiles</div></div>
+          <div className="page-header"><div className="page-title">Persons</div><div className="page-sub">Manage investor profiles &amp; colors</div></div>
           <div className="card">
             <div className="card-title">Add Person</div>
             <div style={{display:'flex',gap:'.5rem',alignItems:'flex-end'}}>
@@ -1216,37 +1181,36 @@
             )}
 
             {persons.length===0?<div className="empty">No persons yet.</div>:(
-              <>
-                <div className="table-wrap desktop-table">
-                  <table>
-                    <thead><tr>
-                      {selectMode&&<th><input type="checkbox" checked={selected.size===persons.length&&persons.length>0} onChange={selectAll}/></th>}
-                      <th>Name</th><th>Tag Preview</th><th></th>
-                    </tr></thead>
-                    <tbody>
-                      {persons.map(p=>(
-                        <tr key={p.id} className="clickable" style={selected.has(p.id)?{background:'#fffde7'}:{}} onClick={()=>selectMode?toggleSelect(p.id):setEditPerson(p)}>
-                          {selectMode&&<td onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.has(p.id)} onChange={()=>toggleSelect(p.id)}/></td>}
-                          <td style={{fontWeight:700}}>{p.name}</td>
-                          <td><span className="tag" style={{background:personColor(p.name),color:'#1a1a1a'}}>{p.name}</span></td>
-                          <td><button className="btn-sm" onClick={e=>{e.stopPropagation();setEditPerson(p);}}>EDIT</button></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="mobile-card-list">
-                  {persons.map(p=>(
-                    <div key={p.id} className={`m-card${selectMode?' selectable':''}`} style={selected.has(p.id)?{background:'#fffde7',borderColor:'#ffe082'}:{}} onClick={()=>selectMode?toggleSelect(p.id):setEditPerson(p)}>
-                      {selectMode&&<span className="m-card-check"><input type="checkbox" checked={selected.has(p.id)} onChange={()=>toggleSelect(p.id)} onClick={e=>e.stopPropagation()}/></span>}
-                      <div className="m-card-header">
-                        <span className="m-card-title">{p.name}</span>
-                        <span className="tag" style={{background:personColor(p.name),color:'#1a1a1a'}}>{p.name}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr>
+                    {selectMode&&<th><input type="checkbox" checked={selected.size===persons.length&&persons.length>0} onChange={selectAll}/></th>}
+                    <th>Person</th>
+                    <th>Color</th>
+                    <th style={{textAlign:'right'}}>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {persons.map(p=>(
+                      <tr key={p.id} className="clickable" style={selected.has(p.id)?{background:'#fffde7'}:{}} onClick={()=>selectMode?toggleSelect(p.id):setEditPerson(p)}>
+                        {selectMode&&<td onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.has(p.id)} onChange={()=>toggleSelect(p.id)}/></td>}
+                        <td>
+                          <span className="tag" style={{background:personColor(p.name,personColors),color:'#1a1a1a'}}>{p.name}</span>
+                        </td>
+                        <td onClick={e=>e.stopPropagation()}>
+                          <ColorPicker
+                            name={p.name}
+                            color={personColor(p.name,personColors)}
+                            onChange={onColorChange}
+                          />
+                        </td>
+                        <td style={{textAlign:'right'}}>
+                          <button className="btn-sm" onClick={e=>{e.stopPropagation();setEditPerson(p);}}>EDIT</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
           {editPerson&&<EditPersonModal person={editPerson} onSave={onUpdate} onDelete={onDelete} onClose={()=>setEditPerson(null)}/>}
@@ -1261,6 +1225,7 @@
       const [transactions,setTransactions]=useState([]);
       const [persons,setPersons]=useState([]);
       const [stockPrices,setStockPrices]=useState({});
+      const [personColors,setPersonColors]=useState({});
       const [sidebarOpen,setSidebarOpen]=useState(false);
       const [loading,setLoading]=useState(true);
 
@@ -1314,7 +1279,8 @@
         const t1=db.collection(`users/${uid}/inv_transactions`).onSnapshot(snap=>{setTransactions(snap.docs.map(d=>({id:d.id,...d.data()})));setLoading(false);},()=>setLoading(false));
         const t2=db.collection(`users/${uid}/inv_persons`).onSnapshot(snap=>{setPersons(snap.docs.map(d=>({id:d.id,...d.data()})));},()=>{});
         const t3=db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').onSnapshot(snap=>{if(snap.exists) setStockPrices(snap.data().prices||{});},()=>{});
-        return()=>{t1();t2();t3();};
+        const t4=db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').onSnapshot(snap=>{if(snap.exists) setPersonColors(snap.data().colors||{});},()=>{});
+        return()=>{t1();t2();t3();t4();};
       },[user]);
 
       const uid=user?.uid;
@@ -1348,6 +1314,7 @@
         }
       };
       const deletePerson=async id=>{await db.collection(`users/${uid}/inv_persons`).doc(id).delete();};
+
       const updatePrices=async(updates,replace=false)=>{
         const merged=replace?updates:{...stockPrices,...updates};
         await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({prices:merged});
@@ -1355,6 +1322,12 @@
       const deletePrice=async(stock)=>{
         const updated={...stockPrices}; delete updated[stock];
         await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({prices:updated});
+      };
+
+      const updatePersonColor=async(personName,color)=>{
+        const upper=personName.toUpperCase().trim();
+        const updated={...personColors,[upper]:color};
+        await db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').set({colors:updated});
       };
 
       if(user===undefined) return <div className="spinner">Loading...</div>;
@@ -1388,13 +1361,13 @@
           <main className="main">
             {loading?<div className="spinner">Loading data...</div>:(
               <>
-                {tab==='dashboard'&&<DashboardTab transactions={transactions} stockPrices={stockPrices}/>}
-                {tab==='transactions'&&<TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson}/>}
-                {tab==='portfolio'&&<PortfolioTab transactions={transactions} stockPrices={stockPrices}/>}
-                {tab==='stocks'&&<StocksTab transactions={transactions} stockPrices={stockPrices}/>}
-                {tab==='fifo'&&<FIFOTab transactions={transactions}/>}
+                {tab==='dashboard'&&<DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
+                {tab==='transactions'&&<TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors}/>}
+                {tab==='portfolio'&&<PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
+                {tab==='stocks'&&<StocksTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
+                {tab==='fifo'&&<FIFOTab transactions={transactions} personColors={personColors}/>}
                 {tab==='prices'&&<StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid}/>}
-                {tab==='persons'&&<PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson}/>}
+                {tab==='persons'&&<PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor}/>}
               </>
             )}
           </main>
