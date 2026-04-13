@@ -2,10 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <title>Investment Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -31,15 +28,11 @@
       --amber: #7a5c00;
       --amber-bg: #fff8e1;
       --input-bg: #fafaf7;
-      --mobile-header: 56px;
-      --mobile-nav: 60px;
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    html { touch-action: pan-x pan-y; }
-    body { font-family: 'Courier Prime', 'Courier New', monospace; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Courier Prime', 'Courier New', monospace; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-    /* ── AUTH ────────────────────────────────────────────── */
+    /* AUTH */
     .auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 1rem; }
     .auth-card { background: var(--surface); border: 1px solid var(--border); padding: 2.5rem 2rem; width: 100%; max-width: 420px; }
     .auth-brand { font-size: 11px; letter-spacing: .15em; color: var(--text-muted); text-transform: uppercase; margin-bottom: .3rem; }
@@ -49,19 +42,19 @@
     .auth-tab.active { color: var(--text); border-bottom-color: var(--text); }
     .form-group { margin-bottom: 1rem; }
     .form-label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: .4rem; }
-    .form-input { width: 100%; padding: .6rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 16px; color: var(--text); outline: none; transition: border-color .15s; border-radius: 0; -webkit-appearance: none; }
+    .form-input { width: 100%; padding: .6rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 16px; color: var(--text); outline: none; transition: border-color .15s; }
     .form-input:focus { border-color: var(--text); }
-    .btn-primary { width: 100%; padding: .65rem; background: var(--text); color: #fff; border: none; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: .05em; transition: opacity .15s; border-radius: 0; -webkit-appearance: none; }
+    .btn-primary { width: 100%; padding: .65rem; background: var(--text); color: #fff; border: none; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: .05em; transition: opacity .15s; }
     .btn-primary:hover { opacity: .85; }
     .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-google { width: 100%; padding: .65rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); font-family: inherit; font-size: 14px; cursor: pointer; margin-top: .75rem; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 0; }
+    .btn-google { width: 100%; padding: .65rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); font-family: inherit; font-size: 14px; cursor: pointer; margin-top: .75rem; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-google:hover { background: var(--bg); }
     .divider { text-align: center; color: var(--text-muted); font-size: 12px; margin: 1rem 0; }
     .auth-error { color: var(--red); font-size: 12px; margin-top: .5rem; }
 
-    /* ── DESKTOP LAYOUT ──────────────────────────────────── */
+    /* LAYOUT */
     .app { display: flex; min-height: 100vh; }
-    .sidebar { width: 220px; min-width: 220px; background: var(--sidebar-bg); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar { width: 220px; min-width: 220px; background: var(--sidebar-bg); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform .3s ease; }
     .sidebar-brand { padding: 1.5rem 1.25rem .75rem; }
     .sidebar-brand-sub { font-size: 10px; letter-spacing: .15em; color: var(--sidebar-muted); text-transform: uppercase; }
     .sidebar-brand-name { font-size: 20px; font-weight: 700; color: var(--sidebar-active); }
@@ -80,11 +73,11 @@
     .page-title { font-size: 22px; font-weight: 700; }
     .page-sub { font-size: 12px; color: var(--text-muted); margin-top: .2rem; }
 
-    /* ── CARDS ───────────────────────────────────────────── */
+    /* CARDS */
     .card { background: var(--surface); border: 1px solid var(--border); padding: 1.25rem; margin-bottom: 1rem; }
     .card-title { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .75rem; }
 
-    /* ── STATS ───────────────────────────────────────────── */
+    /* STATS */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 1px; background: var(--border); margin-bottom: 1.5rem; }
     .stat-card { background: var(--surface); padding: 1.25rem; }
     .stat-label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .35rem; }
@@ -92,69 +85,64 @@
     .pos { color: var(--green); }
     .neg { color: var(--red); }
 
-    /* ── TABLE ───────────────────────────────────────────── */
-    .table-wrap {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      /* Prevent swipe-to-tab inside tables */
-      touch-action: pan-x pan-y;
-    }
-    /* Scrollable table indicator on mobile */
-    .table-scroll-hint { display: none; font-size: 10px; color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .4rem; text-align: right; }
+    /* TABLE */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-weight: 400; white-space: nowrap; }
     td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); }
     tr:last-child td { border-bottom: none; }
     tr.clickable:hover td { background: var(--bg); cursor: pointer; }
 
-    /* ── TAGS ────────────────────────────────────────────── */
+    /* TAGS */
     .tag { display: inline-block; padding: 1px 8px; font-size: 11px; border-radius: 2px; font-weight: 700; }
     .badge-green { background: var(--green-bg); color: var(--green); }
     .badge-red { background: var(--red-bg); color: var(--red); }
 
-    /* ── FORMS ───────────────────────────────────────────── */
+    /* FORMS */
     .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin-bottom: .75rem; }
-    .select-input { width: 100%; padding: .55rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 16px; color: var(--text); outline: none; appearance: none; -webkit-appearance: none; cursor: pointer; border-radius: 0; }
+    .select-input { width: 100%; padding: .55rem .75rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 16px; color: var(--text); outline: none; appearance: none; cursor: pointer; }
     .select-input:focus { border-color: var(--text); }
-    .textarea-input { width: 100%; padding: .6rem .75rem; min-height: 120px; resize: vertical; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 12px; color: var(--text); outline: none; border-radius: 0; }
+    .textarea-input { width: 100%; padding: .6rem .75rem; min-height: 120px; resize: vertical; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 12px; color: var(--text); outline: none; }
     .textarea-input:focus { border-color: var(--text); }
-    .btn-secondary { padding: .55rem 1.25rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); font-family: inherit; font-size: 13px; cursor: pointer; transition: background .15s; border-radius: 0; }
+    .btn-secondary { padding: .55rem 1.25rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); font-family: inherit; font-size: 13px; cursor: pointer; transition: background .15s; }
     .btn-secondary:hover { background: var(--bg); }
-    .btn-sm { padding: .3rem .6rem; background: none; color: var(--text-muted); border: 1px solid var(--border); font-family: inherit; font-size: 11px; cursor: pointer; transition: all .15s; border-radius: 0; }
+    .btn-sm { padding: .3rem .6rem; background: none; color: var(--text-muted); border: 1px solid var(--border); font-family: inherit; font-size: 11px; cursor: pointer; transition: all .15s; }
     .btn-sm:hover { background: var(--bg); color: var(--text); }
-    .btn-sm-danger { padding: .3rem .6rem; background: none; color: var(--red); border: 1px solid var(--red-bg); font-family: inherit; font-size: 11px; cursor: pointer; transition: all .15s; border-radius: 0; }
+    .btn-sm-danger { padding: .3rem .6rem; background: none; color: var(--red); border: 1px solid var(--red-bg); font-family: inherit; font-size: 11px; cursor: pointer; transition: all .15s; }
     .btn-sm-danger:hover { background: var(--red-bg); }
-    .btn-danger { padding: .55rem 1.25rem; background: var(--red); color: #fff; border: none; font-family: inherit; font-size: 13px; cursor: pointer; transition: opacity .15s; border-radius: 0; }
+    .btn-danger { padding: .55rem 1.25rem; background: var(--red); color: #fff; border: none; font-family: inherit; font-size: 13px; cursor: pointer; transition: opacity .15s; }
     .btn-danger:hover { opacity: .85; }
     .btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 
-    /* ── MODAL ───────────────────────────────────────────── */
+    /* MODAL */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 1rem; }
     .modal { background: var(--surface); border: 1px solid var(--border); padding: 1.75rem; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
     .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; }
-    .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); line-height: 1; padding: 4px 8px; }
+    .modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); line-height: 1; }
     .modal-actions { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    /* SAVE FEEDBACK */
     .save-feedback { display: inline-flex; align-items: center; gap: .4rem; font-size: 13px; color: var(--green); font-weight: 700; }
 
-    /* ── FILTER BAR ──────────────────────────────────────── */
+    /* FILTER BAR */
     .filter-bar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
-    .filter-bar select { padding: .35rem .6rem; border: 1px solid var(--border); background: var(--surface); font-family: inherit; font-size: 12px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; }
+    .filter-bar select { padding: .35rem .6rem; border: 1px solid var(--border); background: var(--surface); font-family: inherit; font-size: 12px; cursor: pointer; outline: none; }
 
-    /* ── BULK ACTIONS ────────────────────────────────────── */
+    /* BULK ACTIONS */
     .bulk-bar { display: flex; gap: .5rem; align-items: center; padding: .5rem .75rem; background: var(--amber-bg); border: 1px solid #ffe082; margin-bottom: .75rem; flex-wrap: wrap; }
     .bulk-bar-text { font-size: 12px; color: var(--amber); font-weight: 700; }
 
-    /* ── CHARTS ──────────────────────────────────────────── */
+    /* CHARTS */
     .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
     .chart-card { background: var(--surface); border: 1px solid var(--border); padding: 1.25rem; }
     .chart-wrap { position: relative; height: 280px; }
 
-    /* ── PREVIEW ─────────────────────────────────────────── */
+    /* PREVIEW */
     .preview-table td { font-size: 12px; }
     .preview-ok { background: var(--green-bg); }
     .preview-err { background: var(--red-bg); }
 
-    /* ── MISC ────────────────────────────────────────────── */
+    /* MISC */
     .cards-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
     .top-gainer-card { background: var(--green-bg); border: 1px solid #c8e6c9; padding: 1rem; flex: 1; min-width: 200px; }
     .top-loser-card { background: var(--red-bg); border: 1px solid #f7c1c1; padding: 1rem; flex: 1; min-width: 200px; }
@@ -162,10 +150,14 @@
     .spinner { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 13px; }
     .section-divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
     .import-progress { background: var(--green-bg); border: 1px solid #c8e6c9; padding: .75rem 1rem; margin-top: .75rem; font-size: 12px; color: var(--green); }
+    .price-edit-input { width: 120px; padding: .25rem .5rem; border: 1px solid var(--border); background: var(--input-bg); font-family: inherit; font-size: 13px; color: var(--text); outline: none; }
+    .price-edit-input:focus { border-color: var(--text); }
     .dup-error { color: var(--red); font-size: 12px; margin-top: .3rem; }
+
+    /* CHECKBOX */
     input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--text); }
 
-    /* ── COLOR PICKER ────────────────────────────────────── */
+    /* COLOR PICKER */
     .color-swatch { width: 22px; height: 22px; border: 2px solid rgba(0,0,0,.18); cursor: pointer; border-radius: 3px; display: inline-block; flex-shrink: 0; transition: transform .1s; }
     .color-swatch:hover { transform: scale(1.15); }
     .color-popup { position: absolute; z-index: 300; background: var(--surface); border: 1px solid var(--border); padding: 10px; top: 28px; left: 0; width: 176px; box-shadow: 0 6px 20px rgba(0,0,0,.14); }
@@ -174,270 +166,29 @@
     .color-preset:hover { transform: scale(1.15); }
     .color-preset.selected { border: 2px solid var(--text); }
 
-    /* ── MOBILE HEADER ───────────────────────────────────── */
-    .mobile-header { display: none; }
-
-    /* ── MOBILE BOTTOM NAV ───────────────────────────────── */
-    .mobile-nav { display: none; }
-
-    /* ── MOBILE SIDEBAR OVERLAY ──────────────────────────── */
+    /* MOBILE TOGGLE */
+    .menu-toggle { display: none; position: fixed; top: .75rem; left: .75rem; z-index: 200; background: var(--sidebar-bg); color: #fff; border: none; width: 36px; height: 36px; font-size: 18px; cursor: pointer; align-items: center; justify-content: center; border-radius: 4px; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 90; }
 
-    /* ══════════════════════════════════════════════════════ */
-    /* ── MOBILE STYLES ─────────────────────────────────── */
-    /* ══════════════════════════════════════════════════════ */
-    @media (max-width: 768px) {
-      /* Hide desktop sidebar */
-      .sidebar { display: none; }
+    @media(max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .menu-toggle { display: flex; }
+      .sidebar-brand { padding-left: 3.75rem; }
       .main { margin-left: 0; }
-
-      /* ── Mobile Header ── */
-      .mobile-header {
-        display: flex;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: var(--mobile-header);
-        background: var(--sidebar-bg);
-        color: #fff;
-        z-index: 200;
-        align-items: center;
-        padding: 0 1rem;
-        padding-top: env(safe-area-inset-top, 0px);
-        gap: 12px;
-        border-bottom: 1px solid rgba(255,255,255,.08);
-      }
-      .mobile-header-menu {
-        background: none;
-        border: none;
-        color: #fff;
-        font-size: 20px;
-        cursor: pointer;
-        padding: 0;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-      .mobile-header-title {
-        font-family: 'Courier Prime', monospace;
-        font-size: 16px;
-        font-weight: 700;
-        letter-spacing: .05em;
-        flex: 1;
-      }
-      .mobile-header-user {
-        font-size: 11px;
-        color: rgba(255,255,255,.5);
-        max-width: 120px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      /* ── Mobile Drawer ── */
-      .mobile-drawer {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 280px;
-        height: 100vh;
-        background: var(--sidebar-bg);
-        z-index: 300;
-        transform: translateX(-100%);
-        transition: transform .28s cubic-bezier(.4,0,.2,1);
-        display: flex;
-        flex-direction: column;
-        padding-top: env(safe-area-inset-top, 0px);
-      }
-      .mobile-drawer.open { transform: translateX(0); }
-      .sidebar-overlay.open { display: block; z-index: 250; }
-      .mobile-drawer .sidebar-brand { padding: 1.25rem 1.25rem .75rem; border-bottom: 1px solid rgba(255,255,255,.08); }
-      .mobile-drawer .sidebar-nav { flex: 1; overflow-y: auto; padding: .5rem 0; }
-      .mobile-drawer .sidebar-item {
-        padding: .85rem 1.25rem;
-        font-size: 14px;
-        border-radius: 0;
-      }
-      .mobile-drawer .sidebar-item.active {
-        background: var(--sidebar-active-bg);
-        border-left: 3px solid #fff;
-        padding-left: calc(1.25rem - 3px);
-      }
-      .mobile-drawer .sidebar-footer { padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,.08); padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
-      .mobile-drawer .sidebar-user { font-size: 12px; margin-bottom: .75rem; }
-      .mobile-drawer .btn-logout { padding: .55rem .75rem; font-size: 12px; }
-
-      /* ── Mobile Bottom Nav ── */
-      .mobile-nav {
-        display: flex;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: var(--mobile-nav);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-        background: var(--sidebar-bg);
-        border-top: 1px solid rgba(255,255,255,.08);
-        z-index: 200;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-      }
-      .mobile-nav::-webkit-scrollbar { display: none; }
-      .mobile-nav-item {
-        flex: 1;
-        min-width: 56px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 3px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-family: inherit;
-        color: var(--sidebar-muted);
-        padding: 8px 4px;
-        transition: color .15s;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .mobile-nav-item.active { color: #fff; }
-      .mobile-nav-item.active .mobile-nav-dot {
-        width: 28px;
-        height: 28px;
-        background: rgba(255,255,255,.12);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .mobile-nav-icon { font-size: 16px; line-height: 1; }
-      .mobile-nav-label { font-size: 9px; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
-
-      /* ── Page Layout ── */
-      .page {
-        padding: calc(var(--mobile-header) + env(safe-area-inset-top, 0px) + 12px) 12px calc(var(--mobile-nav) + env(safe-area-inset-bottom, 0px) + 12px);
-        max-width: 100%;
-      }
-      .page-header { margin-bottom: 1rem; }
-      .page-title { font-size: 18px; }
-
-      /* ── Stats Grid ── */
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .stat-card { padding: 1rem; }
-      .stat-val { font-size: 16px; word-break: break-all; }
-      .stat-label { font-size: 9px; }
-
-      /* ── Charts ── */
+      .page { padding: .75rem; padding-top: 3.25rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .charts-row { grid-template-columns: 1fr; }
-      .chart-wrap { height: 200px; }
-
-      /* ── Cards ── */
-      .card { padding: 1rem; margin-bottom: .75rem; }
-      .cards-row { gap: .75rem; }
-      .top-gainer-card, .top-loser-card { min-width: 140px; padding: .75rem; }
-
-      /* ── Forms ── */
-      .form-row { grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: .5rem; }
-      .form-row > div { display: flex; flex-direction: column; }
-      .form-input, .select-input { font-size: 16px; padding: .55rem .65rem; }
-      .btn-primary { padding: .7rem; font-size: 13px; }
-      .btn-secondary { padding: .55rem 1rem; font-size: 12px; }
-      .textarea-input { font-size: 14px; min-height: 100px; }
-
-      /* ── Table: scrollable, not swipeable ── */
-      .table-scroll-hint { display: block; }
-      .table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-x pan-y;
-        margin: 0 -12px;
-        padding: 0 12px;
-        width: calc(100% + 24px);
-        /* Shadow to indicate scrollability */
-        background:
-          linear-gradient(to right, white 30%, rgba(255,255,255,0)),
-          linear-gradient(to right, rgba(255,255,255,0), white 70%) 100% 0,
-          radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.08), transparent),
-          radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.08), transparent) 100% 0;
-        background-repeat: no-repeat;
-        background-color: white;
-        background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
-        background-attachment: local, local, scroll, scroll;
-      }
-      /* Prevent table wrapper from triggering page swipe */
-      .table-wrap * { touch-action: pan-x pan-y; }
-      table { font-size: 11px; min-width: 500px; }
-      th { font-size: 9px; padding: .4rem .5rem; }
-      td { padding: .4rem .5rem; }
-
-      /* ── Modal ── */
-      .modal-overlay { padding: 0; align-items: flex-end; }
-      .modal {
-        max-height: 92vh;
-        max-width: 100%;
-        border-radius: 16px 16px 0 0;
-        padding: 1.25rem;
-        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
-      }
-      .modal::before {
-        content: '';
-        display: block;
-        width: 36px;
-        height: 4px;
-        background: var(--border);
-        border-radius: 2px;
-        margin: 0 auto 1rem;
-      }
-      .modal-title { font-size: 14px; }
+      .form-row { grid-template-columns: 1fr 1fr; }
+      .chart-wrap { height: 220px; }
+      .modal { padding: 1.25rem; }
       .form-row { grid-template-columns: 1fr; }
-
-      /* ── Filter bar ── */
-      .filter-bar { gap: .4rem; }
-      .filter-bar select { font-size: 11px; padding: .3rem .5rem; }
-
-      /* ── Bulk bar ── */
-      .bulk-bar { padding: .4rem .6rem; gap: .4rem; }
-      .bulk-bar-text { font-size: 11px; }
-
-      /* ── Mobile-specific stat colors ── */
-      .mobile-stat-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1px;
-        background: var(--border);
-        margin-bottom: .75rem;
-      }
-
-      /* ── Person cards on dashboard ── */
-      .person-chips-wrap { display: flex; gap: .5rem; flex-wrap: wrap; }
-      .person-chip {
-        padding: .5rem .75rem;
-        font-size: 12px;
-        flex: 1;
-        min-width: 120px;
-        max-width: calc(50% - .25rem);
-      }
-
-      /* ── Import progress ── */
-      .import-progress { font-size: 11px; padding: .6rem .75rem; }
-
-      /* ── btn-sm ── */
-      .btn-sm, .btn-sm-danger { padding: .35rem .65rem; font-size: 11px; }
-
-      /* ── Spinner ── */
-      .spinner { padding-top: calc(var(--mobile-header) + 3rem); }
-    }
-
-    /* Very small phones */
-    @media (max-width: 380px) {
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .stat-val { font-size: 14px; }
-      .form-row { grid-template-columns: 1fr; }
+      table { font-size: 11px; }
+      th { font-size: 9px; padding: .35rem .4rem; }
+      td { padding: .35rem .4rem; }
+      .stat-val { font-size: 18px; }
+      .page-title { font-size: 18px; }
     }
   </style>
 </head>
@@ -449,6 +200,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
+    // ── FIREBASE CONFIG ───────────────────────────────────────
     const firebaseConfig = {
       apiKey: "AIzaSyAyuj-wMRRSu5craUeB_dVbsDoM0rO-ceE",
       authDomain: "finance-tracker-70d81.firebaseapp.com",
@@ -462,9 +214,11 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // ── HELPERS ───────────────────────────────────────────────
     const todayISO = () => new Date().toISOString().split('T')[0];
     const fmt = n => n == null || isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     const fmtPct = n => n == null || isNaN(n) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
+
     const fmtWords = (n) => {
       if (n == null || isNaN(n)) return '—';
       const abs = Math.abs(n);
@@ -474,6 +228,7 @@
       if (abs >= 1e3) return sign + '₹' + (abs / 1e3).toFixed(2) + ' K';
       return sign + '₹' + abs.toFixed(0);
     };
+
     const toJSDate = d => {
       if (!d) return new Date(NaN);
       if (d instanceof Date) return d;
@@ -492,12 +247,14 @@
       PRATIK:'#b3e0f7',JITESH:'#fff9c4',NIDHI:'#d7ccc8',DHARA:'#f0f4c3',
       'NILESH HUF':'#a5d6a7','HITESH HUF':'#90caf9','DHANVANTRAI HUF':'#ce93d8'
     };
+
     const PRESET_COLORS = [
       '#c8e6c9','#bbdefb','#f8bbd9','#ffe0b2','#e1bee7',
       '#b3e0f7','#fff9c4','#d7ccc8','#f0f4c3','#a5d6a7',
       '#90caf9','#ce93d8','#ffcdd2','#b2dfdb','#fff3e0',
       '#fce4ec','#e8eaf6','#e0f2f1','#e6ee9c','#80deea'
     ];
+
     const personColor = (name, customColors = {}) => {
       const u = (name||'').toUpperCase().trim();
       if (customColors && customColors[u]) return customColors[u];
@@ -506,6 +263,7 @@
       return `hsl(${Math.abs(h)%360},50%,80%)`;
     };
 
+    // ── FIFO ENGINE ───────────────────────────────────────────
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
       const sorted = [...valid].sort((a,b) => toJSDate(a.date)-toJSDate(b.date));
@@ -580,6 +338,7 @@
     function ColorPicker({name, color, onChange}) {
       const [open, setOpen] = useState(false);
       const ref = useRef(null);
+
       useEffect(() => {
         if (!open) return;
         const handle = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -587,20 +346,39 @@
         document.addEventListener('touchstart', handle);
         return () => { document.removeEventListener('mousedown', handle); document.removeEventListener('touchstart', handle); };
       }, [open]);
+
       return (
         <div style={{position:'relative',display:'inline-block'}} ref={ref}>
-          <div className="color-swatch" style={{background: color}} onClick={e => { e.stopPropagation(); setOpen(o=>!o); }} title="Change color"/>
+          <div
+            className="color-swatch"
+            style={{background: color}}
+            onClick={e => { e.stopPropagation(); setOpen(o=>!o); }}
+            title="Change color"
+          />
           {open && (
             <div className="color-popup" onClick={e=>e.stopPropagation()}>
               <div style={{fontSize:9,letterSpacing:'.1em',color:'var(--text-muted)',marginBottom:5,textTransform:'uppercase'}}>Presets</div>
               <div className="color-preset-grid">
                 {PRESET_COLORS.map(c=>(
-                  <div key={c} className={`color-preset${color===c?' selected':''}`} style={{background:c}} onClick={()=>{ onChange(name,c); setOpen(false); }}/>
+                  <div
+                    key={c}
+                    className={`color-preset${color===c?' selected':''}`}
+                    style={{background:c}}
+                    onClick={()=>{ onChange(name,c); setOpen(false); }}
+                  />
                 ))}
               </div>
               <div style={{fontSize:9,letterSpacing:'.1em',color:'var(--text-muted)',marginBottom:4,textTransform:'uppercase'}}>Custom</div>
-              <input type="color" value={color.startsWith('hsl')?'#aaaaaa':color} onChange={e=>onChange(name,e.target.value)} style={{width:'100%',height:28,border:'1px solid var(--border)',cursor:'pointer',padding:0,background:'none'}}/>
-              <button onClick={()=>setOpen(false)} style={{marginTop:5,width:'100%',background:'none',border:'1px solid var(--border)',fontSize:10,padding:'3px',cursor:'pointer',fontFamily:'inherit',color:'var(--text-muted)'}}>CLOSE</button>
+              <input
+                type="color"
+                value={color.startsWith('hsl')?'#aaaaaa':color}
+                onChange={e=>onChange(name,e.target.value)}
+                style={{width:'100%',height:28,border:'1px solid var(--border)',cursor:'pointer',padding:0,background:'none'}}
+              />
+              <button
+                onClick={()=>setOpen(false)}
+                style={{marginTop:5,width:'100%',background:'none',border:'1px solid var(--border)',fontSize:10,padding:'3px',cursor:'pointer',fontFamily:'inherit',color:'var(--text-muted)'}}
+              >CLOSE</button>
             </div>
           )}
         </div>
@@ -640,7 +418,7 @@
           options:{
             responsive:true, maintainAspectRatio:false,
             plugins:{
-              legend:{position:'bottom',labels:{font:{family:'Courier Prime',size:10},boxWidth:10,padding:6}},
+              legend:{position:'right',labels:{font:{family:'Courier Prime',size:11},boxWidth:12,padding:8}},
               tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ₹${Number(ctx.parsed).toLocaleString('en-IN',{maximumFractionDigits:0})} (${((ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`}}
             }
           }
@@ -671,7 +449,7 @@
               <button className={`auth-tab${tab==='signup'?' active':''}`} onClick={()=>setTab('signup')}>Sign Up</button>
             </div>
             {tab==='signup'&&<div className="form-group"><label className="form-label">Name</label><input className="form-input" type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></div>}
-            <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com" autoCapitalize="none" autoCorrect="off"/></div>
+            <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com"/></div>
             <div className="form-group"><label className="form-label">Password</label><input className="form-input" type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==='Enter'&&(tab==='login'?doLogin():doSignup())}/></div>
             {err&&<div className="auth-error">{err}</div>}
             <button className="btn-primary" onClick={tab==='login'?doLogin:doSignup} disabled={loading}>{loading?'...':tab==='login'?'LOGIN':'CREATE ACCOUNT'}</button>
@@ -712,7 +490,7 @@
               </div>
             </div>
             <div className="form-row">
-              <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e=>set('stock',e.target.value)} autoCapitalize="characters"/></div>
+              <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e=>set('stock',e.target.value)}/></div>
               <div><label className="form-label">Type</label>
                 <select className="select-input" value={form.type} onChange={e=>set('type',e.target.value)}>
                   <option value="BUY">BUY</option><option value="SELL">SELL</option>
@@ -720,8 +498,8 @@
               </div>
             </div>
             <div className="form-row">
-              <div><label className="form-label">Quantity</label><input className="form-input" type="number" inputMode="numeric" value={form.qty} onChange={e=>set('qty',e.target.value)}/></div>
-              <div><label className="form-label">Price ₹</label><input className="form-input" type="number" inputMode="decimal" value={form.price} onChange={e=>set('price',e.target.value)}/></div>
+              <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e=>set('qty',e.target.value)}/></div>
+              <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e=>set('price',e.target.value)}/></div>
             </div>
             <div className="modal-actions">
               {saveState==='saved'
@@ -756,11 +534,13 @@
         byPerson[r.person].current+=(r.currentVal||r.investedVal);
       });
       const sortedPersons = Object.entries(byPerson).sort((a,b)=>b[1].current-a[1].current);
+
       const pLabels = sortedPersons.map(([p])=>p);
       const barDatasets = [
         {label:'Current Value',data:pLabels.map(p=>byPerson[p].current),backgroundColor:'#87BFDB',borderWidth:0},
         {label:'Invested Value',data:pLabels.map(p=>byPerson[p].invested),backgroundColor:'#2B5F7A',borderWidth:0}
       ];
+
       const byStock = {};
       portfolio.forEach(r=>{ if(!byStock[r.stock]) byStock[r.stock]=0; byStock[r.stock]+=(r.currentVal||r.investedVal); });
       const stockEntries = Object.entries(byStock).sort((a,b)=>b[1]-a[1]);
@@ -776,22 +556,22 @@
             <div className="page-sub">{new Date().toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div>
           </div>
           <div className="stats-grid">
-            <div className="stat-card"><div className="stat-label">Invested</div><div className="stat-val">{fmtWords(totalInvested)}</div></div>
-            <div className="stat-card"><div className="stat-label">Current</div><div className="stat-val">{fmtWords(totalCurrent)}</div></div>
-            <div className="stat-card"><div className="stat-label">Gain ₹</div><div className={`stat-val ${totalGain>=0?'pos':'neg'}`}>{fmtWords(totalGain)}</div></div>
-            <div className="stat-card"><div className="stat-label">Gain %</div><div className={`stat-val ${gainPct>=0?'pos':'neg'}`}>{fmtPct(gainPct)}</div></div>
-            <div className="stat-card"><div className="stat-label">Realized</div><div className="stat-val">{fmtWords(sells.reduce((s,r)=>s+r.profit,0))}</div></div>
+            <div className="stat-card"><div className="stat-label">Invested Value</div><div className="stat-val">{fmt(totalInvested)}</div></div>
+            <div className="stat-card"><div className="stat-label">Current Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
+            <div className="stat-card"><div className="stat-label">Unrealized Gain ₹</div><div className={`stat-val ${totalGain>=0?'pos':'neg'}`}>{fmt(totalGain)}</div></div>
+            <div className="stat-card"><div className="stat-label">Unrealized Gain %</div><div className={`stat-val ${gainPct>=0?'pos':'neg'}`}>{fmtPct(gainPct)}</div></div>
+            <div className="stat-card"><div className="stat-label">Net Realized</div><div className="stat-val">{fmt(sells.reduce((s,r)=>s+r.profit,0))}</div></div>
           </div>
 
           <div className="cards-row">
-            {topGainer&&<div className="top-gainer-card"><div className="card-title">Top Gainer</div><div style={{fontWeight:700,fontSize:13}}>{topGainer.stock}</div><div className="pos" style={{fontSize:18,fontWeight:700}}>{fmtWords(topGainer.absGain)}</div></div>}
-            {topLoser&&topLoser.stock!==(topGainer?.stock)&&<div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{fontWeight:700,fontSize:13}}>{topLoser.stock}</div><div className="neg" style={{fontSize:18,fontWeight:700}}>{fmtWords(topLoser.absGain)}</div></div>}
+            {topGainer&&<div className="top-gainer-card"><div className="card-title">Top Gainer</div><div style={{fontWeight:700}}>{topGainer.stock}</div><div className="pos" style={{fontSize:20}}>{fmt(topGainer.absGain)}</div></div>}
+            {topLoser&&topLoser.stock!==(topGainer?.stock)&&<div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{fontWeight:700}}>{topLoser.stock}</div><div className="neg" style={{fontSize:20}}>{fmt(topLoser.absGain)}</div></div>}
           </div>
 
           {pLabels.length>0&&(
             <div className="charts-row">
               <div className="chart-card">
-                <div className="card-title">Value by Person</div>
+                <div className="card-title">Current vs Invested Value by Person</div>
                 <div className="chart-wrap"><BarChart labels={pLabels} datasets={barDatasets}/></div>
               </div>
               <div className="chart-card">
@@ -802,13 +582,13 @@
           )}
 
           <div className="card">
-            <div className="card-title">By Person</div>
+            <div className="card-title">Portfolio by Person (sorted by value)</div>
             <div style={{display:'flex',gap:'.5rem',flexWrap:'wrap'}}>
               {sortedPersons.map(([p,v])=>(
-                <div key={p} style={{background:personColor(p,personColors),padding:'.6rem .85rem',fontSize:12,minWidth:120,flex:'1 1 140px',maxWidth:'calc(50% - .25rem)'}}>
-                  <span style={{fontWeight:700,display:'block',marginBottom:2}}>{p}</span>
-                  <span style={{fontSize:14,fontWeight:700}}>{fmtWords(v.current)}</span><br/>
-                  <span style={{fontSize:10,opacity:.65}}>{fmt(v.current)}</span>
+                <div key={p} style={{background:personColor(p,personColors),padding:'.5rem .9rem',fontSize:13,minWidth:120}}>
+                  <span style={{fontWeight:700}}>{p}</span><br/>
+                  <span style={{fontSize:13,fontWeight:700}}>{fmtWords(v.current)}</span><br/>
+                  <span style={{fontSize:11,opacity:.7}}>{fmt(v.current)}</span>
                 </div>
               ))}
             </div>
@@ -888,6 +668,7 @@
       return (
         <div className="page">
           <div className="page-header"><div className="page-title">Transactions</div></div>
+
           {!csvMode?(
             <div className="card">
               <div className="card-title">Add Transaction</div>
@@ -898,26 +679,27 @@
                     <option value="">Select...</option>{persons.map(p=><option key={p.name}>{p.name}</option>)}
                   </select>
                 </div>
-                <div><label className="form-label">Stock</label><input className="form-input" type="text" value={form.stock} onChange={e=>set('stock',e.target.value)} placeholder="ADANI POWER" autoCapitalize="characters"/></div>
+                <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e=>set('stock',e.target.value)} placeholder="ADANI POWER"/></div>
                 <div><label className="form-label">Type</label>
                   <select className="select-input" value={form.type} onChange={e=>set('type',e.target.value)}>
                     <option value="BUY">BUY</option><option value="SELL">SELL</option>
                   </select>
                 </div>
-                <div><label className="form-label">Qty</label><input className="form-input" type="number" inputMode="numeric" value={form.qty} onChange={e=>set('qty',e.target.value)} placeholder="100"/></div>
-                <div><label className="form-label">Price ₹</label><input className="form-input" type="number" inputMode="decimal" value={form.price} onChange={e=>set('price',e.target.value)} placeholder="250.00"/></div>
+                <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e=>set('qty',e.target.value)} placeholder="100"/></div>
+                <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e=>set('price',e.target.value)} placeholder="250.00"/></div>
               </div>
               <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem',flexWrap:'wrap'}}>
-                <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleAdd} disabled={saving}>{saving?'...':'+ ADD'}</button>
+                <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleAdd} disabled={saving}>{saving?'...':'+ ADD TRANSACTION'}</button>
                 <button className="btn-secondary" onClick={()=>setCsvMode(true)}>IMPORT CSV</button>
               </div>
             </div>
           ):(
             <div className="card">
-              <div className="card-title">Import via CSV</div>
+              <div className="card-title">Import Transactions via CSV</div>
               <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:'.75rem',lineHeight:1.7}}>
-                Format: <strong>DATE, PERSON, STOCK, QTY, PRICE</strong><br/>
-                Negative QTY = SELL &nbsp;|&nbsp; Date: DD/MM/YYYY or YYYY-MM-DD
+                Format: <strong>DATE, PERSON, STOCK NAME, QTY, PRICE</strong><br/>
+                Negative QTY = SELL &nbsp;|&nbsp; Date: DD/MM/YYYY or YYYY-MM-DD<br/>
+                Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100</code>
               </div>
               <textarea className="textarea-input" value={csvText} onChange={e=>setCsvText(e.target.value)} placeholder="Paste CSV rows here..."/>
               <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem'}}>
@@ -926,7 +708,7 @@
               </div>
               {importProgress&&(
                 <div className="import-progress">
-                  Importing... {importProgress.done} / {importProgress.total}
+                  Importing... {importProgress.done} / {importProgress.total} saved
                   <div style={{marginTop:'.5rem',background:'#c8e6c9',height:6,borderRadius:3}}>
                     <div style={{background:'var(--green)',height:'100%',borderRadius:3,width:`${(importProgress.done/importProgress.total)*100}%`,transition:'width .2s'}}/>
                   </div>
@@ -935,7 +717,6 @@
               {preview&&!importProgress&&<>
                 <hr className="section-divider"/>
                 <div className="card-title">Preview — {preview.filter(r=>r.ok).length} valid, {preview.filter(r=>!r.ok).length} errors</div>
-                <div className="table-scroll-hint">← scroll to see all →</div>
                 <div className="table-wrap">
                   <table className="preview-table">
                     <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
@@ -949,20 +730,21 @@
 
           <div className="card">
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.75rem',flexWrap:'wrap',gap:'.5rem'}}>
-              <span className="card-title" style={{margin:0}}>All ({filtered.length})</span>
+              <span className="card-title" style={{margin:0}}>All Transactions ({filtered.length})</span>
               <div style={{display:'flex',gap:'.5rem',alignItems:'center',flexWrap:'wrap'}}>
-                <input className="form-input" style={{width:130,fontSize:12}} placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/>
-                <button className="btn-sm" onClick={()=>{setSelectMode(s=>!s);setSelected(new Set());}}>{selectMode?'DONE':'SELECT'}</button>
+                <input className="form-input" style={{width:160,fontSize:12}} placeholder="Search..." value={search} onChange={e=>setSearch(e.target.value)}/>
+                <button className="btn-sm" onClick={()=>{setSelectMode(s=>!s);setSelected(new Set());}}>{selectMode?'CANCEL':'SELECT'}</button>
               </div>
             </div>
+
             {selectMode&&selected.size>0&&(
               <div className="bulk-bar">
                 <span className="bulk-bar-text">{selected.size} selected</span>
-                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting?'...':'DELETE'}</button>
+                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting?'DELETING...':'DELETE SELECTED'}</button>
                 <button className="btn-secondary" onClick={()=>setSelected(new Set())}>CLEAR</button>
               </div>
             )}
-            <div className="table-scroll-hint">← scroll to see all →</div>
+
             <div className="table-wrap">
               <table>
                 <thead>
@@ -989,6 +771,7 @@
               </table>
             </div>
           </div>
+
           {editTx&&<EditTxModal tx={editTx} persons={persons} onSave={onUpdate} onDelete={onDelete} onClose={()=>setEditTx(null)}/>}
         </div>
       );
@@ -1005,17 +788,16 @@
       const filtered=rows.filter(r=>(filterPerson==='All'||r.person===filterPerson)&&(filterStock==='All'||r.stock===filterStock));
       return (
         <div className="page">
-          <div className="page-header"><div className="page-title">Portfolio</div><div className="page-sub">Per person, per stock</div></div>
+          <div className="page-header"><div className="page-title">Portfolio</div><div className="page-sub">Per person, per stock breakdown</div></div>
           <div className="filter-bar">
             <select value={filterPerson} onChange={e=>setFilterPerson(e.target.value)}>{persons.map(p=><option key={p}>{p}</option>)}</select>
             <select value={filterStock} onChange={e=>setFilterStock(e.target.value)}>{stocks.map(s=><option key={s}>{s}</option>)}</select>
-            <span style={{fontSize:11,color:'var(--text-muted)'}}>{filtered.length} rows</span>
+            <span style={{fontSize:12,color:'var(--text-muted)'}}>{filtered.length} rows</span>
           </div>
           <div className="card" style={{padding:0}}>
-            <div className="table-scroll-hint" style={{padding:'.5rem .75rem 0'}}>← scroll to see all →</div>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>CMP</th><th>Curr Val</th><th>Gain ₹</th><th>Gain %</th><th>Holdings</th></tr></thead>
+                <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Holdings</th></tr></thead>
                 <tbody>
                   {filtered.length===0&&<tr><td colSpan="10"><div className="empty">No data</div></td></tr>}
                   {filtered.map((r,i)=>(
@@ -1027,7 +809,7 @@
                       <td style={{whiteSpace:'nowrap'}}>{r.currentVal?fmt(r.currentVal):'—'}</td>
                       <td className={r.absGain!=null?(r.absGain>=0?'pos':'neg'):''} style={{whiteSpace:'nowrap'}}>{r.absGain!=null?fmt(r.absGain):'—'}</td>
                       <td className={r.absGainPct!=null?(r.absGainPct>=0?'pos':'neg'):''}>{r.absGainPct!=null?fmtPct(r.absGainPct):'—'}</td>
-                      <td style={{fontSize:10,color:'var(--text-muted)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.breakup}</td>
+                      <td style={{fontSize:11,color:'var(--text-muted)',maxWidth:150,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.breakup}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1046,10 +828,9 @@
         <div className="page">
           <div className="page-header"><div className="page-title">Stocks</div><div className="page-sub">All persons merged per stock</div></div>
           <div className="card" style={{padding:0}}>
-            <div className="table-scroll-hint" style={{padding:'.5rem .75rem 0'}}>← scroll to see all →</div>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>CMP</th><th>Curr Val</th><th>Gain ₹</th><th>Gain %</th><th>Persons</th></tr></thead>
+                <thead><tr><th>Stock</th><th>Total Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Persons</th></tr></thead>
                 <tbody>
                   {stocks.length===0&&<tr><td colSpan="9"><div className="empty">No data</div></td></tr>}
                   {stocks.map((s,i)=>(
@@ -1082,13 +863,12 @@
       const totalProfit=filtered.reduce((s,r)=>s+r.profit,0);
       return (
         <div className="page">
-          <div className="page-header"><div className="page-title">FIFO Results</div><div className="page-sub">Realized gains</div></div>
+          <div className="page-header"><div className="page-title">FIFO Results</div><div className="page-sub">Realized gains from completed trades</div></div>
           <div className="filter-bar">
             <select value={filterPerson} onChange={e=>setFilterPerson(e.target.value)}>{persons.map(p=><option key={p}>{p}</option>)}</select>
-            <span style={{fontSize:12,fontWeight:700,marginLeft:'auto'}}>Total: <span className={totalProfit>=0?'pos':'neg'}>{fmt(totalProfit)}</span></span>
+            <span style={{fontSize:13,fontWeight:700,marginLeft:'auto'}}>Total Realized: <span className={totalProfit>=0?'pos':'neg'}>{fmt(totalProfit)}</span></span>
           </div>
           <div className="card" style={{padding:0}}>
-            <div className="table-scroll-hint" style={{padding:'.5rem .75rem 0'}}>← scroll to see all →</div>
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Person</th><th>Stock</th><th>Buy Date</th><th>Buy ₹</th><th>Sell Date</th><th>Sell ₹</th><th>Qty</th><th>Profit</th><th>CAGR</th></tr></thead>
@@ -1138,14 +918,14 @@
             <div className="modal-title">Edit Stock Entry <button className="modal-close" onClick={onClose}>✕</button></div>
             <div className="form-group">
               <label className="form-label">Stock Name</label>
-              <input className="form-input" type="text" value={newStock} onChange={e=>setNewStock(e.target.value)} autoCapitalize="characters"/>
+              <input className="form-input" type="text" value={newStock} onChange={e=>setNewStock(e.target.value)} autoFocus/>
             </div>
             <div className="form-group">
               <label className="form-label">Current Price ₹</label>
-              <input className="form-input" type="number" inputMode="decimal" value={newPrice} onChange={e=>setNewPrice(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSave()}/>
+              <input className="form-input" type="number" value={newPrice} onChange={e=>setNewPrice(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSave()}/>
             </div>
             <div style={{fontSize:11,color:'var(--amber)',background:'var(--amber-bg)',padding:'.5rem',marginBottom:'1rem',border:'1px solid #ffe082'}}>
-              ⚠ Renaming updates name in all existing transactions.
+              ⚠ Renaming the stock here will also update the name in all your existing transactions.
             </div>
             <div className="modal-actions">
               {saveState==='saved'
@@ -1208,8 +988,8 @@
       };
 
       const handleDelete=async(stock)=>{ await onDeletePrice(stock); };
+
       const toggleSelect=(s)=>{ setSelected(prev=>{const n=new Set(prev);n.has(s)?n.delete(s):n.add(s);return n;}); };
-      const entries=Object.entries(stockPrices).sort((a,b)=>a[0].localeCompare(b[0]));
       const selectAll=()=>{ if(selected.size===entries.length) setSelected(new Set()); else setSelected(new Set(entries.map(([s])=>s))); };
       const deleteSelected=async()=>{
         if(!confirm(`Delete ${selected.size} price(s)?`)) return;
@@ -1218,17 +998,20 @@
         setSelected(new Set()); setSelectMode(false); setDeleting(false);
       };
 
+      const entries=Object.entries(stockPrices).sort((a,b)=>a[0].localeCompare(b[0]));
+
       return (
         <div className="page">
           <div className="page-header">
             <div className="page-title">Stock Prices</div>
-            <div className="page-sub">Tap any row to edit</div>
+            <div className="page-sub">Click any row to edit — paste CSV to bulk update</div>
           </div>
+
           <div className="card">
             <div className="card-title">Import Price CSV</div>
             <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:'.75rem',lineHeight:1.7}}>
-              Format: <strong>STOCK, PRICE</strong><br/>
-              <code style={{fontSize:11}}>ADANI POWER, 181.94</code>
+              Format: <strong>STOCK NAME, CURRENT PRICE</strong><br/>
+              Example: <code>ADANI POWER, 181.94</code>
             </div>
             <textarea className="textarea-input" value={csvText} onChange={e=>setCsvText(e.target.value)} placeholder={"ADANI POWER, 181.94\nBHEL, 291.12"}/>
             <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem'}}>
@@ -1238,7 +1021,6 @@
             {preview&&<>
               <hr className="section-divider"/>
               <div className="card-title">Preview — {preview.filter(r=>r.ok).length} valid</div>
-              <div className="table-scroll-hint">← scroll to see all →</div>
               <div className="table-wrap">
                 <table className="preview-table">
                   <thead><tr><th>Stock</th><th>Price</th><th>Status</th></tr></thead>
@@ -1248,18 +1030,26 @@
               {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={doImport} disabled={saving}>{saving?'...':`UPDATE ${preview.filter(r=>r.ok).length} PRICES`}</button>}
             </>}
           </div>
+
           <div className="card">
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.75rem'}}>
               <div className="card-title" style={{margin:0}}>Stored Prices ({entries.length})</div>
               <button className="btn-sm" onClick={()=>{setSelectMode(s=>!s);setSelected(new Set());}}>{selectMode?'CANCEL':'SELECT'}</button>
             </div>
+
             {selectMode&&selected.size>0&&(
               <div className="bulk-bar">
                 <span className="bulk-bar-text">{selected.size} selected</span>
-                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting?'...':'DELETE'}</button>
+                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting?'DELETING...':'DELETE SELECTED'}</button>
                 <button className="btn-secondary" onClick={()=>setSelected(new Set())}>CLEAR</button>
               </div>
             )}
+            {selectMode&&(
+              <div style={{marginBottom:'.5rem'}}>
+                <button className="btn-sm" onClick={selectAll}>{selected.size===entries.length?'DESELECT ALL':'SELECT ALL'}</button>
+              </div>
+            )}
+
             {entries.length===0?<div className="empty">No prices loaded yet</div>:(
               <div className="table-wrap">
                 <table>
@@ -1285,6 +1075,7 @@
               </div>
             )}
           </div>
+
           {editEntry&&<EditPriceModal stock={editEntry.stock} price={editEntry.price} onSave={handleEditSave} onDelete={handleDelete} onClose={()=>setEditEntry(null)}/>}
         </div>
       );
@@ -1310,10 +1101,10 @@
             <div className="modal-title">Edit Person <button className="modal-close" onClick={onClose}>✕</button></div>
             <div className="form-group">
               <label className="form-label">Name</label>
-              <input className="form-input" type="text" value={name} onChange={e=>setName(e.target.value)} autoCapitalize="characters" onKeyDown={e=>e.key==='Enter'&&handleSave()}/>
+              <input className="form-input" type="text" value={name} onChange={e=>setName(e.target.value)} autoFocus onKeyDown={e=>e.key==='Enter'&&handleSave()}/>
             </div>
             <div style={{fontSize:12,color:'var(--amber)',background:'var(--amber-bg)',padding:'.6rem .75rem',marginBottom:'.75rem',border:'1px solid #ffe082'}}>
-              ⚠ Renaming updates all their transactions.
+              ⚠ Renaming will also update this person's name in all their transactions.
             </div>
             <div className="modal-actions">
               {saveState==='saved'
@@ -1364,7 +1155,7 @@
             <div style={{display:'flex',gap:'.5rem',alignItems:'flex-end'}}>
               <div style={{flex:1}}>
                 <label className="form-label">Name</label>
-                <input className="form-input" type="text" value={newName} onChange={e=>{setNewName(e.target.value);setDupError('');}} placeholder="E.g. NILESH" autoCapitalize="characters" onKeyDown={e=>e.key==='Enter'&&handleAdd()}/>
+                <input className="form-input" type="text" value={newName} onChange={e=>{setNewName(e.target.value);setDupError('');}} placeholder="E.g. NILESH" onKeyDown={e=>e.key==='Enter'&&handleAdd()}/>
                 {dupError&&<div className="dup-error">{dupError}</div>}
               </div>
               <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.25rem',flexShrink:0}} onClick={handleAdd} disabled={saving}>{saving?'...':'+ ADD'}</button>
@@ -1375,13 +1166,20 @@
               <div className="card-title" style={{margin:0}}>All Persons ({persons.length})</div>
               <button className="btn-sm" onClick={()=>{setSelectMode(s=>!s);setSelected(new Set());}}>{selectMode?'CANCEL':'SELECT'}</button>
             </div>
+
             {selectMode&&selected.size>0&&(
               <div className="bulk-bar">
                 <span className="bulk-bar-text">{selected.size} selected</span>
-                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting?'...':'DELETE'}</button>
+                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting?'DELETING...':'DELETE SELECTED'}</button>
                 <button className="btn-secondary" onClick={()=>setSelected(new Set())}>CLEAR</button>
               </div>
             )}
+            {selectMode&&(
+              <div style={{marginBottom:'.5rem'}}>
+                <button className="btn-sm" onClick={selectAll}>{selected.size===persons.length?'DESELECT ALL':'SELECT ALL'}</button>
+              </div>
+            )}
+
             {persons.length===0?<div className="empty">No persons yet.</div>:(
               <div className="table-wrap">
                 <table>
@@ -1395,9 +1193,19 @@
                     {persons.map(p=>(
                       <tr key={p.id} className="clickable" style={selected.has(p.id)?{background:'#fffde7'}:{}} onClick={()=>selectMode?toggleSelect(p.id):setEditPerson(p)}>
                         {selectMode&&<td onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.has(p.id)} onChange={()=>toggleSelect(p.id)}/></td>}
-                        <td><span className="tag" style={{background:personColor(p.name,personColors),color:'#1a1a1a'}}>{p.name}</span></td>
-                        <td onClick={e=>e.stopPropagation()}><ColorPicker name={p.name} color={personColor(p.name,personColors)} onChange={onColorChange}/></td>
-                        <td style={{textAlign:'right'}}><button className="btn-sm" onClick={e=>{e.stopPropagation();setEditPerson(p);}}>EDIT</button></td>
+                        <td>
+                          <span className="tag" style={{background:personColor(p.name,personColors),color:'#1a1a1a'}}>{p.name}</span>
+                        </td>
+                        <td onClick={e=>e.stopPropagation()}>
+                          <ColorPicker
+                            name={p.name}
+                            color={personColor(p.name,personColors)}
+                            onChange={onColorChange}
+                          />
+                        </td>
+                        <td style={{textAlign:'right'}}>
+                          <button className="btn-sm" onClick={e=>{e.stopPropagation();setEditPerson(p);}}>EDIT</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1418,21 +1226,12 @@
       const [persons,setPersons]=useState([]);
       const [stockPrices,setStockPrices]=useState({});
       const [personColors,setPersonColors]=useState({});
-      const [drawerOpen,setDrawerOpen]=useState(false);
+      const [sidebarOpen,setSidebarOpen]=useState(false);
       const [loading,setLoading]=useState(true);
-      const [isMobile,setIsMobile]=useState(window.innerWidth<=768);
 
+      const touchStartX=useRef(null);
+      const touchStartY=useRef(null);
       const navItems=[
-        {key:'dashboard',label:'Dashboard',icon:'▦'},
-        {key:'transactions',label:'Txns',icon:'↕'},
-        {key:'portfolio',label:'Portfolio',icon:'◈'},
-        {key:'stocks',label:'Stocks',icon:'◉'},
-        {key:'fifo',label:'FIFO',icon:'⟳'},
-        {key:'prices',label:'Prices',icon:'⬆'},
-        {key:'persons',label:'Persons',icon:'◎'},
-      ];
-
-      const navItemsFull=[
         {key:'dashboard',label:'Dashboard',icon:'▦'},
         {key:'transactions',label:'Transactions',icon:'↕'},
         {key:'portfolio',label:'Portfolio',icon:'◈'},
@@ -1443,10 +1242,34 @@
       ];
 
       useEffect(()=>{
-        const onResize=()=>setIsMobile(window.innerWidth<=768);
-        window.addEventListener('resize',onResize);
-        return()=>window.removeEventListener('resize',onResize);
-      },[]);
+        const onTS=e=>{
+          touchStartX.current=e.touches[0].clientX;
+          touchStartY.current=e.touches[0].clientY;
+        };
+        const onTE=e=>{
+          if(touchStartX.current===null) return;
+          const dx=e.changedTouches[0].clientX-touchStartX.current;
+          const dy=Math.abs(e.changedTouches[0].clientY-touchStartY.current);
+          if(Math.abs(dx)<dy*0.7){touchStartX.current=null;return;}
+          if(dx>60&&touchStartX.current<40){setSidebarOpen(true);}
+          else if(dx<-60&&sidebarOpen){setSidebarOpen(false);}
+          else if(dx<-60&&!sidebarOpen){
+            setTab(prev=>{
+              const idx=navItems.findIndex(n=>n.key===prev);
+              return idx<navItems.length-1?navItems[idx+1].key:prev;
+            });
+          } else if(dx>60&&touchStartX.current>=40&&!sidebarOpen){
+            setTab(prev=>{
+              const idx=navItems.findIndex(n=>n.key===prev);
+              return idx>0?navItems[idx-1].key:prev;
+            });
+          }
+          touchStartX.current=null;
+        };
+        document.addEventListener('touchstart',onTS);
+        document.addEventListener('touchend',onTE);
+        return()=>{document.removeEventListener('touchstart',onTS);document.removeEventListener('touchend',onTE);};
+      },[sidebarOpen]);
 
       useEffect(()=>{return auth.onAuthStateChanged(u=>setUser(u||null));},[]);
 
@@ -1461,6 +1284,7 @@
       },[user]);
 
       const uid=user?.uid;
+
       const addTx=async tx=>{await db.collection(`users/${uid}/inv_transactions`).add({...tx,createdAt:new Date().toISOString()});};
       const bulkAddTx=async(txs)=>{
         const batchSize=500;
@@ -1472,12 +1296,14 @@
       };
       const updateTx=async(id,data)=>{await db.collection(`users/${uid}/inv_transactions`).doc(id).update(data);};
       const deleteTx=async id=>{await db.collection(`users/${uid}/inv_transactions`).doc(id).delete();};
+
       const ensurePerson=useCallback(async(personName)=>{
         const upper=personName.toUpperCase().trim(); if(!upper) return;
         const already=persons.find(p=>p.name.toUpperCase()===upper); if(already) return;
         const snap=await db.collection(`users/${uid}/inv_persons`).where('name','==',upper).get();
         if(snap.empty) await db.collection(`users/${uid}/inv_persons`).add({name:upper});
       },[persons,uid]);
+
       const addPerson=async p=>{await db.collection(`users/${uid}/inv_persons`).add(p);};
       const updatePerson=async(id,data,oldName)=>{
         const newName=data.name.toUpperCase().trim();
@@ -1488,6 +1314,7 @@
         }
       };
       const deletePerson=async id=>{await db.collection(`users/${uid}/inv_persons`).doc(id).delete();};
+
       const updatePrices=async(updates,replace=false)=>{
         const merged=replace?updates:{...stockPrices,...updates};
         await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({prices:merged});
@@ -1496,6 +1323,7 @@
         const updated={...stockPrices}; delete updated[stock];
         await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({prices:updated});
       };
+
       const updatePersonColor=async(personName,color)=>{
         const upper=personName.toUpperCase().trim();
         const updated={...personColors,[upper]:color};
@@ -1506,33 +1334,20 @@
       if(!user) return <AuthPage/>;
 
       const personList=persons.length>0?persons:[...new Set(transactions.filter(t=>t.person).map(t=>t.person))].map(n=>({id:n,name:n}));
-      const currentTabLabel = navItemsFull.find(n=>n.key===tab)?.label || 'Dashboard';
 
-      const goTo=k=>{setTab(k);setDrawerOpen(false);};
-
-      const tabContent = loading
-        ? <div className="spinner">Loading data...</div>
-        : <>
-            {tab==='dashboard'&&<DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
-            {tab==='transactions'&&<TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors}/>}
-            {tab==='portfolio'&&<PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
-            {tab==='stocks'&&<StocksTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
-            {tab==='fifo'&&<FIFOTab transactions={transactions} personColors={personColors}/>}
-            {tab==='prices'&&<StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid}/>}
-            {tab==='persons'&&<PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor}/>}
-          </>;
+      const goTo=k=>{setTab(k);setSidebarOpen(false);};
 
       return (
         <div className="app">
-
-          {/* ── Desktop Sidebar ── */}
-          <nav className="sidebar">
+          <button className="menu-toggle" onClick={()=>setSidebarOpen(o=>!o)}>☰</button>
+          <div className={`sidebar-overlay${sidebarOpen?' open':''}`} onClick={()=>setSidebarOpen(false)}/>
+          <nav className={`sidebar${sidebarOpen?' open':''}`}>
             <div className="sidebar-brand">
               <div className="sidebar-brand-sub">Investment</div>
               <div className="sidebar-brand-name">Tracker</div>
             </div>
             <div className="sidebar-nav">
-              {navItemsFull.map(item=>(
+              {navItems.map(item=>(
                 <button key={item.key} className={`sidebar-item${tab===item.key?' active':''}`} onClick={()=>goTo(item.key)}>
                   <span className="sidebar-icon">{item.icon}</span>{item.label}
                 </button>
@@ -1543,55 +1358,19 @@
               <button className="btn-logout" onClick={()=>auth.signOut()}>LOGOUT</button>
             </div>
           </nav>
-
-          {/* ── Mobile Header ── */}
-          <header className="mobile-header">
-            <button className="mobile-header-menu" onClick={()=>setDrawerOpen(o=>!o)}>☰</button>
-            <span className="mobile-header-title">{currentTabLabel}</span>
-            <span className="mobile-header-user">{user.displayName||user.email}</span>
-          </header>
-
-          {/* ── Mobile Drawer ── */}
-          <div className={`sidebar-overlay${drawerOpen?' open':''}`} onClick={()=>setDrawerOpen(false)}/>
-          <nav className={`mobile-drawer${drawerOpen?' open':''}`}>
-            <div className="sidebar-brand">
-              <div className="sidebar-brand-sub">Investment</div>
-              <div className="sidebar-brand-name">Tracker</div>
-            </div>
-            <div className="sidebar-nav">
-              {navItemsFull.map(item=>(
-                <button key={item.key} className={`sidebar-item${tab===item.key?' active':''}`} onClick={()=>goTo(item.key)}>
-                  <span className="sidebar-icon">{item.icon}</span>{item.label}
-                </button>
-              ))}
-            </div>
-            <div className="sidebar-footer">
-              <div className="sidebar-user">{user.displayName||user.email}</div>
-              <button className="btn-logout" onClick={()=>auth.signOut()}>LOGOUT</button>
-            </div>
-          </nav>
-
-          {/* ── Main Content ── */}
           <main className="main">
-            {tabContent}
+            {loading?<div className="spinner">Loading data...</div>:(
+              <>
+                {tab==='dashboard'&&<DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
+                {tab==='transactions'&&<TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors}/>}
+                {tab==='portfolio'&&<PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
+                {tab==='stocks'&&<StocksTab transactions={transactions} stockPrices={stockPrices} personColors={personColors}/>}
+                {tab==='fifo'&&<FIFOTab transactions={transactions} personColors={personColors}/>}
+                {tab==='prices'&&<StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid}/>}
+                {tab==='persons'&&<PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor}/>}
+              </>
+            )}
           </main>
-
-          {/* ── Mobile Bottom Nav ── */}
-          <nav className="mobile-nav">
-            {navItems.map(item=>(
-              <button
-                key={item.key}
-                className={`mobile-nav-item${tab===item.key?' active':''}`}
-                onClick={()=>goTo(item.key)}
-              >
-                <div className={tab===item.key?'mobile-nav-dot':''}>
-                  <span className="mobile-nav-icon">{item.icon}</span>
-                </div>
-                <span className="mobile-nav-label">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-
         </div>
       );
     }
