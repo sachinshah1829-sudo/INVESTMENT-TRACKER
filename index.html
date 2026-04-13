@@ -776,8 +776,18 @@
     const todayISO = () => new Date().toISOString().split('T')[0];
     const fmt = n => n == null || isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
     const fmtPct = n => n == null || isNaN(n) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
-    const fmtDate = d => { try { const dt = new Date(d); return isNaN(dt) ? '—' : dt.toLocaleDateString('en-IN'); } catch { return '—'; } };
-    const isValidDate = d => { try { return d && !isNaN(new Date(d)); } catch { return false; } };
+    const toJSDate = d => {
+      if (!d) return new Date(NaN);
+      if (d instanceof Date) return d;
+      let s = String(d).trim();
+      if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(s)) {
+        const parts = s.split(/[\/\-]/);
+        return new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
+      }
+      return new Date(s);
+    };
+    const fmtDate = d => { try { const dt = toJSDate(d); return isNaN(dt) ? '—' : dt.toLocaleDateString('en-IN'); } catch { return '—'; } };
+    const isValidDate = d => { try { const dt = toJSDate(d); return d && !isNaN(dt); } catch { return false; } };
 
     const PERSON_COLORS = {
       NILESH: '#c8e6c9', HITESH: '#bbdefb', REKHA: '#f8bbd9', RASHMI: '#ffe0b2', HEENA: '#e1bee7',
@@ -794,7 +804,7 @@
     // ── FIFO ENGINE ───────────────────────────────────────────
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
-      const sorted = [...valid].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const sorted = [...valid].sort((a, b) => toJSDate(a.date) - toJSDate(b.date));
       const buys = {}; const sells = [];
       sorted.forEach(tx => {
         const key = `${tx.person}|${tx.stock}`;
@@ -805,7 +815,7 @@
           while (sq > 0 && q.length > 0) {
             const b = q[0]; const used = Math.min(b.qty, sq);
             const profit = (tx.price - b.price) * used;
-            const yrs = (new Date(tx.date) - new Date(b.date)) / (1000 * 60 * 60 * 24 * 365);
+            const yrs = (toJSDate(tx.date) - toJSDate(b.date)) / (1000 * 60 * 60 * 24 * 365);
             const cagr = yrs > 0 ? (Math.pow(tx.price / b.price, 1 / yrs) - 1) * 100 : null;
             sells.push({ person: tx.person, stock: tx.stock, buyDate: b.date, buyPrice: b.price, sellDate: tx.date, sellPrice: tx.price, qty: used, profit, cagr });
             b.qty -= used; sq -= used; if (b.qty === 0) q.shift();
@@ -1140,7 +1150,7 @@
       };
 
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person);
-      const filtered = valid.filter(t => !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase())).sort((a, b) => new Date(b.date) - new Date(a.date));
+      const filtered = valid.filter(t => !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase())).sort((a, b) => toJSDate(b.date) - toJSDate(a.date));
 
       return (
         <div className="page">
