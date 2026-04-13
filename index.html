@@ -1156,11 +1156,19 @@
           const absGain = currentVal != null ? currentVal - investedVal : null;
           const absGainPct = absGain != null ? (absGain / investedVal) * 100 : null;
           
+          let weightedAge = 0; const now = new Date();
+          lots.forEach(l => {
+            const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
+            weightedAge += (l.qty * l.price) * age;
+          });
+          const avgAge = investedVal > 0 ? weightedAge / investedVal : 0;
+          const cagr = (currentVal != null && investedVal > 0 && avgAge > 0) ? (Math.pow(currentVal / investedVal, 1 / avgAge) - 1) * 100 : null;
+
           const aggregated = {};
           lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
           const breakup = Object.entries(aggregated).map(([p, q]) => `${q}@${p}`).join(', ');
           
-          rows.push({ person, stock, totalQty, avgBuy, investedVal, currentPrice: cp, currentVal, absGain, absGainPct, breakup });
+          rows.push({ person, stock, totalQty, avgBuy, investedVal, currentPrice: cp, currentVal, absGain, absGainPct, breakup, cagr, weightedAge });
         });
       });
       return rows;
@@ -1487,6 +1495,11 @@
       const totalCurrent = portfolio.reduce((s, r) => s + (r.currentVal || r.investedVal), 0);
       const totalGain = totalCurrent - totalInvested;
       const gainPct = totalInvested > 0 ? (totalGain / totalInvested) * 100 : 0;
+
+      const totalWeightedAgeSum = portfolio.reduce((s, r) => s + (r.weightedAge || 0), 0);
+      const portfolioAvgAge = totalInvested > 0 ? totalWeightedAgeSum / totalInvested : 0;
+      const portfolioCAGR = (totalInvested > 0 && portfolioAvgAge > 0) ? (Math.pow(totalCurrent / totalInvested, 1 / portfolioAvgAge) - 1) * 100 : 0;
+
       const [showAllocation, setShowAllocation] = useState(false);
 
       const stockRows = buildStockSheet(holdings, stockPrices);
@@ -1538,6 +1551,10 @@
             <div className="stat-card"><div className="stat-label">Current Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
             <div className="stat-card"><div className="stat-label">Unrealized Gain ₹</div><div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div></div>
             <div className="stat-card"><div className="stat-label">Unrealized Gain %</div><div className={`stat-val ${gainPct >= 0 ? 'pos' : 'neg'}`}>{fmtPct(gainPct)}</div></div>
+            <div className="stat-card">
+              <div className="stat-label">Net Unrealized CAGR</div>
+              <div className={`stat-val ${portfolioCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(portfolioCAGR)}</div>
+            </div>
             <div className="stat-card"><div className="stat-label">Net Realized</div><div className="stat-val">{fmt(sells.reduce((s, r) => s + r.profit, 0))}</div></div>
           </div>
 
