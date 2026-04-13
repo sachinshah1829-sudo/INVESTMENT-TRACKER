@@ -1429,6 +1429,40 @@
         </div>
       );
     }
+    
+    // ── STOCK ALLOCATION MODAL ────────────────────────────────
+    function StockAllocationModal({ stockEntries, totalValue, onClose }) {
+      return (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+          <div className="modal" style={{ maxWidth: 500 }}>
+            <div className="modal-title">Full Portfolio Allocation <button className="modal-close" onClick={onClose}>✕</button></div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Stock</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>%</th></tr></thead>
+                <tbody>
+                  {stockEntries.map(([s, v]) => {
+                    const pct = totalValue > 0 ? (v / totalValue) * 100 : 0;
+                    return (
+                      <tr key={s}>
+                        <td style={{ fontWeight: 700 }}>{s}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v)}</span><br/>
+                          <span style={{ fontSize: 11, opacity: .7 }}>{fmt(v)}</span>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 700 }}>{pct.toFixed(1)}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={onClose}>CLOSE</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     // ── DASHBOARD ─────────────────────────────────────────────
     function DashboardTab({ transactions, stockPrices, personColors, onPersonClick }) {
@@ -1438,6 +1472,8 @@
       const totalCurrent = portfolio.reduce((s, r) => s + (r.currentVal || r.investedVal), 0);
       const totalGain = totalCurrent - totalInvested;
       const gainPct = totalInvested > 0 ? (totalGain / totalInvested) * 100 : 0;
+      const [showAllocation, setShowAllocation] = useState(false);
+
       const stockRows = buildStockSheet(holdings, stockPrices);
       const withGain = [...stockRows].filter(s => s.absGain != null);
       const topGainer = [...withGain].sort((a, b) => b.absGain - a.absGain)[0];
@@ -1460,13 +1496,22 @@
       const byStock = {};
       portfolio.forEach(r => { if (!byStock[r.stock]) byStock[r.stock] = 0; byStock[r.stock] += (r.currentVal || r.investedVal); });
       const stockEntries = Object.entries(byStock).sort((a, b) => b[1] - a[1]);
+      
+      const top10 = stockEntries.slice(0, 10);
+      const others = stockEntries.slice(10);
+      const otherVal = others.reduce((s, [, v]) => s + v, 0);
+      
+      const pieEntries = [...top10];
+      if (otherVal > 0) pieEntries.push(['Others', otherVal]);
+      
       const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac', '#54a0e8', '#f87171', '#34d399', '#a78bfa', '#fb923c'];
-      const pieLabels = stockEntries.map(([s]) => s);
-      const pieData = stockEntries.map(([, v]) => v);
-      const pieColors = stockEntries.map((_, i) => PIE_COLORS[i % PIE_COLORS.length]);
+      const pieLabels = pieEntries.map(([s]) => s);
+      const pieData = pieEntries.map(([, v]) => v);
+      const pieColors = pieEntries.map(([s], i) => s === 'Others' ? '#ced4da' : PIE_COLORS[i % PIE_COLORS.length]);
 
       return (
         <div className="page">
+          {showAllocation && <StockAllocationModal stockEntries={stockEntries} totalValue={totalCurrent} onClose={() => setShowAllocation(false)} />}
           <div className="page-header">
             <div className="page-title">Dashboard</div>
             <div className="page-sub">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
@@ -1491,7 +1536,10 @@
                 <div className="chart-wrap"><BarChart labels={pLabels} datasets={barDatasets} /></div>
               </div>
               <div className="chart-card">
-                <div className="card-title">Portfolio by Stock</div>
+                <div className="card-title clickable" onClick={() => setShowAllocation(true)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                  <span>Portfolio by Stock</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>View full list ↗</span>
+                </div>
                 <div className="chart-wrap"><PieChart labels={pieLabels} data={pieData} colors={pieColors} /></div>
               </div>
             </div>
@@ -1935,13 +1983,15 @@
         <div className="page">
           <div className="page-header">
             <div className="page-title">Stock Prices</div>
-            <div className="page-sub">
-              Click any row to edit — paste CSV to bulk update
-              {priceMeta.lastUpdated && <div style={{ fontSize: 11, color: 'var(--amber)', marginTop: 4 }}>Last Updated: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN')}</div>}
-            </div>
+            <div className="page-sub">Click any row to edit — paste CSV to bulk update</div>
           </div>
 
           <div className="card">
+            {priceMeta.lastUpdated && (
+              <div style={{ float: 'right', fontSize: 10, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '2px 8px', borderRadius: 4, marginTop: -4 }}>
+                Last Updated: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+              </div>
+            )}
             <div className="card-title">Import Price CSV</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '.75rem', lineHeight: 1.7 }}>
               Format: <strong>STOCK NAME, CURRENT PRICE</strong><br />
