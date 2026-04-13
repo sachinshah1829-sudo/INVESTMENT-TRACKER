@@ -1506,8 +1506,11 @@
       const totalValueCombined = totalCurrent + realizedValueSum;
       const totalWeightedAgeCombined = totalWeightedAgeSum + realizedWeightedAgeSum;
       
-      const portfolioAvgAge = totalCostCombined > 0 ? totalWeightedAgeCombined / totalCostCombined : 0;
-      const combinedCAGR = (totalCostCombined > 0 && portfolioAvgAge > 0) ? (Math.pow(totalValueCombined / totalCostCombined, 1 / portfolioAvgAge) - 1) * 100 : 0;
+      const portfolioAvgAge = totalInvested > 0 ? totalWeightedAgeSum / totalInvested : 0;
+      const unrealizedCAGR = (totalInvested > 0 && portfolioAvgAge > 0) ? (Math.pow(totalCurrent / totalInvested, 1 / portfolioAvgAge) - 1) * 100 : 0;
+
+      const portfolioAvgAgeCombined = totalCostCombined > 0 ? totalWeightedAgeCombined / totalCostCombined : 0;
+      const combinedCAGR = (totalCostCombined > 0 && portfolioAvgAgeCombined > 0) ? (Math.pow(totalValueCombined / totalCostCombined, 1 / portfolioAvgAgeCombined) - 1) * 100 : 0;
 
       const [showAllocation, setShowAllocation] = useState(false);
 
@@ -1567,6 +1570,11 @@
               <div className="stat-label">Combined Net CAGR</div>
               <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
               <div className="stat-sub">Realized + Unrealized</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Unrealized Net CAGR</div>
+              <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
+              <div className="stat-sub">Active holdings only</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Net Realized</div>
