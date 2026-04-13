@@ -1155,7 +1155,11 @@
           const currentVal = cp ? totalQty * cp : null;
           const absGain = currentVal != null ? currentVal - investedVal : null;
           const absGainPct = absGain != null ? (absGain / investedVal) * 100 : null;
-          const breakup = lots.map(l => `${l.qty}@${l.price}`).join(', ');
+          
+          const aggregated = {};
+          lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
+          const breakup = Object.entries(aggregated).map(([p, q]) => `${q}@${p}`).join(', ');
+          
           rows.push({ person, stock, totalQty, avgBuy, investedVal, currentPrice: cp, currentVal, absGain, absGainPct, breakup });
         });
       });
@@ -1754,7 +1758,11 @@
                 <tbody>
                   {stocks.length === 0 && <tr><td colSpan="9"><div className="empty">No data</div></td></tr>}
                   {stocks.map((s, i) => {
-                    const hText = Object.entries(s.persons || {}).flatMap(([p, d]) => d.lots || []).map(l => `${l.qty}@${l.price}`).join(', ');
+                    const aggregated = {};
+                    Object.values(s.persons || {}).forEach(d => {
+                      (d.lots || []).forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
+                    });
+                    const hText = Object.entries(aggregated).sort((a,b) => b[1]-a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
                     return (
                       <tr key={i}>
                         <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{s.stock}</td>
@@ -1864,7 +1872,7 @@
     }
 
     // ── STOCK PRICES ──────────────────────────────────────────
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -2307,7 +2315,7 @@
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
                 {tab === 'stocks' && <StocksTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} />}
-                {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} />}
+                {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta} />}
                 {tab === 'persons' && <PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor} />}
               </>
             )}
