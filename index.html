@@ -1,1538 +1,940 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Investment Tracker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap"
-    rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg: #f5f4f0;
-      --surface: #fff;
-      --sidebar-bg: #1a1a1a;
-      --sidebar-text: #e8e6e0;
-      --sidebar-muted: #888;
-      --sidebar-active: #fff;
-      --sidebar-active-bg: #333;
-      --border: #e0ddd5;
-      --text: #1a1a1a;
-      --text-muted: #666;
-      --green: #2d6a2d;
-      --green-bg: #e8f5e8;
-      --red: #8b1a1a;
-      --red-bg: #fceaea;
-      --amber: #7a5c00;
-      --amber-bg: #fff8e1;
-      --input-bg: #fafaf7;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Courier Prime', 'Courier New', monospace;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* AUTH */
-    .auth-wrapper {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg);
-      padding: 1rem;
-    }
-
-    .auth-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 2.5rem 2rem;
-      width: 100%;
-      max-width: 420px;
-    }
-
-    .auth-brand {
-      font-size: 11px;
-      letter-spacing: .15em;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      margin-bottom: .3rem;
-    }
-
-    .auth-title {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 2rem;
-    }
-
-    .auth-tabs {
-      display: flex;
-      margin-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .auth-tab {
-      padding: .5rem 1rem;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 13px;
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--text-muted);
-      transition: all .15s;
-    }
-
-    .auth-tab.active {
-      color: var(--text);
-      border-bottom-color: var(--text);
-    }
-
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-label {
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      display: block;
-      margin-bottom: .4rem;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: .6rem .75rem;
-      border: 1px solid var(--border);
-      background: var(--input-bg);
-      font-family: inherit;
-      font-size: 14px;
-      color: var(--text);
-      outline: none;
-      transition: border-color .15s;
-    }
-
-    .form-input:focus {
-      border-color: var(--text);
-    }
-
-    .btn-primary {
-      width: 100%;
-      padding: .65rem;
-      background: var(--text);
-      color: #fff;
-      border: none;
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: .05em;
-      transition: opacity .15s;
-    }
-
-    .btn-primary:hover {
-      opacity: .85;
-    }
-
-    .btn-primary:disabled {
-      opacity: .5;
-      cursor: not-allowed;
-    }
-
-    .btn-google {
-      width: 100%;
-      padding: .65rem;
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      font-family: inherit;
-      font-size: 14px;
-      cursor: pointer;
-      margin-top: .75rem;
-      transition: background .15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-google:hover {
-      background: var(--bg);
-    }
-
-    .divider {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 12px;
-      margin: 1rem 0;
-    }
-
-    .auth-error {
-      color: var(--red);
-      font-size: 12px;
-      margin-top: .5rem;
-    }
-
-    /* LAYOUT */
-    .app {
-      display: flex;
-      min-height: 100vh;
-    }
-
-    .sidebar {
-      width: 220px;
-      min-width: 220px;
-      background: var(--sidebar-bg);
-      display: flex;
-      flex-direction: column;
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      z-index: 100;
-      transition: transform .3s ease;
-    }
-
-    .sidebar-brand {
-      padding: 1.5rem 1.25rem .75rem;
-    }
-
-    .sidebar-brand-sub {
-      font-size: 10px;
-      letter-spacing: .15em;
-      color: var(--sidebar-muted);
-      text-transform: uppercase;
-    }
-
-    .sidebar-brand-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--sidebar-active);
-    }
-
-    .sidebar-nav {
-      flex: 1;
-      padding: .5rem 0;
-      overflow-y: auto;
-    }
-
-    .sidebar-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: .65rem 1.25rem;
-      cursor: pointer;
-      color: var(--sidebar-muted);
-      font-size: 13px;
-      transition: all .15s;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
-      font-family: inherit;
-    }
-
-    .sidebar-item:hover {
-      color: var(--sidebar-text);
-      background: rgba(255, 255, 255, .05);
-    }
-
-    .sidebar-item.active {
-      color: var(--sidebar-active);
-      background: var(--sidebar-active-bg);
-    }
-
-    .sidebar-icon {
-      font-size: 14px;
-      width: 18px;
-      text-align: center;
-    }
-
-    .sidebar-footer {
-      padding: 1rem 1.25rem;
-      border-top: 1px solid rgba(255, 255, 255, .08);
-    }
-
-    .sidebar-user {
-      font-size: 11px;
-      color: var(--sidebar-muted);
-      margin-bottom: .5rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .btn-logout {
-      width: 100%;
-      padding: .4rem .75rem;
-      background: none;
-      border: 1px solid rgba(255, 255, 255, .15);
-      color: var(--sidebar-muted);
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
-      letter-spacing: .08em;
-      transition: all .15s;
-    }
-
-    .btn-logout:hover {
-      border-color: rgba(255, 255, 255, .4);
-      color: var(--sidebar-text);
-    }
-
-    .main {
-      margin-left: 220px;
-      flex: 1;
-      min-height: 100vh;
-    }
-
-    .page {
-      padding: 2rem;
-      max-width: 1400px;
-    }
-
-    .page-header {
-      margin-bottom: 1.5rem;
-    }
-
-    .page-title {
-      font-size: 22px;
-      font-weight: 700;
-    }
-
-    .page-sub {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: .2rem;
-    }
-
-    /* CARDS */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .card-title {
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: .75rem;
-    }
-
-    /* STATS */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-      gap: 1px;
-      background: var(--border);
-      margin-bottom: 1.5rem;
-    }
-
-    .stat-card {
-      background: var(--surface);
-      padding: 1.25rem;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: .35rem;
-    }
-
-    .stat-val {
-      font-size: 22px;
-      font-weight: 700;
-    }
-
-    .pos {
-      color: var(--green);
-    }
-
-    .neg {
-      color: var(--red);
-    }
-
-    /* TABLE */
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th {
-      font-size: 10px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      text-align: left;
-      padding: .5rem .75rem;
-      border-bottom: 1px solid var(--border);
-      font-weight: 400;
-      white-space: nowrap;
-    }
-
-    td {
-      padding: .5rem .75rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    tr.clickable:hover td {
-      background: var(--bg);
-      cursor: pointer;
-    }
-
-    /* TAGS */
-    .tag {
-      display: inline-block;
-      padding: 1px 8px;
-      font-size: 11px;
-      border-radius: 2px;
-      font-weight: 700;
-    }
-
-    .badge-green {
-      background: var(--green-bg);
-      color: var(--green);
-    }
-
-    .badge-red {
-      background: var(--red-bg);
-      color: var(--red);
-    }
-
-    /* FORMS */
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: .75rem;
-      margin-bottom: .75rem;
-    }
-
-    .select-input {
-      width: 100%;
-      padding: .55rem .75rem;
-      border: 1px solid var(--border);
-      background: var(--input-bg);
-      font-family: inherit;
-      font-size: 13px;
-      color: var(--text);
-      outline: none;
-      appearance: none;
-      cursor: pointer;
-    }
-
-    .select-input:focus {
-      border-color: var(--text);
-    }
-
-    .textarea-input {
-      width: 100%;
-      padding: .6rem .75rem;
-      min-height: 120px;
-      resize: vertical;
-      border: 1px solid var(--border);
-      background: var(--input-bg);
-      font-family: inherit;
-      font-size: 12px;
-      color: var(--text);
-      outline: none;
-    }
-
-    .textarea-input:focus {
-      border-color: var(--text);
-    }
-
-    .btn-secondary {
-      padding: .55rem 1.25rem;
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      font-family: inherit;
-      font-size: 13px;
-      cursor: pointer;
-      transition: background .15s;
-    }
-
-    .btn-secondary:hover {
-      background: var(--bg);
-    }
-
-    .btn-sm {
-      padding: .3rem .6rem;
-      background: none;
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all .15s;
-    }
-
-    .btn-sm:hover {
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .btn-sm-danger {
-      padding: .3rem .6rem;
-      background: none;
-      color: var(--red);
-      border: 1px solid var(--red-bg);
-      font-family: inherit;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all .15s;
-    }
-
-    .btn-sm-danger:hover {
-      background: var(--red-bg);
-    }
-
-    /* MODAL */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .45);
-      z-index: 500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1.75rem;
-      width: 100%;
-      max-width: 560px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .modal-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 1.25rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-      color: var(--text-muted);
-      line-height: 1;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: .5rem;
-      margin-top: 1rem;
-      flex-wrap: wrap;
-    }
-
-    /* FILTER BAR */
-    .filter-bar {
-      display: flex;
-      gap: .5rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-      align-items: center;
-    }
-
-    .filter-bar select {
-      padding: .35rem .6rem;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      font-family: inherit;
-      font-size: 12px;
-      cursor: pointer;
-      outline: none;
-    }
-
-    /* CHARTS */
-    .charts-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 1.25rem;
-    }
-
-    .chart-wrap {
-      position: relative;
-      height: 280px;
-    }
-
-    /* PREVIEW */
-    .preview-table td {
-      font-size: 12px;
-    }
-
-    .preview-ok {
-      background: var(--green-bg);
-    }
-
-    .preview-err {
-      background: var(--red-bg);
-    }
-
-    /* MISC */
-    .cards-row {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-
-    .top-gainer-card {
-      background: var(--green-bg);
-      border: 1px solid #c8e6c9;
-      padding: 1rem;
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .top-loser-card {
-      background: var(--red-bg);
-      border: 1px solid #f7c1c1;
-      padding: 1rem;
-      flex: 1;
-      min-width: 200px;
-    }
-
-    .empty {
-      color: var(--text-muted);
-      font-size: 13px;
-      padding: 2rem;
-      text-align: center;
-    }
-
-    .spinner {
-      text-align: center;
-      padding: 3rem;
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-
-    .section-divider {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 1.25rem 0;
-    }
-
-    /* MOBILE */
-    .menu-toggle {
-      display: none;
-      position: fixed;
-      top: 1rem;
-      left: 1rem;
-      z-index: 200;
-      background: var(--sidebar-bg);
-      color: #fff;
-      border: none;
-      width: 36px;
-      height: 36px;
-      font-size: 18px;
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .sidebar-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .5);
-      z-index: 90;
-    }
-
-    @media(max-width:768px) {
-      .sidebar {
-        transform: translateX(-100%);
-      }
-
-      .sidebar.open {
-        transform: translateX(0);
-      }
-
-      .sidebar-overlay.open {
-        display: block;
-      }
-
-      .menu-toggle {
-        display: flex;
-      }
-
-      .main {
-        margin-left: 0;
-      }
-
-      .page {
-        padding: 1rem;
-        padding-top: 3.5rem;
-      }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .charts-row {
-        grid-template-columns: 1fr;
-      }
-
-      .form-row {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#f5f4f0;--surface:#fff;--sidebar-bg:#1a1a1a;--sidebar-text:#e8e6e0;
+    --sidebar-muted:#888;--sidebar-active:#fff;--sidebar-active-bg:#333;
+    --border:#e0ddd5;--text:#1a1a1a;--text-muted:#666;
+    --green:#2d6a2d;--green-bg:#e8f5e8;--red:#8b1a1a;--red-bg:#fceaea;
+    --amber:#7a5c00;--amber-bg:#fff8e1;--input-bg:#fafaf7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Courier Prime','Courier New',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  /* AUTH */
+  .auth-wrapper{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:1rem;}
+  .auth-card{background:var(--surface);border:1px solid var(--border);padding:2.5rem 2rem;width:100%;max-width:420px;}
+  .auth-brand{font-size:11px;letter-spacing:.15em;color:var(--text-muted);text-transform:uppercase;margin-bottom:.3rem;}
+  .auth-title{font-size:28px;font-weight:700;margin-bottom:2rem;}
+  .auth-tabs{display:flex;margin-bottom:1.5rem;border-bottom:1px solid var(--border);}
+  .auth-tab{padding:.5rem 1rem;cursor:pointer;font-family:inherit;font-size:13px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);transition:all .15s;}
+  .auth-tab.active{color:var(--text);border-bottom-color:var(--text);}
+  .form-group{margin-bottom:1rem;}
+  .form-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.4rem;}
+  .form-input{width:100%;padding:.6rem .75rem;border:1px solid var(--border);background:var(--input-bg);font-family:inherit;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;}
+  .form-input:focus{border-color:var(--text);}
+  .btn-primary{width:100%;padding:.65rem;background:var(--text);color:#fff;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:opacity .15s;}
+  .btn-primary:hover{opacity:.85;}.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-google{width:100%;padding:.65rem;background:var(--surface);color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:14px;cursor:pointer;margin-top:.75rem;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-google:hover{background:var(--bg);}
+  .divider{text-align:center;color:var(--text-muted);font-size:12px;margin:1rem 0;}
+  .auth-error{color:var(--red);font-size:12px;margin-top:.5rem;}
+  /* LAYOUT */
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:220px;min-width:220px;background:var(--sidebar-bg);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .3s ease;}
+  .sidebar-brand{padding:1.5rem 1.25rem .75rem;}
+  .sidebar-brand-sub{font-size:10px;letter-spacing:.15em;color:var(--sidebar-muted);text-transform:uppercase;}
+  .sidebar-brand-name{font-size:20px;font-weight:700;color:var(--sidebar-active);}
+  .sidebar-nav{flex:1;padding:.5rem 0;overflow-y:auto;}
+  .sidebar-item{display:flex;align-items:center;gap:10px;padding:.65rem 1.25rem;cursor:pointer;color:var(--sidebar-muted);font-size:13px;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:inherit;}
+  .sidebar-item:hover{color:var(--sidebar-text);background:rgba(255,255,255,.05);}
+  .sidebar-item.active{color:var(--sidebar-active);background:var(--sidebar-active-bg);}
+  .sidebar-icon{font-size:14px;width:18px;text-align:center;}
+  .sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.08);}
+  .sidebar-user{font-size:11px;color:var(--sidebar-muted);margin-bottom:.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .btn-logout{width:100%;padding:.4rem .75rem;background:none;border:1px solid rgba(255,255,255,.15);color:var(--sidebar-muted);font-family:inherit;font-size:11px;cursor:pointer;letter-spacing:.08em;transition:all .15s;}
+  .btn-logout:hover{border-color:rgba(255,255,255,.4);color:var(--sidebar-text);}
+  .main{margin-left:220px;flex:1;min-height:100vh;}
+  .page{padding:2rem;max-width:1400px;}
+  .page-header{margin-bottom:1.5rem;}
+  .page-title{font-size:22px;font-weight:700;}
+  .page-sub{font-size:12px;color:var(--text-muted);margin-top:.2rem;}
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);padding:1.25rem;margin-bottom:1rem;}
+  .card-title{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.75rem;}
+  /* STATS */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:1px;background:var(--border);margin-bottom:1.5rem;}
+  .stat-card{background:var(--surface);padding:1.25rem;}
+  .stat-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.35rem;}
+  .stat-val{font-size:22px;font-weight:700;}
+  .pos{color:var(--green);}.neg{color:var(--red);}
+  /* TABLE */
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--border);font-weight:400;white-space:nowrap;}
+  td{padding:.5rem .75rem;border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  tr.clickable:hover td{background:var(--bg);cursor:pointer;}
+  /* TAGS */
+  .tag{display:inline-block;padding:1px 8px;font-size:11px;border-radius:2px;font-weight:700;}
+  .badge-green{background:var(--green-bg);color:var(--green);}
+  .badge-red{background:var(--red-bg);color:var(--red);}
+  /* FORMS */
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:.75rem;}
+  .select-input{width:100%;padding:.55rem .75rem;border:1px solid var(--border);background:var(--input-bg);font-family:inherit;font-size:13px;color:var(--text);outline:none;appearance:none;cursor:pointer;}
+  .select-input:focus{border-color:var(--text);}
+  .textarea-input{width:100%;padding:.6rem .75rem;min-height:120px;resize:vertical;border:1px solid var(--border);background:var(--input-bg);font-family:inherit;font-size:12px;color:var(--text);outline:none;}
+  .textarea-input:focus{border-color:var(--text);}
+  .btn-secondary{padding:.55rem 1.25rem;background:var(--surface);color:var(--text);border:1px solid var(--border);font-family:inherit;font-size:13px;cursor:pointer;transition:background .15s;}
+  .btn-secondary:hover{background:var(--bg);}
+  .btn-sm{padding:.3rem .6rem;background:none;color:var(--text-muted);border:1px solid var(--border);font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s;}
+  .btn-sm:hover{background:var(--bg);color:var(--text);}
+  .btn-sm-danger{padding:.3rem .6rem;background:none;color:var(--red);border:1px solid var(--red-bg);font-family:inherit;font-size:11px;cursor:pointer;transition:all .15s;}
+  .btn-sm-danger:hover{background:var(--red-bg);}
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem;}
+  .modal{background:var(--surface);border:1px solid var(--border);padding:1.75rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-size:15px;font-weight:700;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;}
+  .modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);line-height:1;}
+  .modal-actions{display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap;}
+  /* FILTER BAR */
+  .filter-bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;}
+  .filter-bar select{padding:.35rem .6rem;border:1px solid var(--border);background:var(--surface);font-family:inherit;font-size:12px;cursor:pointer;outline:none;}
+  /* CHARTS */
+  .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);padding:1.25rem;}
+  .chart-wrap{position:relative;height:280px;}
+  /* PREVIEW */
+  .preview-table td{font-size:12px;}
+  .preview-ok{background:var(--green-bg);}
+  .preview-err{background:var(--red-bg);}
+  /* MISC */
+  .cards-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;}
+  .top-gainer-card{background:var(--green-bg);border:1px solid #c8e6c9;padding:1rem;flex:1;min-width:200px;}
+  .top-loser-card{background:var(--red-bg);border:1px solid #f7c1c1;padding:1rem;flex:1;min-width:200px;}
+  .empty{color:var(--text-muted);font-size:13px;padding:2rem;text-align:center;}
+  .spinner{text-align:center;padding:3rem;color:var(--text-muted);font-size:13px;}
+  .section-divider{border:none;border-top:1px solid var(--border);margin:1.25rem 0;}
+  /* MOBILE */
+  .menu-toggle{display:none;position:fixed;top:1rem;left:1rem;z-index:200;background:var(--sidebar-bg);color:#fff;border:none;width:36px;height:36px;font-size:18px;cursor:pointer;align-items:center;justify-content:center;}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;}
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%);}
+    .sidebar.open{transform:translateX(0);}
+    .sidebar-overlay.open{display:block;}
+    .menu-toggle{display:flex;}
+    .main{margin-left:0;}
+    .page{padding:1rem;padding-top:3.5rem;}
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+    .charts-row{grid-template-columns:1fr;}
+    .form-row{grid-template-columns:1fr 1fr;}
+  }
+</style>
 </head>
-
 <body>
-  <div id="root"></div>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
 
-    // ── FIREBASE CONFIG ───────────────────────────────────────
-    const firebaseConfig = {
-      apiKey: "AIzaSyAyuj-wMRRSu5craUeB_dVbsDoM0rO-ceE",
-      authDomain: "finance-tracker-70d81.firebaseapp.com",
-      projectId: "finance-tracker-70d81",
-      storageBucket: "finance-tracker-70d81.firebasestorage.app",
-      messagingSenderId: "191924832332",
-      appId: "1:191924832332:web:da128b3982e524fcdf4ce9",
-      measurementId: "G-0N8JYP9E23"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+// ── FIREBASE CONFIG ───────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyAyuj-wMRRSu5craUeB_dVbsDoM0rO-ceE",
+  authDomain: "finance-tracker-70d81.firebaseapp.com",
+  projectId: "finance-tracker-70d81",
+  storageBucket: "finance-tracker-70d81.firebasestorage.app",
+  messagingSenderId: "191924832332",
+  appId: "1:191924832332:web:da128b3982e524fcdf4ce9",
+  measurementId: "G-0N8JYP9E23"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-    // ── HELPERS ───────────────────────────────────────────────
-    const todayISO = () => new Date().toISOString().split('T')[0];
-    const fmt = n => n == null || isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-    const fmtPct = n => n == null || isNaN(n) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
-    const fmtDate = d => { try { const dt = new Date(d); return isNaN(dt) ? '—' : dt.toLocaleDateString('en-IN'); } catch { return '—'; } };
-    const isValidDate = d => { try { return d && !isNaN(new Date(d)); } catch { return false; } };
+// ── HELPERS ───────────────────────────────────────────────
+const todayISO = () => new Date().toISOString().split('T')[0];
+const fmt = n => n==null||isNaN(n)?'—':'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
+const fmtPct = n => n==null||isNaN(n)?'—':(n>=0?'+':'')+Number(n).toFixed(2)+'%';
+const fmtDate = d => { try { const dt=new Date(d); return isNaN(dt)?'—':dt.toLocaleDateString('en-IN'); } catch{return '—';} };
+const isValidDate = d => { try { return d && !isNaN(new Date(d)); } catch{return false;} };
 
-    const PERSON_COLORS = {
-      NILESH: '#c8e6c9', HITESH: '#bbdefb', REKHA: '#f8bbd9', RASHMI: '#ffe0b2', HEENA: '#e1bee7',
-      PRATIK: '#b3e0f7', JITESH: '#fff9c4', NIDHI: '#d7ccc8', DHARA: '#f0f4c3',
-      'NILESH HUF': '#a5d6a7', 'HITESH HUF': '#90caf9', 'DHANVANTRAI HUF': '#ce93d8'
-    };
-    const personColor = name => {
-      const u = (name || '').toUpperCase().trim();
-      if (PERSON_COLORS[u]) return PERSON_COLORS[u];
-      let h = 0; for (let i = 0; i < u.length; i++) h = u.charCodeAt(i) + ((h << 5) - h);
-      return `hsl(${Math.abs(h) % 360},50%,80%)`;
-    };
+const PERSON_COLORS = {
+  NILESH:'#c8e6c9',HITESH:'#bbdefb',REKHA:'#f8bbd9',RASHMI:'#ffe0b2',HEENA:'#e1bee7',
+  PRATIK:'#b3e0f7',JITESH:'#fff9c4',NIDHI:'#d7ccc8',DHARA:'#f0f4c3',
+  'NILESH HUF':'#a5d6a7','HITESH HUF':'#90caf9','DHANVANTRAI HUF':'#ce93d8'
+};
+const personColor = name => {
+  const u=(name||'').toUpperCase().trim();
+  if(PERSON_COLORS[u]) return PERSON_COLORS[u];
+  let h=0; for(let i=0;i<u.length;i++) h=u.charCodeAt(i)+((h<<5)-h);
+  return `hsl(${Math.abs(h)%360},50%,80%)`;
+};
 
-    // ── FIFO ENGINE ───────────────────────────────────────────
-    function computeFIFO(transactions) {
-      const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
-      const sorted = [...valid].sort((a, b) => new Date(a.date) - new Date(b.date));
-      const buys = {}; const sells = [];
-      sorted.forEach(tx => {
-        const key = `${tx.person}|${tx.stock}`;
-        if (!buys[key]) buys[key] = [];
-        if (tx.qty > 0) { buys[key].push({ date: tx.date, price: tx.price, qty: tx.qty }); }
-        else if (tx.qty < 0) {
-          let sq = Math.abs(tx.qty); const q = buys[key] || [];
-          while (sq > 0 && q.length > 0) {
-            const b = q[0]; const used = Math.min(b.qty, sq);
-            const profit = (tx.price - b.price) * used;
-            const yrs = (new Date(tx.date) - new Date(b.date)) / (1000 * 60 * 60 * 24 * 365);
-            const cagr = yrs > 0 ? (Math.pow(tx.price / b.price, 1 / yrs) - 1) * 100 : null;
-            sells.push({ person: tx.person, stock: tx.stock, buyDate: b.date, buyPrice: b.price, sellDate: tx.date, sellPrice: tx.price, qty: used, profit, cagr });
-            b.qty -= used; sq -= used; if (b.qty === 0) q.shift();
-          }
+// ── FIFO ENGINE ───────────────────────────────────────────
+function computeFIFO(transactions) {
+  const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
+  const sorted = [...valid].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const buys={}; const sells=[];
+  sorted.forEach(tx => {
+    const key=`${tx.person}|${tx.stock}`;
+    if(!buys[key]) buys[key]=[];
+    if(tx.qty>0) { buys[key].push({date:tx.date,price:tx.price,qty:tx.qty}); }
+    else if(tx.qty<0) {
+      let sq=Math.abs(tx.qty); const q=buys[key]||[];
+      while(sq>0&&q.length>0) {
+        const b=q[0]; const used=Math.min(b.qty,sq);
+        const profit=(tx.price-b.price)*used;
+        const yrs=(new Date(tx.date)-new Date(b.date))/(1000*60*60*24*365);
+        const cagr=yrs>0?(Math.pow(tx.price/b.price,1/yrs)-1)*100:null;
+        sells.push({person:tx.person,stock:tx.stock,buyDate:b.date,buyPrice:b.price,sellDate:tx.date,sellPrice:tx.price,qty:used,profit,cagr});
+        b.qty-=used; sq-=used; if(b.qty===0) q.shift();
+      }
+    }
+  });
+  const holdings={};
+  Object.entries(buys).forEach(([key,lots]) => {
+    const [person,stock]=key.split('|');
+    const rem=lots.filter(l=>l.qty>0);
+    if(!rem.length) return;
+    if(!holdings[stock]) holdings[stock]={};
+    holdings[stock][person]=rem;
+  });
+  return {sells,holdings};
+}
+
+function buildPortfolio(holdings,stockPrices) {
+  const rows=[];
+  Object.entries(holdings).forEach(([stock,persons]) => {
+    Object.entries(persons).forEach(([person,lots]) => {
+      const totalQty=lots.reduce((s,l)=>s+l.qty,0);
+      const investedVal=lots.reduce((s,l)=>s+l.qty*l.price,0);
+      const avgBuy=investedVal/totalQty;
+      const cp=stockPrices[stock]||stockPrices[stock.replace('NSE:','')]||null;
+      const currentVal=cp?totalQty*cp:null;
+      const absGain=currentVal!=null?currentVal-investedVal:null;
+      const absGainPct=absGain!=null?(absGain/investedVal)*100:null;
+      const breakup=lots.map(l=>`${l.qty}@${l.price}`).join(', ');
+      rows.push({person,stock,totalQty,avgBuy,investedVal,currentPrice:cp,currentVal,absGain,absGainPct,breakup});
+    });
+  });
+  return rows;
+}
+
+function buildStockSheet(holdings,stockPrices) {
+  const stocks={};
+  Object.entries(holdings).forEach(([stock,persons]) => {
+    if(!stocks[stock]) stocks[stock]={stock,totalQty:0,investedVal:0,persons:{}};
+    Object.entries(persons).forEach(([person,lots]) => {
+      const qty=lots.reduce((s,l)=>s+l.qty,0);
+      const inv=lots.reduce((s,l)=>s+l.qty*l.price,0);
+      stocks[stock].totalQty+=qty; stocks[stock].investedVal+=inv;
+      if(!stocks[stock].persons[person]) stocks[stock].persons[person]={qty:0};
+      stocks[stock].persons[person].qty+=qty;
+    });
+  });
+  return Object.values(stocks).map(s => {
+    const cp=stockPrices[s.stock]||stockPrices[s.stock.replace('NSE:','')]||null;
+    const currentVal=cp?s.totalQty*cp:null;
+    const absGain=currentVal!=null?currentVal-s.investedVal:null;
+    const absGainPct=absGain!=null?(absGain/s.investedVal)*100:null;
+    return {...s,avgBuy:s.investedVal/s.totalQty,currentPrice:cp,currentVal,absGain,absGainPct};
+  });
+}
+
+// ── CHART COMPONENTS ──────────────────────────────────────
+function BarChart({labels,datasets}) {
+  const ref=useRef(null); const chart=useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(chart.current) chart.current.destroy();
+    chart.current=new Chart(ref.current,{
+      type:'bar',data:{labels,datasets},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{font:{family:'Courier Prime',size:11},boxWidth:12}}},
+        scales:{
+          x:{ticks:{font:{family:'Courier Prime',size:10},maxRotation:45},grid:{display:false}},
+          y:{ticks:{font:{family:'Courier Prime',size:10},callback:v=>'₹'+(v>=100000?(v/100000).toFixed(1)+'L':v>=1000?(v/1000).toFixed(0)+'K':v)},grid:{color:'#f0ede6'}}
         }
-      });
-      const holdings = {};
-      Object.entries(buys).forEach(([key, lots]) => {
-        const [person, stock] = key.split('|');
-        const rem = lots.filter(l => l.qty > 0);
-        if (!rem.length) return;
-        if (!holdings[stock]) holdings[stock] = {};
-        holdings[stock][person] = rem;
-      });
-      return { sells, holdings };
-    }
+      }
+    });
+    return()=>{if(chart.current)chart.current.destroy();};
+  },[JSON.stringify(labels),JSON.stringify(datasets)]);
+  return <canvas ref={ref}/>;
+}
 
-    function buildPortfolio(holdings, stockPrices) {
-      const rows = [];
-      Object.entries(holdings).forEach(([stock, persons]) => {
-        Object.entries(persons).forEach(([person, lots]) => {
-          const totalQty = lots.reduce((s, l) => s + l.qty, 0);
-          const investedVal = lots.reduce((s, l) => s + l.qty * l.price, 0);
-          const avgBuy = investedVal / totalQty;
-          const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
-          const currentVal = cp ? totalQty * cp : null;
-          const absGain = currentVal != null ? currentVal - investedVal : null;
-          const absGainPct = absGain != null ? (absGain / investedVal) * 100 : null;
-          const breakup = lots.map(l => `${l.qty}@${l.price}`).join(', ');
-          rows.push({ person, stock, totalQty, avgBuy, investedVal, currentPrice: cp, currentVal, absGain, absGainPct, breakup });
-        });
-      });
-      return rows;
-    }
+function PieChart({labels,data,colors}) {
+  const ref=useRef(null); const chart=useRef(null);
+  useEffect(()=>{
+    if(!ref.current) return;
+    if(chart.current) chart.current.destroy();
+    chart.current=new Chart(ref.current,{
+      type:'pie',
+      data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:1,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'right',labels:{font:{family:'Courier Prime',size:11},boxWidth:12,padding:8}},
+          tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ₹${Number(ctx.parsed).toLocaleString('en-IN',{maximumFractionDigits:0})} (${((ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0))*100).toFixed(1)}%)`}}
+        }
+      }
+    });
+    return()=>{if(chart.current)chart.current.destroy();};
+  },[JSON.stringify(labels),JSON.stringify(data)]);
+  return <canvas ref={ref}/>;
+}
 
-    function buildStockSheet(holdings, stockPrices) {
-      const stocks = {};
-      Object.entries(holdings).forEach(([stock, persons]) => {
-        if (!stocks[stock]) stocks[stock] = { stock, totalQty: 0, investedVal: 0, persons: {} };
-        Object.entries(persons).forEach(([person, lots]) => {
-          const qty = lots.reduce((s, l) => s + l.qty, 0);
-          const inv = lots.reduce((s, l) => s + l.qty * l.price, 0);
-          stocks[stock].totalQty += qty; stocks[stock].investedVal += inv;
-          if (!stocks[stock].persons[person]) stocks[stock].persons[person] = { qty: 0 };
-          stocks[stock].persons[person].qty += qty;
-        });
-      });
-      return Object.values(stocks).map(s => {
-        const cp = stockPrices[s.stock] || stockPrices[s.stock.replace('NSE:', '')] || null;
-        const currentVal = cp ? s.totalQty * cp : null;
-        const absGain = currentVal != null ? currentVal - s.investedVal : null;
-        const absGainPct = absGain != null ? (absGain / s.investedVal) * 100 : null;
-        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct };
-      });
-    }
+// ── AUTH ──────────────────────────────────────────────────
+function AuthPage() {
+  const [tab,setTab]=useState('login');
+  const [email,setEmail]=useState('');
+  const [pass,setPass]=useState('');
+  const [name,setName]=useState('');
+  const [err,setErr]=useState('');
+  const [loading,setLoading]=useState(false);
+  const doLogin=async()=>{setErr('');setLoading(true);try{await auth.signInWithEmailAndPassword(email,pass);}catch(e){setErr(e.message);}setLoading(false);};
+  const doSignup=async()=>{setErr('');setLoading(true);try{const c=await auth.createUserWithEmailAndPassword(email,pass);await c.user.updateProfile({displayName:name});}catch(e){setErr(e.message);}setLoading(false);};
+  const doGoogle=async()=>{setErr('');setLoading(true);try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());}catch(e){setErr(e.message);}setLoading(false);};
+  return (
+    <div className="auth-wrapper">
+      <div className="auth-card">
+        <div className="auth-brand">Investment</div>
+        <div className="auth-title">Tracker</div>
+        <div className="auth-tabs">
+          <button className={`auth-tab${tab==='login'?' active':''}`} onClick={()=>setTab('login')}>Login</button>
+          <button className={`auth-tab${tab==='signup'?' active':''}`} onClick={()=>setTab('signup')}>Sign Up</button>
+        </div>
+        {tab==='signup'&&<div className="form-group"><label className="form-label">Name</label><input className="form-input" type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></div>}
+        <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com"/></div>
+        <div className="form-group"><label className="form-label">Password</label><input className="form-input" type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==='Enter'&&(tab==='login'?doLogin():doSignup())}/></div>
+        {err&&<div className="auth-error">{err}</div>}
+        <button className="btn-primary" onClick={tab==='login'?doLogin:doSignup} disabled={loading}>{loading?'...':tab==='login'?'LOGIN':'CREATE ACCOUNT'}</button>
+        <div className="divider">or</div>
+        <button className="btn-google" onClick={doGoogle} disabled={loading}>
+          <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71C3.784 10.17 3.682 9.593 3.682 9s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+          Continue with Google
+        </button>
+      </div>
+    </div>
+  );
+}
 
-    // ── CHART COMPONENTS ──────────────────────────────────────
-    function BarChart({ labels, datasets }) {
-      const ref = useRef(null); const chart = useRef(null);
-      useEffect(() => {
-        if (!ref.current) return;
-        if (chart.current) chart.current.destroy();
-        chart.current = new Chart(ref.current, {
-          type: 'bar', data: { labels, datasets },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { labels: { font: { family: 'Courier Prime', size: 11 }, boxWidth: 12 } } },
-            scales: {
-              x: { ticks: { font: { family: 'Courier Prime', size: 10 }, maxRotation: 45 }, grid: { display: false } },
-              y: { ticks: { font: { family: 'Courier Prime', size: 10 }, callback: v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v) }, grid: { color: '#f0ede6' } }
-            }
-          }
-        });
-        return () => { if (chart.current) chart.current.destroy(); };
-      }, [JSON.stringify(labels), JSON.stringify(datasets)]);
-      return <canvas ref={ref} />;
-    }
+// ── EDIT TX MODAL ─────────────────────────────────────────
+function EditTxModal({tx,persons,onSave,onDelete,onClose}) {
+  const [form,setForm]=useState({date:tx.date||todayISO(),person:tx.person||'',stock:tx.stock||'',qty:Math.abs(tx.qty)||'',price:tx.price||'',type:tx.qty<0?'SELL':'BUY'});
+  const [saving,setSaving]=useState(false);
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const handleSave=async()=>{
+    if(!form.date||!form.person||!form.stock||!form.qty||!form.price) return;
+    setSaving(true);
+    const qty=form.type==='SELL'?-Math.abs(Number(form.qty)):Math.abs(Number(form.qty));
+    await onSave(tx.id,{date:form.date,person:form.person.toUpperCase(),stock:form.stock.toUpperCase(),qty,price:Number(form.price)});
+    setSaving(false);onClose();
+  };
+  const handleDelete=async()=>{if(!confirm('Delete this transaction?'))return;await onDelete(tx.id);onClose();};
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">Edit Transaction <button className="modal-close" onClick={onClose}>✕</button></div>
+        <div className="form-row">
+          <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
+          <div><label className="form-label">Person</label>
+            <select className="select-input" value={form.person} onChange={e=>set('person',e.target.value)}>
+              <option value="">Select...</option>{persons.map(p=><option key={p.name}>{p.name}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e=>set('stock',e.target.value)}/></div>
+          <div><label className="form-label">Type</label>
+            <select className="select-input" value={form.type} onChange={e=>set('type',e.target.value)}>
+              <option value="BUY">BUY</option><option value="SELL">SELL</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e=>set('qty',e.target.value)}/></div>
+          <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e=>set('price',e.target.value)}/></div>
+        </div>
+        <div className="modal-actions">
+          <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleSave} disabled={saving}>{saving?'...':'SAVE CHANGES'}</button>
+          <button className="btn-secondary" onClick={onClose}>CANCEL</button>
+          <button className="btn-sm-danger" style={{marginLeft:'auto'}} onClick={handleDelete}>DELETE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-    function PieChart({ labels, data, colors }) {
-      const ref = useRef(null); const chart = useRef(null);
-      useEffect(() => {
-        if (!ref.current) return;
-        if (chart.current) chart.current.destroy();
-        chart.current = new Chart(ref.current, {
-          type: 'pie',
-          data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1, borderColor: '#fff' }] },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'right', labels: { font: { family: 'Courier Prime', size: 11 }, boxWidth: 12, padding: 8 } },
-              tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ₹${Number(ctx.parsed).toLocaleString('en-IN', { maximumFractionDigits: 0 })} (${((ctx.parsed / ctx.dataset.data.reduce((a, b) => a + b, 0)) * 100).toFixed(1)}%)` } }
-            }
-          }
-        });
-        return () => { if (chart.current) chart.current.destroy(); };
-      }, [JSON.stringify(labels), JSON.stringify(data)]);
-      return <canvas ref={ref} />;
-    }
+// ── DASHBOARD ─────────────────────────────────────────────
+function DashboardTab({transactions,stockPrices}) {
+  const {sells,holdings}=computeFIFO(transactions);
+  const portfolio=buildPortfolio(holdings,stockPrices);
+  const totalInvested=portfolio.reduce((s,r)=>s+r.investedVal,0);
+  const totalCurrent=portfolio.reduce((s,r)=>s+(r.currentVal||r.investedVal),0);
+  const totalGain=totalCurrent-totalInvested;
+  const gainPct=totalInvested>0?(totalGain/totalInvested)*100:0;
+  const stockRows=buildStockSheet(holdings,stockPrices);
+  const withGain=[...stockRows].filter(s=>s.absGain!=null);
+  const topGainer=[...withGain].sort((a,b)=>b.absGain-a.absGain)[0];
+  const topLoser=[...withGain].sort((a,b)=>a.absGain-b.absGain)[0];
 
-    // ── AUTH ──────────────────────────────────────────────────
-    function AuthPage() {
-      const [tab, setTab] = useState('login');
-      const [email, setEmail] = useState('');
-      const [pass, setPass] = useState('');
-      const [name, setName] = useState('');
-      const [err, setErr] = useState('');
-      const [loading, setLoading] = useState(false);
-      const doLogin = async () => { setErr(''); setLoading(true); try { await auth.signInWithEmailAndPassword(email, pass); } catch (e) { setErr(e.message); } setLoading(false); };
-      const doSignup = async () => { setErr(''); setLoading(true); try { const c = await auth.createUserWithEmailAndPassword(email, pass); await c.user.updateProfile({ displayName: name }); } catch (e) { setErr(e.message); } setLoading(false); };
-      const doGoogle = async () => { setErr(''); setLoading(true); try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); } catch (e) { setErr(e.message); } setLoading(false); };
-      return (
-        <div className="auth-wrapper">
-          <div className="auth-card">
-            <div className="auth-brand">Investment</div>
-            <div className="auth-title">Tracker</div>
-            <div className="auth-tabs">
-              <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Login</button>
-              <button className={`auth-tab${tab === 'signup' ? ' active' : ''}`} onClick={() => setTab('signup')}>Sign Up</button>
+  // Person bar chart data
+  const byPerson={};
+  portfolio.forEach(r=>{
+    if(!byPerson[r.person]) byPerson[r.person]={invested:0,current:0};
+    byPerson[r.person].invested+=r.investedVal;
+    byPerson[r.person].current+=r.currentVal||r.investedVal;
+  });
+  const pLabels=Object.keys(byPerson);
+  const barDatasets=[
+    {label:'Current Value',data:pLabels.map(p=>byPerson[p].current),backgroundColor:'#87BFDB',borderWidth:0},
+    {label:'Invested Value',data:pLabels.map(p=>byPerson[p].invested),backgroundColor:'#2B5F7A',borderWidth:0}
+  ];
+
+  // Stock pie chart data
+  const byStock={};
+  portfolio.forEach(r=>{
+    if(!byStock[r.stock]) byStock[r.stock]=0;
+    byStock[r.stock]+=r.currentVal||r.investedVal;
+  });
+  const stockEntries=Object.entries(byStock).sort((a,b)=>b[1]-a[1]);
+  const PIE_COLORS=['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac','#54a0e8','#f87171','#34d399','#a78bfa','#fb923c'];
+  const pieLabels=stockEntries.map(([s])=>s);
+  const pieData=stockEntries.map(([,v])=>v);
+  const pieColors=stockEntries.map((_,i)=>PIE_COLORS[i%PIE_COLORS.length]);
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title">Dashboard</div>
+        <div className="page-sub">{new Date().toLocaleDateString('en-IN',{month:'long',year:'numeric'})}</div>
+      </div>
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-label">Invested Value</div><div className="stat-val">{fmt(totalInvested)}</div></div>
+        <div className="stat-card"><div className="stat-label">Current Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
+        <div className="stat-card"><div className="stat-label">Unrealized Gain ₹</div><div className={`stat-val ${totalGain>=0?'pos':'neg'}`}>{fmt(totalGain)}</div></div>
+        <div className="stat-card"><div className="stat-label">Unrealized Gain %</div><div className={`stat-val ${gainPct>=0?'pos':'neg'}`}>{fmtPct(gainPct)}</div></div>
+        <div className="stat-card"><div className="stat-label">Net Realized</div><div className="stat-val">{fmt(sells.reduce((s,r)=>s+r.profit,0))}</div></div>
+      </div>
+
+      <div className="cards-row">
+        {topGainer&&<div className="top-gainer-card"><div className="card-title">Top Gainer</div><div style={{fontWeight:700}}>{topGainer.stock}</div><div className="pos" style={{fontSize:20}}>{fmt(topGainer.absGain)}</div></div>}
+        {topLoser&&topLoser.stock!==(topGainer?.stock)&&<div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{fontWeight:700}}>{topLoser.stock}</div><div className="neg" style={{fontSize:20}}>{fmt(topLoser.absGain)}</div></div>}
+      </div>
+
+      {pLabels.length>0&&(
+        <div className="charts-row">
+          <div className="chart-card">
+            <div className="card-title">Current vs Invested Value by Person</div>
+            <div className="chart-wrap"><BarChart labels={pLabels} datasets={barDatasets}/></div>
+          </div>
+          <div className="chart-card">
+            <div className="card-title">Portfolio by Stock</div>
+            <div className="chart-wrap"><PieChart labels={pieLabels} data={pieData} colors={pieColors}/></div>
+          </div>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="card-title">Portfolio by Person</div>
+        <div style={{display:'flex',gap:'.5rem',flexWrap:'wrap'}}>
+          {Object.entries(byPerson).map(([p,v])=>(
+            <div key={p} style={{background:personColor(p),padding:'.5rem .9rem',fontSize:13}}>
+              <span style={{fontWeight:700}}>{p}</span><br/>
+              <span style={{fontSize:12}}>{fmt(v.current)}</span>
             </div>
-            {tab === 'signup' && <div className="form-group"><label className="form-label">Name</label><input className="form-input" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" /></div>}
-            <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@email.com" /></div>
-            <div className="form-group"><label className="form-label">Password</label><input className="form-input" type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••" onKeyDown={e => e.key === 'Enter' && (tab === 'login' ? doLogin() : doSignup())} /></div>
-            {err && <div className="auth-error">{err}</div>}
-            <button className="btn-primary" onClick={tab === 'login' ? doLogin : doSignup} disabled={loading}>{loading ? '...' : tab === 'login' ? 'LOGIN' : 'CREATE ACCOUNT'}</button>
-            <div className="divider">or</div>
-            <button className="btn-google" onClick={doGoogle} disabled={loading}>
-              <svg width="16" height="16" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" /><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" /><path fill="#FBBC05" d="M3.964 10.71C3.784 10.17 3.682 9.593 3.682 9s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" /><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" /></svg>
-              Continue with Google
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TRANSACTIONS ──────────────────────────────────────────
+function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete}) {
+  const [form,setForm]=useState({date:todayISO(),person:'',stock:'',qty:'',price:'',type:'BUY'});
+  const [csvMode,setCsvMode]=useState(false);
+  const [csvText,setCsvText]=useState('');
+  const [preview,setPreview]=useState(null);
+  const [saving,setSaving]=useState(false);
+  const [search,setSearch]=useState('');
+  const [editTx,setEditTx]=useState(null);
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const handleAdd=async()=>{
+    if(!form.date||!form.person||!form.stock||!form.qty||!form.price) return;
+    setSaving(true);
+    const qty=form.type==='SELL'?-Math.abs(Number(form.qty)):Math.abs(Number(form.qty));
+    await onAdd({date:form.date,person:form.person.toUpperCase(),stock:form.stock.toUpperCase(),qty,price:Number(form.price)});
+    setForm({date:todayISO(),person:'',stock:'',qty:'',price:'',type:'BUY'});
+    setSaving(false);
+  };
+
+  const parseCSV=()=>{
+    const lines=csvText.trim().split('\n').filter(Boolean);
+    const rows=[];
+    lines.forEach((line,i)=>{
+      const parts=line.split(',').map(s=>s.trim());
+      if(parts.length<5){rows.push({err:`Row ${i+1}: need 5 cols`,raw:line});return;}
+      const [date,person,stock,qtyRaw,priceRaw]=parts;
+      const qty=Number(qtyRaw); const price=Number(priceRaw);
+      if(!date||!person||!stock){rows.push({err:`Row ${i+1}: missing field`,raw:line});return;}
+      if(isNaN(qty)||qty===0){rows.push({err:`Row ${i+1}: invalid qty`,raw:line});return;}
+      if(isNaN(price)||price<=0){rows.push({err:`Row ${i+1}: invalid price`,raw:line});return;}
+      rows.push({date,person:person.toUpperCase(),stock:stock.toUpperCase(),qty,price,ok:true});
+    });
+    setPreview(rows);
+  };
+
+  const importCSV=async()=>{
+    if(!preview) return; setSaving(true);
+    for(const row of preview.filter(r=>r.ok)) await onAdd(row);
+    setPreview(null);setCsvText('');setCsvMode(false);setSaving(false);
+  };
+
+  // Only show valid transactions (filters out invalid-date ones)
+  const valid=transactions.filter(t=>isValidDate(t.date)&&t.stock&&t.person);
+  const filtered=valid.filter(t=>!search||t.person?.toLowerCase().includes(search.toLowerCase())||t.stock?.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  return (
+    <div className="page">
+      <div className="page-header"><div className="page-title">Transactions</div></div>
+
+      {!csvMode?(
+        <div className="card">
+          <div className="card-title">Add Transaction</div>
+          <div className="form-row">
+            <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
+            <div><label className="form-label">Person</label>
+              <select className="select-input" value={form.person} onChange={e=>set('person',e.target.value)}>
+                <option value="">Select...</option>{persons.map(p=><option key={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+            <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e=>set('stock',e.target.value)} placeholder="ADANI POWER"/></div>
+            <div><label className="form-label">Type</label>
+              <select className="select-input" value={form.type} onChange={e=>set('type',e.target.value)}>
+                <option value="BUY">BUY</option><option value="SELL">SELL</option>
+              </select>
+            </div>
+            <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e=>set('qty',e.target.value)} placeholder="100"/></div>
+            <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e=>set('price',e.target.value)} placeholder="250.00"/></div>
+          </div>
+          <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem'}}>
+            <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleAdd} disabled={saving}>{saving?'...':'+ ADD TRANSACTION'}</button>
+            <button className="btn-secondary" onClick={()=>setCsvMode(true)}>IMPORT CSV</button>
+          </div>
+        </div>
+      ):(
+        <div className="card">
+          <div className="card-title">Import Transactions via CSV</div>
+          <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:'.75rem',lineHeight:1.7}}>
+            Format: <strong>DATE, PERSON, STOCK NAME, QTY, PRICE</strong><br/>
+            Negative QTY = SELL &nbsp;|&nbsp; Date: DD/MM/YYYY or YYYY-MM-DD<br/>
+            Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100</code>
+          </div>
+          <textarea className="textarea-input" value={csvText} onChange={e=>setCsvText(e.target.value)} placeholder="Paste CSV rows here..."/>
+          <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem'}}>
+            <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={parseCSV}>PREVIEW</button>
+            <button className="btn-secondary" onClick={()=>{setCsvMode(false);setPreview(null);setCsvText('');}}>CANCEL</button>
+          </div>
+          {preview&&<>
+            <hr className="section-divider"/>
+            <div className="card-title">Preview — {preview.filter(r=>r.ok).length} valid, {preview.filter(r=>!r.ok).length} errors</div>
+            <div className="table-wrap">
+              <table className="preview-table">
+                <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
+                <tbody>{preview.map((r,i)=><tr key={i} className={r.ok?'preview-ok':'preview-err'}><td>{r.date||'—'}</td><td>{r.person||'—'}</td><td>{r.stock||r.raw}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok?'✓':r.err}</td></tr>)}</tbody>
+              </table>
+            </div>
+            {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={importCSV} disabled={saving}>{saving?'...':`IMPORT ${preview.filter(r=>r.ok).length} ROWS`}</button>}
+          </>}
+        </div>
+      )}
+
+      <div className="card">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.75rem',flexWrap:'wrap',gap:'.5rem'}}>
+          <div>
+            <span className="card-title" style={{margin:0}}>All Transactions ({filtered.length})</span>
+            <span style={{fontSize:11,color:'var(--text-muted)',marginLeft:'0.5rem'}}>— click row to edit</span>
+          </div>
+          <input className="form-input" style={{width:200,fontSize:12}} placeholder="Search person / stock..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th><th>Type</th></tr></thead>
+            <tbody>
+              {filtered.length===0&&<tr><td colSpan="7"><div className="empty">No transactions</div></td></tr>}
+              {filtered.map(tx=>(
+                <tr key={tx.id} className="clickable" onClick={()=>setEditTx(tx)}>
+                  <td>{fmtDate(tx.date)}</td>
+                  <td><span className="tag" style={{background:personColor(tx.person),color:'#1a1a1a'}}>{tx.person}</span></td>
+                  <td style={{fontWeight:700}}>{tx.stock}</td>
+                  <td className={tx.qty>0?'pos':'neg'}>{tx.qty>0?'+':''}{tx.qty}</td>
+                  <td>{fmt(tx.price)}</td>
+                  <td>{fmt(Math.abs(tx.qty)*tx.price)}</td>
+                  <td><span className={`tag ${tx.qty>0?'badge-green':'badge-red'}`}>{tx.qty>0?'BUY':'SELL'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {editTx&&<EditTxModal tx={editTx} persons={persons} onSave={onUpdate} onDelete={onDelete} onClose={()=>setEditTx(null)}/>}
+    </div>
+  );
+}
+
+// ── PORTFOLIO ─────────────────────────────────────────────
+function PortfolioTab({transactions,stockPrices}) {
+  const [filterPerson,setFilterPerson]=useState('All');
+  const [filterStock,setFilterStock]=useState('All');
+  const {holdings}=computeFIFO(transactions);
+  const rows=buildPortfolio(holdings,stockPrices);
+  const persons=['All',...new Set(rows.map(r=>r.person))];
+  const stocks=['All',...new Set(rows.map(r=>r.stock))];
+  const filtered=rows.filter(r=>(filterPerson==='All'||r.person===filterPerson)&&(filterStock==='All'||r.stock===filterStock));
+  return (
+    <div className="page">
+      <div className="page-header"><div className="page-title">Portfolio</div><div className="page-sub">Per person, per stock breakdown</div></div>
+      <div className="filter-bar">
+        <select value={filterPerson} onChange={e=>setFilterPerson(e.target.value)}>{persons.map(p=><option key={p}>{p}</option>)}</select>
+        <select value={filterStock} onChange={e=>setFilterStock(e.target.value)}>{stocks.map(s=><option key={s}>{s}</option>)}</select>
+        <span style={{fontSize:12,color:'var(--text-muted)'}}>{filtered.length} rows</span>
+      </div>
+      <div className="card" style={{padding:0}}>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Holdings</th></tr></thead>
+            <tbody>
+              {filtered.length===0&&<tr><td colSpan="10"><div className="empty">No data</div></td></tr>}
+              {filtered.map((r,i)=>(
+                <tr key={i}>
+                  <td><span className="tag" style={{background:personColor(r.person),color:'#1a1a1a'}}>{r.person}</span></td>
+                  <td style={{fontWeight:700}}>{r.stock}</td>
+                  <td>{r.totalQty}</td><td>{fmt(r.avgBuy)}</td><td>{fmt(r.investedVal)}</td>
+                  <td>{r.currentPrice?fmt(r.currentPrice):'—'}</td>
+                  <td>{r.currentVal?fmt(r.currentVal):'—'}</td>
+                  <td className={r.absGain!=null?(r.absGain>=0?'pos':'neg'):''}>{r.absGain!=null?fmt(r.absGain):'—'}</td>
+                  <td className={r.absGainPct!=null?(r.absGainPct>=0?'pos':'neg'):''}>{r.absGainPct!=null?fmtPct(r.absGainPct):'—'}</td>
+                  <td style={{fontSize:11,color:'var(--text-muted)',maxWidth:180}}>{r.breakup}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── STOCKS ────────────────────────────────────────────────
+function StocksTab({transactions,stockPrices}) {
+  const {holdings}=computeFIFO(transactions);
+  const stocks=buildStockSheet(holdings,stockPrices);
+  return (
+    <div className="page">
+      <div className="page-header"><div className="page-title">Stocks</div><div className="page-sub">All persons merged per stock</div></div>
+      <div className="card" style={{padding:0}}>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Stock</th><th>Total Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Persons</th></tr></thead>
+            <tbody>
+              {stocks.length===0&&<tr><td colSpan="9"><div className="empty">No data</div></td></tr>}
+              {stocks.map((s,i)=>(
+                <tr key={i}>
+                  <td style={{fontWeight:700}}>{s.stock}</td><td>{s.totalQty}</td><td>{fmt(s.avgBuy)}</td><td>{fmt(s.investedVal)}</td>
+                  <td>{s.currentPrice?fmt(s.currentPrice):'—'}</td><td>{s.currentVal?fmt(s.currentVal):'—'}</td>
+                  <td className={s.absGain!=null?(s.absGain>=0?'pos':'neg'):''}>{s.absGain!=null?fmt(s.absGain):'—'}</td>
+                  <td className={s.absGainPct!=null?(s.absGainPct>=0?'pos':'neg'):''}>{s.absGainPct!=null?fmtPct(s.absGainPct):'—'}</td>
+                  <td style={{fontSize:11}}>{Object.keys(s.persons).map(p=><span key={p} className="tag" style={{background:personColor(p),color:'#1a1a1a',marginRight:2}}>{p}</span>)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── FIFO RESULTS ──────────────────────────────────────────
+function FIFOTab({transactions}) {
+  const {sells}=computeFIFO(transactions);
+  const [filterPerson,setFilterPerson]=useState('All');
+  const persons=['All',...new Set(sells.map(r=>r.person))];
+  const filtered=sells.filter(r=>filterPerson==='All'||r.person===filterPerson);
+  const totalProfit=filtered.reduce((s,r)=>s+r.profit,0);
+  return (
+    <div className="page">
+      <div className="page-header"><div className="page-title">FIFO Results</div><div className="page-sub">Realized gains from completed trades</div></div>
+      <div className="filter-bar">
+        <select value={filterPerson} onChange={e=>setFilterPerson(e.target.value)}>{persons.map(p=><option key={p}>{p}</option>)}</select>
+        <span style={{fontSize:13,fontWeight:700,marginLeft:'auto'}}>Total Realized: <span className={totalProfit>=0?'pos':'neg'}>{fmt(totalProfit)}</span></span>
+      </div>
+      <div className="card" style={{padding:0}}>
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Person</th><th>Stock</th><th>Buy Date</th><th>Buy Price</th><th>Sell Date</th><th>Sell Price</th><th>Qty</th><th>Profit</th><th>CAGR %</th></tr></thead>
+            <tbody>
+              {filtered.length===0&&<tr><td colSpan="9"><div className="empty">No realized trades yet</div></td></tr>}
+              {filtered.map((r,i)=>(
+                <tr key={i}>
+                  <td><span className="tag" style={{background:personColor(r.person),color:'#1a1a1a'}}>{r.person}</span></td>
+                  <td style={{fontWeight:700}}>{r.stock}</td>
+                  <td>{fmtDate(r.buyDate)}</td><td>{fmt(r.buyPrice)}</td>
+                  <td>{fmtDate(r.sellDate)}</td><td>{fmt(r.sellPrice)}</td>
+                  <td>{r.qty}</td>
+                  <td className={r.profit>=0?'pos':'neg'}>{fmt(r.profit)}</td>
+                  <td className={r.cagr!=null?(r.cagr>=0?'pos':'neg'):''}>{r.cagr!=null?fmtPct(r.cagr):'—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── STOCK PRICES ──────────────────────────────────────────
+function StockPricesTab({stockPrices,onUpdatePrices}) {
+  const [csvText,setCsvText]=useState('');
+  const [preview,setPreview]=useState(null);
+  const [saving,setSaving]=useState(false);
+  const parse=()=>{
+    const lines=csvText.trim().split('\n').filter(Boolean); const rows=[];
+    lines.forEach((line,i)=>{
+      const parts=line.split(',').map(s=>s.trim());
+      if(parts.length<2){rows.push({err:`Row ${i+1}: need STOCK,PRICE`,raw:line});return;}
+      const [stock,priceRaw]=parts;
+      const price=parseFloat(priceRaw.replace(/[₹,]/g,''));
+      if(!stock){rows.push({err:`Row ${i+1}: missing stock`});return;}
+      if(isNaN(price)||price<=0){rows.push({err:`Row ${i+1}: invalid price`,raw:line});return;}
+      rows.push({stock:stock.toUpperCase(),price,ok:true});
+    });
+    setPreview(rows);
+  };
+  const doImport=async()=>{
+    if(!preview) return; setSaving(true);
+    const updates={};preview.filter(r=>r.ok).forEach(r=>{updates[r.stock]=r.price;});
+    await onUpdatePrices(updates);setPreview(null);setCsvText('');setSaving(false);
+  };
+  return (
+    <div className="page">
+      <div className="page-header"><div className="page-title">Stock Prices</div><div className="page-sub">Paste CSV to update current prices</div></div>
+      <div className="card">
+        <div className="card-title">Import Price CSV</div>
+        <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:'.75rem',lineHeight:1.7}}>
+          Format: <strong>STOCK NAME, CURRENT PRICE</strong><br/>
+          Example: <code>ADANI POWER, 181.94</code>
+        </div>
+        <textarea className="textarea-input" value={csvText} onChange={e=>setCsvText(e.target.value)} placeholder={"ADANI POWER, 181.94\nBHEL, 291.12\nBPCL, 292.15"}/>
+        <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem'}}>
+          <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={parse}>PREVIEW</button>
+          {preview&&<button className="btn-secondary" onClick={()=>setPreview(null)}>CLEAR</button>}
+        </div>
+        {preview&&<>
+          <hr className="section-divider"/>
+          <div className="card-title">Preview — {preview.filter(r=>r.ok).length} valid</div>
+          <div className="table-wrap">
+            <table className="preview-table">
+              <thead><tr><th>Stock</th><th>Price</th><th>Status</th></tr></thead>
+              <tbody>{preview.map((r,i)=><tr key={i} className={r.ok?'preview-ok':'preview-err'}><td>{r.stock||r.raw}</td><td>{r.ok?fmt(r.price):'—'}</td><td>{r.ok?'✓':r.err}</td></tr>)}</tbody>
+            </table>
+          </div>
+          {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={doImport} disabled={saving}>{saving?'...':`UPDATE ${preview.filter(r=>r.ok).length} PRICES`}</button>}
+        </>}
+      </div>
+      <div className="card">
+        <div className="card-title">Stored Prices ({Object.keys(stockPrices).length})</div>
+        {Object.keys(stockPrices).length===0?<div className="empty">No prices loaded yet</div>:(
+          <div className="table-wrap">
+            <table><thead><tr><th>Stock</th><th>Price</th></tr></thead>
+              <tbody>{Object.entries(stockPrices).map(([s,p])=><tr key={s}><td style={{fontWeight:700}}>{s}</td><td>{fmt(p)}</td></tr>)}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── EDIT PERSON MODAL ─────────────────────────────────────
+function EditPersonModal({person,onSave,onClose,onDelete}) {
+  const [name,setName]=useState(person.name||'');
+  const [saving,setSaving]=useState(false);
+  const handleSave=async()=>{
+    if(!name.trim()) return; setSaving(true);
+    await onSave(person.id,{name:name.toUpperCase().trim()});
+    setSaving(false);onClose();
+  };
+  const handleDelete=async()=>{
+    if(!confirm(`Delete person "${person.name}"?\nThis won't delete their transactions.`)) return;
+    await onDelete(person.id);onClose();
+  };
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">Edit Person <button className="modal-close" onClick={onClose}>✕</button></div>
+        <div className="form-group"><label className="form-label">Name</label><input className="form-input" type="text" value={name} onChange={e=>setName(e.target.value)} autoFocus onKeyDown={e=>e.key==='Enter'&&handleSave()}/></div>
+        <div className="modal-actions">
+          <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleSave} disabled={saving}>{saving?'...':'SAVE'}</button>
+          <button className="btn-secondary" onClick={onClose}>CANCEL</button>
+          <button className="btn-sm-danger" style={{marginLeft:'auto'}} onClick={handleDelete}>DELETE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PERSONS TAB ───────────────────────────────────────────
+function PersonsTab({persons,onAdd,onUpdate,onDelete}) {
+  const [newName,setNewName]=useState('');
+  const [saving,setSaving]=useState(false);
+  const [editPerson,setEditPerson]=useState(null);
+  const handleAdd=async()=>{
+    if(!newName.trim()) return; setSaving(true);
+    await onAdd({name:newName.toUpperCase().trim()});
+    setNewName('');setSaving(false);
+  };
+  return (
+    <div className="page">
+      <div className="page-header"><div className="page-title">Persons</div><div className="page-sub">Manage investor profiles — click a row to edit</div></div>
+      <div className="card">
+        <div className="card-title">Add Person</div>
+        <div style={{display:'flex',gap:'.5rem',alignItems:'flex-end'}}>
+          <div style={{flex:1}}><label className="form-label">Name</label><input className="form-input" type="text" value={newName} onChange={e=>setNewName(e.target.value)} placeholder="E.g. NILESH" onKeyDown={e=>e.key==='Enter'&&handleAdd()}/></div>
+          <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.25rem',flexShrink:0}} onClick={handleAdd} disabled={saving}>{saving?'...':'+ ADD'}</button>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-title">All Persons ({persons.length})</div>
+        {persons.length===0?<div className="empty">No persons added yet. Add one above, or they'll auto-appear from transactions.</div>:(
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Tag Preview</th><th></th></tr></thead>
+              <tbody>
+                {persons.map(p=>(
+                  <tr key={p.id} className="clickable" onClick={()=>setEditPerson(p)}>
+                    <td style={{fontWeight:700}}>{p.name}</td>
+                    <td><span className="tag" style={{background:personColor(p.name),color:'#1a1a1a'}}>{p.name}</span></td>
+                    <td><button className="btn-sm" onClick={e=>{e.stopPropagation();setEditPerson(p);}}>EDIT</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      {editPerson&&<EditPersonModal person={editPerson} onSave={onUpdate} onDelete={onDelete} onClose={()=>setEditPerson(null)}/>}
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────
+function App() {
+  const [user,setUser]=useState(undefined);
+  const [tab,setTab]=useState('dashboard');
+  const [transactions,setTransactions]=useState([]);
+  const [persons,setPersons]=useState([]);
+  const [stockPrices,setStockPrices]=useState({});
+  const [sidebarOpen,setSidebarOpen]=useState(false);
+  const [loading,setLoading]=useState(true);
+
+  // Touch swipe for mobile sidebar
+  const touchStartX=useRef(null);
+  useEffect(()=>{
+    const onTS=e=>{touchStartX.current=e.touches[0].clientX;};
+    const onTE=e=>{
+      if(touchStartX.current===null) return;
+      const dx=e.changedTouches[0].clientX-touchStartX.current;
+      if(dx>60&&touchStartX.current<40) setSidebarOpen(true);
+      if(dx<-60) setSidebarOpen(false);
+      touchStartX.current=null;
+    };
+    document.addEventListener('touchstart',onTS);
+    document.addEventListener('touchend',onTE);
+    return()=>{document.removeEventListener('touchstart',onTS);document.removeEventListener('touchend',onTE);};
+  },[]);
+
+  useEffect(()=>{return auth.onAuthStateChanged(u=>setUser(u||null));},[]);
+
+  useEffect(()=>{
+    if(!user){setLoading(false);return;}
+    const uid=user.uid; setLoading(true);
+    const t1=db.collection(`users/${uid}/transactions`).onSnapshot(snap=>{setTransactions(snap.docs.map(d=>({id:d.id,...d.data()})));setLoading(false);},()=>setLoading(false));
+    const t2=db.collection(`users/${uid}/persons`).onSnapshot(snap=>{setPersons(snap.docs.map(d=>({id:d.id,...d.data()})));},()=>{});
+    const t3=db.collection(`users/${uid}/meta`).doc('stockPrices').onSnapshot(snap=>{if(snap.exists)setStockPrices(snap.data().prices||{});},()=>{});
+    return()=>{t1();t2();t3();};
+  },[user]);
+
+  const uid=user?.uid;
+  const addTx=async tx=>{await db.collection(`users/${uid}/transactions`).add({...tx,createdAt:new Date().toISOString()});};
+  const updateTx=async(id,data)=>{await db.collection(`users/${uid}/transactions`).doc(id).update(data);};
+  const deleteTx=async id=>{await db.collection(`users/${uid}/transactions`).doc(id).delete();};
+  const addPerson=async p=>{await db.collection(`users/${uid}/persons`).add(p);};
+  const updatePerson=async(id,data)=>{await db.collection(`users/${uid}/persons`).doc(id).update(data);};
+  const deletePerson=async id=>{await db.collection(`users/${uid}/persons`).doc(id).delete();};
+  const updatePrices=async updates=>{const merged={...stockPrices,...updates};await db.collection(`users/${uid}/meta`).doc('stockPrices').set({prices:merged});};
+
+  if(user===undefined) return <div className="spinner">Loading...</div>;
+  if(!user) return <AuthPage/>;
+
+  // Persons list: managed list first; fall back to inferring from transactions
+  const personList=persons.length>0
+    ? persons
+    : [...new Set(transactions.filter(t=>t.person).map(t=>t.person))].map(n=>({id:n,name:n}));
+
+  const navItems=[
+    {key:'dashboard',label:'Dashboard',icon:'▦'},
+    {key:'transactions',label:'Transactions',icon:'↕'},
+    {key:'portfolio',label:'Portfolio',icon:'◈'},
+    {key:'stocks',label:'Stocks',icon:'◉'},
+    {key:'fifo',label:'FIFO Results',icon:'⟳'},
+    {key:'prices',label:'Stock Prices',icon:'⬆'},
+    {key:'persons',label:'Persons',icon:'◎'},
+  ];
+  const goTo=k=>{setTab(k);setSidebarOpen(false);};
+
+  return (
+    <div className="app">
+      <button className="menu-toggle" onClick={()=>setSidebarOpen(o=>!o)}>☰</button>
+      <div className={`sidebar-overlay${sidebarOpen?' open':''}`} onClick={()=>setSidebarOpen(false)}/>
+      <nav className={`sidebar${sidebarOpen?' open':''}`}>
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-sub">Investment</div>
+          <div className="sidebar-brand-name">Tracker</div>
+        </div>
+        <div className="sidebar-nav">
+          {navItems.map(item=>(
+            <button key={item.key} className={`sidebar-item${tab===item.key?' active':''}`} onClick={()=>goTo(item.key)}>
+              <span className="sidebar-icon">{item.icon}</span>{item.label}
             </button>
-          </div>
+          ))}
         </div>
-      );
-    }
-
-    // ── EDIT TX MODAL ─────────────────────────────────────────
-    function EditTxModal({ tx, persons, onSave, onDelete, onClose }) {
-      const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: Math.abs(tx.qty) || '', price: tx.price || '', type: tx.qty < 0 ? 'SELL' : 'BUY' });
-      const [saving, setSaving] = useState(false);
-      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-      const handleSave = async () => {
-        if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
-        setSaving(true);
-        const qty = form.type === 'SELL' ? -Math.abs(Number(form.qty)) : Math.abs(Number(form.qty));
-        await onSave(tx.id, { date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price) });
-        setSaving(false); onClose();
-      };
-      const handleDelete = async () => { if (!confirm('Delete this transaction?')) return; await onDelete(tx.id); onClose(); };
-      return (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-          <div className="modal">
-            <div className="modal-title">Edit Transaction <button className="modal-close" onClick={onClose}>✕</button></div>
-            <div className="form-row">
-              <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
-              <div><label className="form-label">Person</label>
-                <select className="select-input" value={form.person} onChange={e => set('person', e.target.value)}>
-                  <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
-              <div><label className="form-label">Type</label>
-                <select className="select-input" value={form.type} onChange={e => set('type', e.target.value)}>
-                  <option value="BUY">BUY</option><option value="SELL">SELL</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
-              <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} /></div>
-            </div>
-            <div className="modal-actions">
-              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleSave} disabled={saving}>{saving ? '...' : 'SAVE CHANGES'}</button>
-              <button className="btn-secondary" onClick={onClose}>CANCEL</button>
-              <button className="btn-sm-danger" style={{ marginLeft: 'auto' }} onClick={handleDelete}>DELETE</button>
-            </div>
-          </div>
+        <div className="sidebar-footer">
+          <div className="sidebar-user">{user.displayName||user.email}</div>
+          <button className="btn-logout" onClick={()=>auth.signOut()}>LOGOUT</button>
         </div>
-      );
-    }
+      </nav>
+      <main className="main">
+        {loading?<div className="spinner">Loading data...</div>:(
+          <>
+            {tab==='dashboard'&&<DashboardTab transactions={transactions} stockPrices={stockPrices}/>}
+            {tab==='transactions'&&<TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onUpdate={updateTx} onDelete={deleteTx}/>}
+            {tab==='portfolio'&&<PortfolioTab transactions={transactions} stockPrices={stockPrices}/>}
+            {tab==='stocks'&&<StocksTab transactions={transactions} stockPrices={stockPrices}/>}
+            {tab==='fifo'&&<FIFOTab transactions={transactions}/>}
+            {tab==='prices'&&<StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices}/>}
+            {tab==='persons'&&<PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson}/>}
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
 
-    // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices }) {
-      const { sells, holdings } = computeFIFO(transactions);
-      const portfolio = buildPortfolio(holdings, stockPrices);
-      const totalInvested = portfolio.reduce((s, r) => s + r.investedVal, 0);
-      const totalCurrent = portfolio.reduce((s, r) => s + (r.currentVal || r.investedVal), 0);
-      const totalGain = totalCurrent - totalInvested;
-      const gainPct = totalInvested > 0 ? (totalGain / totalInvested) * 100 : 0;
-      const stockRows = buildStockSheet(holdings, stockPrices);
-      const withGain = [...stockRows].filter(s => s.absGain != null);
-      const topGainer = [...withGain].sort((a, b) => b.absGain - a.absGain)[0];
-      const topLoser = [...withGain].sort((a, b) => a.absGain - b.absGain)[0];
-
-      // Person bar chart data
-      const byPerson = {};
-      portfolio.forEach(r => {
-        if (!byPerson[r.person]) byPerson[r.person] = { invested: 0, current: 0 };
-        byPerson[r.person].invested += r.investedVal;
-        byPerson[r.person].current += r.currentVal || r.investedVal;
-      });
-      const pLabels = Object.keys(byPerson);
-      const barDatasets = [
-        { label: 'Current Value', data: pLabels.map(p => byPerson[p].current), backgroundColor: '#87BFDB', borderWidth: 0 },
-        { label: 'Invested Value', data: pLabels.map(p => byPerson[p].invested), backgroundColor: '#2B5F7A', borderWidth: 0 }
-      ];
-
-      // Stock pie chart data
-      const byStock = {};
-      portfolio.forEach(r => {
-        if (!byStock[r.stock]) byStock[r.stock] = 0;
-        byStock[r.stock] += r.currentVal || r.investedVal;
-      });
-      const stockEntries = Object.entries(byStock).sort((a, b) => b[1] - a[1]);
-      const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac', '#54a0e8', '#f87171', '#34d399', '#a78bfa', '#fb923c'];
-      const pieLabels = stockEntries.map(([s]) => s);
-      const pieData = stockEntries.map(([, v]) => v);
-      const pieColors = stockEntries.map((_, i) => PIE_COLORS[i % PIE_COLORS.length]);
-
-      return (
-        <div className="page">
-          <div className="page-header">
-            <div className="page-title">Dashboard</div>
-            <div className="page-sub">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
-          </div>
-          <div className="stats-grid">
-            <div className="stat-card"><div className="stat-label">Invested Value</div><div className="stat-val">{fmt(totalInvested)}</div></div>
-            <div className="stat-card"><div className="stat-label">Current Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
-            <div className="stat-card"><div className="stat-label">Unrealized Gain ₹</div><div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div></div>
-            <div className="stat-card"><div className="stat-label">Unrealized Gain %</div><div className={`stat-val ${gainPct >= 0 ? 'pos' : 'neg'}`}>{fmtPct(gainPct)}</div></div>
-            <div className="stat-card"><div className="stat-label">Net Realized</div><div className="stat-val">{fmt(sells.reduce((s, r) => s + r.profit, 0))}</div></div>
-          </div>
-
-          <div className="cards-row">
-            {topGainer && <div className="top-gainer-card"><div className="card-title">Top Gainer</div><div style={{ fontWeight: 700 }}>{topGainer.stock}</div><div className="pos" style={{ fontSize: 20 }}>{fmt(topGainer.absGain)}</div></div>}
-            {topLoser && topLoser.stock !== (topGainer?.stock) && <div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{ fontWeight: 700 }}>{topLoser.stock}</div><div className="neg" style={{ fontSize: 20 }}>{fmt(topLoser.absGain)}</div></div>}
-          </div>
-
-          {pLabels.length > 0 && (
-            <div className="charts-row">
-              <div className="chart-card">
-                <div className="card-title">Current vs Invested Value by Person</div>
-                <div className="chart-wrap"><BarChart labels={pLabels} datasets={barDatasets} /></div>
-              </div>
-              <div className="chart-card">
-                <div className="card-title">Portfolio by Stock</div>
-                <div className="chart-wrap"><PieChart labels={pieLabels} data={pieData} colors={pieColors} /></div>
-              </div>
-            </div>
-          )}
-
-          <div className="card">
-            <div className="card-title">Portfolio by Person</div>
-            <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-              {Object.entries(byPerson).map(([p, v]) => (
-                <div key={p} style={{ background: personColor(p), padding: '.5rem .9rem', fontSize: 13 }}>
-                  <span style={{ fontWeight: 700 }}>{p}</span><br />
-                  <span style={{ fontSize: 12 }}>{fmt(v.current)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, onAdd, onUpdate, onDelete }) {
-      const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', type: 'BUY' });
-      const [csvMode, setCsvMode] = useState(false);
-      const [csvText, setCsvText] = useState('');
-      const [preview, setPreview] = useState(null);
-      const [saving, setSaving] = useState(false);
-      const [search, setSearch] = useState('');
-      const [editTx, setEditTx] = useState(null);
-      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-      const handleAdd = async () => {
-        if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
-        setSaving(true);
-        const qty = form.type === 'SELL' ? -Math.abs(Number(form.qty)) : Math.abs(Number(form.qty));
-        await onAdd({ date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price) });
-        setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '', type: 'BUY' });
-        setSaving(false);
-      };
-
-      const parseCSV = () => {
-        const lines = csvText.trim().split('\n').filter(Boolean);
-        const rows = [];
-        lines.forEach((line, i) => {
-          const parts = line.split(',').map(s => s.trim());
-          if (parts.length < 5) { rows.push({ err: `Row ${i + 1}: need 5 cols`, raw: line }); return; }
-          const [date, person, stock, qtyRaw, priceRaw] = parts;
-          const qty = Number(qtyRaw); const price = Number(priceRaw);
-          if (!date || !person || !stock) { rows.push({ err: `Row ${i + 1}: missing field`, raw: line }); return; }
-          if (isNaN(qty) || qty === 0) { rows.push({ err: `Row ${i + 1}: invalid qty`, raw: line }); return; }
-          if (isNaN(price) || price <= 0) { rows.push({ err: `Row ${i + 1}: invalid price`, raw: line }); return; }
-          rows.push({ date, person: person.toUpperCase(), stock: stock.toUpperCase(), qty, price, ok: true });
-        });
-        setPreview(rows);
-      };
-
-      const importCSV = async () => {
-        if (!preview) return; setSaving(true);
-        for (const row of preview.filter(r => r.ok)) await onAdd(row);
-        setPreview(null); setCsvText(''); setCsvMode(false); setSaving(false);
-      };
-
-      // Only show valid transactions (filters out invalid-date ones)
-      const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person);
-      const filtered = valid.filter(t => !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase())).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      return (
-        <div className="page">
-          <div className="page-header"><div className="page-title">Transactions</div></div>
-
-          {!csvMode ? (
-            <div className="card">
-              <div className="card-title">Add Transaction</div>
-              <div className="form-row">
-                <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
-                <div><label className="form-label">Person</label>
-                  <select className="select-input" value={form.person} onChange={e => set('person', e.target.value)}>
-                    <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" /></div>
-                <div><label className="form-label">Type</label>
-                  <select className="select-input" value={form.type} onChange={e => set('type', e.target.value)}>
-                    <option value="BUY">BUY</option><option value="SELL">SELL</option>
-                  </select>
-                </div>
-                <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" /></div>
-                <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" /></div>
-              </div>
-              <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem' }}>
-                <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
-                <button className="btn-secondary" onClick={() => setCsvMode(true)}>IMPORT CSV</button>
-              </div>
-            </div>
-          ) : (
-            <div className="card">
-              <div className="card-title">Import Transactions via CSV</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '.75rem', lineHeight: 1.7 }}>
-                Format: <strong>DATE, PERSON, STOCK NAME, QTY, PRICE</strong><br />
-                Negative QTY = SELL &nbsp;|&nbsp; Date: DD/MM/YYYY or YYYY-MM-DD<br />
-                Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100</code>
-              </div>
-              <textarea className="textarea-input" value={csvText} onChange={e => setCsvText(e.target.value)} placeholder="Paste CSV rows here..." />
-              <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem' }}>
-                <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={parseCSV}>PREVIEW</button>
-                <button className="btn-secondary" onClick={() => { setCsvMode(false); setPreview(null); setCsvText(''); }}>CANCEL</button>
-              </div>
-              {preview && <>
-                <hr className="section-divider" />
-                <div className="card-title">Preview — {preview.filter(r => r.ok).length} valid, {preview.filter(r => !r.ok).length} errors</div>
-                <div className="table-wrap">
-                  <table className="preview-table">
-                    <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
-                    <tbody>{preview.map((r, i) => <tr key={i} className={r.ok ? 'preview-ok' : 'preview-err'}><td>{r.date || '—'}</td><td>{r.person || '—'}</td><td>{r.stock || r.raw}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok ? '✓' : r.err}</td></tr>)}</tbody>
-                  </table>
-                </div>
-                {preview.some(r => r.ok) && <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem', marginTop: '.75rem' }} onClick={importCSV} disabled={saving}>{saving ? '...' : `IMPORT ${preview.filter(r => r.ok).length} ROWS`}</button>}
-              </>}
-            </div>
-          )}
-
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
-              <div>
-                <span className="card-title" style={{ margin: 0 }}>All Transactions ({filtered.length})</span>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: '0.5rem' }}>— click row to edit</span>
-              </div>
-              <input className="form-input" style={{ width: 200, fontSize: 12 }} placeholder="Search person / stock..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th><th>Type</th></tr></thead>
-                <tbody>
-                  {filtered.length === 0 && <tr><td colSpan="7"><div className="empty">No transactions</div></td></tr>}
-                  {filtered.map(tx => (
-                    <tr key={tx.id} className="clickable" onClick={() => setEditTx(tx)}>
-                      <td>{fmtDate(tx.date)}</td>
-                      <td><span className="tag" style={{ background: personColor(tx.person), color: '#1a1a1a' }}>{tx.person}</span></td>
-                      <td style={{ fontWeight: 700 }}>{tx.stock}</td>
-                      <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
-                      <td>{fmt(tx.price)}</td>
-                      <td>{fmt(Math.abs(tx.qty) * tx.price)}</td>
-                      <td><span className={`tag ${tx.qty > 0 ? 'badge-green' : 'badge-red'}`}>{tx.qty > 0 ? 'BUY' : 'SELL'}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {editTx && <EditTxModal tx={editTx} persons={persons} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} />}
-        </div>
-      );
-    }
-
-    // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices }) {
-      const [filterPerson, setFilterPerson] = useState('All');
-      const [filterStock, setFilterStock] = useState('All');
-      const { holdings } = computeFIFO(transactions);
-      const rows = buildPortfolio(holdings, stockPrices);
-      const persons = ['All', ...new Set(rows.map(r => r.person))];
-      const stocks = ['All', ...new Set(rows.map(r => r.stock))];
-      const filtered = rows.filter(r => (filterPerson === 'All' || r.person === filterPerson) && (filterStock === 'All' || r.stock === filterStock));
-      return (
-        <div className="page">
-          <div className="page-header"><div className="page-title">Portfolio</div><div className="page-sub">Per person, per stock breakdown</div></div>
-          <div className="filter-bar">
-            <select value={filterPerson} onChange={e => setFilterPerson(e.target.value)}>{persons.map(p => <option key={p}>{p}</option>)}</select>
-            <select value={filterStock} onChange={e => setFilterStock(e.target.value)}>{stocks.map(s => <option key={s}>{s}</option>)}</select>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{filtered.length} rows</span>
-          </div>
-          <div className="card" style={{ padding: 0 }}>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Holdings</th></tr></thead>
-                <tbody>
-                  {filtered.length === 0 && <tr><td colSpan="10"><div className="empty">No data</div></td></tr>}
-                  {filtered.map((r, i) => (
-                    <tr key={i}>
-                      <td><span className="tag" style={{ background: personColor(r.person), color: '#1a1a1a' }}>{r.person}</span></td>
-                      <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                      <td>{r.totalQty}</td><td>{fmt(r.avgBuy)}</td><td>{fmt(r.investedVal)}</td>
-                      <td>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
-                      <td className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
-                      <td className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
-                      <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 180 }}>{r.breakup}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ── STOCKS ────────────────────────────────────────────────
-    function StocksTab({ transactions, stockPrices }) {
-      const { holdings } = computeFIFO(transactions);
-      const stocks = buildStockSheet(holdings, stockPrices);
-      return (
-        <div className="page">
-          <div className="page-header"><div className="page-title">Stocks</div><div className="page-sub">All persons merged per stock</div></div>
-          <div className="card" style={{ padding: 0 }}>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Stock</th><th>Total Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Persons</th></tr></thead>
-                <tbody>
-                  {stocks.length === 0 && <tr><td colSpan="9"><div className="empty">No data</div></td></tr>}
-                  {stocks.map((s, i) => (
-                    <tr key={i}>
-                      <td style={{ fontWeight: 700 }}>{s.stock}</td><td>{s.totalQty}</td><td>{fmt(s.avgBuy)}</td><td>{fmt(s.investedVal)}</td>
-                      <td>{s.currentPrice ? fmt(s.currentPrice) : '—'}</td><td>{s.currentVal ? fmt(s.currentVal) : '—'}</td>
-                      <td className={s.absGain != null ? (s.absGain >= 0 ? 'pos' : 'neg') : ''}>{s.absGain != null ? fmt(s.absGain) : '—'}</td>
-                      <td className={s.absGainPct != null ? (s.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{s.absGainPct != null ? fmtPct(s.absGainPct) : '—'}</td>
-                      <td style={{ fontSize: 11 }}>{Object.keys(s.persons).map(p => <span key={p} className="tag" style={{ background: personColor(p), color: '#1a1a1a', marginRight: 2 }}>{p}</span>)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ── FIFO RESULTS ──────────────────────────────────────────
-    function FIFOTab({ transactions }) {
-      const { sells } = computeFIFO(transactions);
-      const [filterPerson, setFilterPerson] = useState('All');
-      const persons = ['All', ...new Set(sells.map(r => r.person))];
-      const filtered = sells.filter(r => filterPerson === 'All' || r.person === filterPerson);
-      const totalProfit = filtered.reduce((s, r) => s + r.profit, 0);
-      return (
-        <div className="page">
-          <div className="page-header"><div className="page-title">FIFO Results</div><div className="page-sub">Realized gains from completed trades</div></div>
-          <div className="filter-bar">
-            <select value={filterPerson} onChange={e => setFilterPerson(e.target.value)}>{persons.map(p => <option key={p}>{p}</option>)}</select>
-            <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 'auto' }}>Total Realized: <span className={totalProfit >= 0 ? 'pos' : 'neg'}>{fmt(totalProfit)}</span></span>
-          </div>
-          <div className="card" style={{ padding: 0 }}>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Buy Date</th><th>Buy Price</th><th>Sell Date</th><th>Sell Price</th><th>Qty</th><th>Profit</th><th>CAGR %</th></tr></thead>
-                <tbody>
-                  {filtered.length === 0 && <tr><td colSpan="9"><div className="empty">No realized trades yet</div></td></tr>}
-                  {filtered.map((r, i) => (
-                    <tr key={i}>
-                      <td><span className="tag" style={{ background: personColor(r.person), color: '#1a1a1a' }}>{r.person}</span></td>
-                      <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                      <td>{fmtDate(r.buyDate)}</td><td>{fmt(r.buyPrice)}</td>
-                      <td>{fmtDate(r.sellDate)}</td><td>{fmt(r.sellPrice)}</td>
-                      <td>{r.qty}</td>
-                      <td className={r.profit >= 0 ? 'pos' : 'neg'}>{fmt(r.profit)}</td>
-                      <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ── STOCK PRICES ──────────────────────────────────────────
-    function StockPricesTab({ stockPrices, onUpdatePrices }) {
-      const [csvText, setCsvText] = useState('');
-      const [preview, setPreview] = useState(null);
-      const [saving, setSaving] = useState(false);
-      const parse = () => {
-        const lines = csvText.trim().split('\n').filter(Boolean); const rows = [];
-        lines.forEach((line, i) => {
-          const parts = line.split(',').map(s => s.trim());
-          if (parts.length < 2) { rows.push({ err: `Row ${i + 1}: need STOCK,PRICE`, raw: line }); return; }
-          const [stock, priceRaw] = parts;
-          const price = parseFloat(priceRaw.replace(/[₹,]/g, ''));
-          if (!stock) { rows.push({ err: `Row ${i + 1}: missing stock` }); return; }
-          if (isNaN(price) || price <= 0) { rows.push({ err: `Row ${i + 1}: invalid price`, raw: line }); return; }
-          rows.push({ stock: stock.toUpperCase(), price, ok: true });
-        });
-        setPreview(rows);
-      };
-      const doImport = async () => {
-        if (!preview) return; setSaving(true);
-        const updates = {}; preview.filter(r => r.ok).forEach(r => { updates[r.stock] = r.price; });
-        await onUpdatePrices(updates); setPreview(null); setCsvText(''); setSaving(false);
-      };
-      return (
-        <div className="page">
-          <div className="page-header"><div className="page-title">Stock Prices</div><div className="page-sub">Paste CSV to update current prices</div></div>
-          <div className="card">
-            <div className="card-title">Import Price CSV</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '.75rem', lineHeight: 1.7 }}>
-              Format: <strong>STOCK NAME, CURRENT PRICE</strong><br />
-              Example: <code>ADANI POWER, 181.94</code>
-            </div>
-            <textarea className="textarea-input" value={csvText} onChange={e => setCsvText(e.target.value)} placeholder={"ADANI POWER, 181.94\nBHEL, 291.12\nBPCL, 292.15"} />
-            <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem' }}>
-              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={parse}>PREVIEW</button>
-              {preview && <button className="btn-secondary" onClick={() => setPreview(null)}>CLEAR</button>}
-            </div>
-            {preview && <>
-              <hr className="section-divider" />
-              <div className="card-title">Preview — {preview.filter(r => r.ok).length} valid</div>
-              <div className="table-wrap">
-                <table className="preview-table">
-                  <thead><tr><th>Stock</th><th>Price</th><th>Status</th></tr></thead>
-                  <tbody>{preview.map((r, i) => <tr key={i} className={r.ok ? 'preview-ok' : 'preview-err'}><td>{r.stock || r.raw}</td><td>{r.ok ? fmt(r.price) : '—'}</td><td>{r.ok ? '✓' : r.err}</td></tr>)}</tbody>
-                </table>
-              </div>
-              {preview.some(r => r.ok) && <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem', marginTop: '.75rem' }} onClick={doImport} disabled={saving}>{saving ? '...' : `UPDATE ${preview.filter(r => r.ok).length} PRICES`}</button>}
-            </>}
-          </div>
-          <div className="card">
-            <div className="card-title">Stored Prices ({Object.keys(stockPrices).length})</div>
-            {Object.keys(stockPrices).length === 0 ? <div className="empty">No prices loaded yet</div> : (
-              <div className="table-wrap">
-                <table><thead><tr><th>Stock</th><th>Price</th></tr></thead>
-                  <tbody>{Object.entries(stockPrices).map(([s, p]) => <tr key={s}><td style={{ fontWeight: 700 }}>{s}</td><td>{fmt(p)}</td></tr>)}</tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // ── EDIT PERSON MODAL ─────────────────────────────────────
-    function EditPersonModal({ person, onSave, onClose, onDelete }) {
-      const [name, setName] = useState(person.name || '');
-      const [saving, setSaving] = useState(false);
-      const handleSave = async () => {
-        if (!name.trim()) return; setSaving(true);
-        await onSave(person.id, { name: name.toUpperCase().trim() });
-        setSaving(false); onClose();
-      };
-      const handleDelete = async () => {
-        if (!confirm(`Delete person "${person.name}"?\nThis won't delete their transactions.`)) return;
-        await onDelete(person.id); onClose();
-      };
-      return (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-          <div className="modal">
-            <div className="modal-title">Edit Person <button className="modal-close" onClick={onClose}>✕</button></div>
-            <div className="form-group"><label className="form-label">Name</label><input className="form-input" type="text" value={name} onChange={e => setName(e.target.value)} autoFocus onKeyDown={e => e.key === 'Enter' && handleSave()} /></div>
-            <div className="modal-actions">
-              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleSave} disabled={saving}>{saving ? '...' : 'SAVE'}</button>
-              <button className="btn-secondary" onClick={onClose}>CANCEL</button>
-              <button className="btn-sm-danger" style={{ marginLeft: 'auto' }} onClick={handleDelete}>DELETE</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ── PERSONS TAB ───────────────────────────────────────────
-    function PersonsTab({ persons, onAdd, onUpdate, onDelete }) {
-      const [newName, setNewName] = useState('');
-      const [saving, setSaving] = useState(false);
-      const [editPerson, setEditPerson] = useState(null);
-      const handleAdd = async () => {
-        if (!newName.trim()) return; setSaving(true);
-        await onAdd({ name: newName.toUpperCase().trim() });
-        setNewName(''); setSaving(false);
-      };
-      return (
-        <div className="page">
-          <div className="page-header"><div className="page-title">Persons</div><div className="page-sub">Manage investor profiles — click a row to edit</div></div>
-          <div className="card">
-            <div className="card-title">Add Person</div>
-            <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}><label className="form-label">Name</label><input className="form-input" type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="E.g. NILESH" onKeyDown={e => e.key === 'Enter' && handleAdd()} /></div>
-              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.25rem', flexShrink: 0 }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD'}</button>
-            </div>
-          </div>
-          <div className="card">
-            <div className="card-title">All Persons ({persons.length})</div>
-            {persons.length === 0 ? <div className="empty">No persons added yet. Add one above, or they'll auto-appear from transactions.</div> : (
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Name</th><th>Tag Preview</th><th></th></tr></thead>
-                  <tbody>
-                    {persons.map(p => (
-                      <tr key={p.id} className="clickable" onClick={() => setEditPerson(p)}>
-                        <td style={{ fontWeight: 700 }}>{p.name}</td>
-                        <td><span className="tag" style={{ background: personColor(p.name), color: '#1a1a1a' }}>{p.name}</span></td>
-                        <td><button className="btn-sm" onClick={e => { e.stopPropagation(); setEditPerson(p); }}>EDIT</button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-          {editPerson && <EditPersonModal person={editPerson} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditPerson(null)} />}
-        </div>
-      );
-    }
-
-    // ── MAIN APP ──────────────────────────────────────────────
-    function App() {
-      const [user, setUser] = useState(undefined);
-      const [tab, setTab] = useState('dashboard');
-      const [transactions, setTransactions] = useState([]);
-      const [persons, setPersons] = useState([]);
-      const [stockPrices, setStockPrices] = useState({});
-      const [sidebarOpen, setSidebarOpen] = useState(false);
-      const [loading, setLoading] = useState(true);
-
-      // Touch swipe for mobile sidebar
-      const touchStartX = useRef(null);
-      useEffect(() => {
-        const onTS = e => { touchStartX.current = e.touches[0].clientX; };
-        const onTE = e => {
-          if (touchStartX.current === null) return;
-          const dx = e.changedTouches[0].clientX - touchStartX.current;
-          if (dx > 60 && touchStartX.current < 40) setSidebarOpen(true);
-          if (dx < -60) setSidebarOpen(false);
-          touchStartX.current = null;
-        };
-        document.addEventListener('touchstart', onTS);
-        document.addEventListener('touchend', onTE);
-        return () => { document.removeEventListener('touchstart', onTS); document.removeEventListener('touchend', onTE); };
-      }, []);
-
-      useEffect(() => { return auth.onAuthStateChanged(u => setUser(u || null)); }, []);
-
-      useEffect(() => {
-        if (!user) { setLoading(false); return; }
-        const uid = user.uid; setLoading(true);
-        const t1 = db.collection(`users/${uid}/transactions`).onSnapshot(snap => { setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false));
-        const t2 = db.collection(`users/${uid}/persons`).onSnapshot(snap => { setPersons(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
-        const t3 = db.collection(`users/${uid}/meta`).doc('stockPrices').onSnapshot(snap => { if (snap.exists) setStockPrices(snap.data().prices || {}); }, () => { });
-        return () => { t1(); t2(); t3(); };
-      }, [user]);
-
-      const uid = user?.uid;
-      const addTx = async tx => { await db.collection(`users/${uid}/transactions`).add({ ...tx, createdAt: new Date().toISOString() }); };
-      const updateTx = async (id, data) => { await db.collection(`users/${uid}/transactions`).doc(id).update(data); };
-      const deleteTx = async id => { await db.collection(`users/${uid}/transactions`).doc(id).delete(); };
-      const addPerson = async p => { await db.collection(`users/${uid}/persons`).add(p); };
-      const updatePerson = async (id, data) => { await db.collection(`users/${uid}/persons`).doc(id).update(data); };
-      const deletePerson = async id => { await db.collection(`users/${uid}/persons`).doc(id).delete(); };
-      const updatePrices = async updates => { const merged = { ...stockPrices, ...updates }; await db.collection(`users/${uid}/meta`).doc('stockPrices').set({ prices: merged }); };
-
-      if (user === undefined) return <div className="spinner">Loading...</div>;
-      if (!user) return <AuthPage />;
-
-      // Persons list: managed list first; fall back to inferring from transactions
-      const personList = persons.length > 0
-        ? persons
-        : [...new Set(transactions.filter(t => t.person).map(t => t.person))].map(n => ({ id: n, name: n }));
-
-      const navItems = [
-        { key: 'dashboard', label: 'Dashboard', icon: '▦' },
-        { key: 'transactions', label: 'Transactions', icon: '↕' },
-        { key: 'portfolio', label: 'Portfolio', icon: '◈' },
-        { key: 'stocks', label: 'Stocks', icon: '◉' },
-        { key: 'fifo', label: 'FIFO Results', icon: '⟳' },
-        { key: 'prices', label: 'Stock Prices', icon: '⬆' },
-        { key: 'persons', label: 'Persons', icon: '◎' },
-      ];
-      const goTo = k => { setTab(k); setSidebarOpen(false); };
-
-      return (
-        <div className="app">
-          <button className="menu-toggle" onClick={() => setSidebarOpen(o => !o)}>☰</button>
-          <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
-          <nav className={`sidebar${sidebarOpen ? ' open' : ''}`}>
-            <div className="sidebar-brand">
-              <div className="sidebar-brand-sub">Investment</div>
-              <div className="sidebar-brand-name">Tracker</div>
-            </div>
-            <div className="sidebar-nav">
-              {navItems.map(item => (
-                <button key={item.key} className={`sidebar-item${tab === item.key ? ' active' : ''}`} onClick={() => goTo(item.key)}>
-                  <span className="sidebar-icon">{item.icon}</span>{item.label}
-                </button>
-              ))}
-            </div>
-            <div className="sidebar-footer">
-              <div className="sidebar-user">{user.displayName || user.email}</div>
-              <button className="btn-logout" onClick={() => auth.signOut()}>LOGOUT</button>
-            </div>
-          </nav>
-          <main className="main">
-            {loading ? <div className="spinner">Loading data...</div> : (
-              <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onUpdate={updateTx} onDelete={deleteTx} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} />}
-                {tab === 'stocks' && <StocksTab transactions={transactions} stockPrices={stockPrices} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} />}
-                {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} />}
-                {tab === 'persons' && <PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} />}
-              </>
-            )}
-          </main>
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
 </body>
-
 </html>
