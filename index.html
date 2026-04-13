@@ -1435,7 +1435,7 @@
           await onUpdatePrices(updated, true); // True flag to skip merging and just set
 
           // 2. Cascade rename to all transactions
-          const snap = await db.collection(`users/${uid}/transactions`).where('stock', '==', oldStock).get();
+          const snap = await db.collection(`users/${uid}/inv_transactions`).where('stock', '==', oldStock).get();
           if (!snap.empty) {
             const batch = db.batch();
             snap.docs.forEach(doc => batch.update(doc.ref, { stock: newStock }));
@@ -1632,16 +1632,16 @@
       useEffect(() => {
         if (!user) { setLoading(false); return; }
         const uid = user.uid; setLoading(true);
-        const t1 = db.collection(`users/${uid}/transactions`).onSnapshot(snap => { setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false));
-        const t2 = db.collection(`users/${uid}/persons`).onSnapshot(snap => { setPersons(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
-        const t3 = db.collection(`users/${uid}/meta`).doc('stockPrices').onSnapshot(snap => { if (snap.exists) setStockPrices(snap.data().prices || {}); }, () => { });
+        const t1 = db.collection(`users/${uid}/inv_transactions`).onSnapshot(snap => { setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false));
+        const t2 = db.collection(`users/${uid}/inv_persons`).onSnapshot(snap => { setPersons(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
+        const t3 = db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').onSnapshot(snap => { if (snap.exists) setStockPrices(snap.data().prices || {}); }, () => { });
         return () => { t1(); t2(); t3(); };
       }, [user]);
 
       const uid = user?.uid;
 
       const addTx = async tx => {
-        await db.collection(`users/${uid}/transactions`).add({ ...tx, createdAt: new Date().toISOString() });
+        await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, createdAt: new Date().toISOString() });
       };
 
       const bulkAddTx = async (txs) => {
@@ -1650,7 +1650,7 @@
           const batch = db.batch();
           const chunk = txs.slice(i, i + batchSize);
           chunk.forEach(tx => {
-            const ref = db.collection(`users/${uid}/transactions`).doc();
+            const ref = db.collection(`users/${uid}/inv_transactions`).doc();
             batch.set(ref, { ...tx, createdAt: new Date().toISOString() });
           });
           await batch.commit();
@@ -1658,11 +1658,11 @@
       };
 
       const updateTx = async (id, data) => {
-        await db.collection(`users/${uid}/transactions`).doc(id).update(data);
+        await db.collection(`users/${uid}/inv_transactions`).doc(id).update(data);
       };
 
       const deleteTx = async id => {
-        await db.collection(`users/${uid}/transactions`).doc(id).delete();
+        await db.collection(`users/${uid}/inv_transactions`).doc(id).delete();
       };
 
       // ── AUTO-CREATE PERSON if not exists ─────────────────────
@@ -1673,24 +1673,24 @@
         const already = persons.find(p => p.name.toUpperCase() === upper);
         if (already) return;
         // Check Firestore (in case state is stale)
-        const snap = await db.collection(`users/${uid}/persons`).where('name', '==', upper).get();
+        const snap = await db.collection(`users/${uid}/inv_persons`).where('name', '==', upper).get();
         if (snap.empty) {
-          await db.collection(`users/${uid}/persons`).add({ name: upper });
+          await db.collection(`users/${uid}/inv_persons`).add({ name: upper });
         }
       }, [persons, uid]);
 
       const addPerson = async p => {
-        await db.collection(`users/${uid}/persons`).add(p);
+        await db.collection(`users/${uid}/inv_persons`).add(p);
       };
 
       // ── UPDATE PERSON + CASCADE TO TRANSACTIONS ───────────────
       const updatePerson = async (id, data, oldName) => {
         const newName = data.name.toUpperCase().trim();
         // Update person doc
-        await db.collection(`users/${uid}/persons`).doc(id).update(data);
+        await db.collection(`users/${uid}/inv_persons`).doc(id).update(data);
         // Find all transactions with old name and batch-update
         if (oldName && oldName.toUpperCase() !== newName) {
-          const snap = await db.collection(`users/${uid}/transactions`).where('person', '==', oldName.toUpperCase()).get();
+          const snap = await db.collection(`users/${uid}/inv_transactions`).where('person', '==', oldName.toUpperCase()).get();
           if (!snap.empty) {
             const batch = db.batch();
             snap.docs.forEach(doc => {
@@ -1702,19 +1702,19 @@
       };
 
       const deletePerson = async id => {
-        await db.collection(`users/${uid}/persons`).doc(id).delete();
+        await db.collection(`users/${uid}/inv_persons`).doc(id).delete();
       };
 
       const updatePrices = async (updates, replace = false) => {
         const merged = replace ? updates : { ...stockPrices, ...updates };
-        await db.collection(`users/${uid}/meta`).doc('stockPrices').set({ prices: merged });
+        await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({ prices: merged });
       };
 
       // ── DELETE SINGLE STOCK PRICE ─────────────────────────────
       const deletePrice = async (stock) => {
         const updated = { ...stockPrices };
         delete updated[stock];
-        await db.collection(`users/${uid}/meta`).doc('stockPrices').set({ prices: updated });
+        await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({ prices: updated });
       };
 
       if (user === undefined) return <div className="spinner">Loading...</div>;
