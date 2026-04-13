@@ -1894,9 +1894,9 @@
           <div className="card" style={{ padding: 0 }}>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>Holdings</th></tr></thead>
+                <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th></tr></thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan="10"><div className="empty">No data</div></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan="11"><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => (
                     <tr key={i}>
                       <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>
@@ -1906,6 +1906,7 @@
                       <td style={{ whiteSpace: 'nowrap' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
                       <td className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
                       <td className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
+                      <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.breakup}</td>
                     </tr>
                   ))}
