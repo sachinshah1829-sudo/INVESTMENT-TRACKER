@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>Investment Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap"
     rel="stylesheet">
@@ -41,12 +41,17 @@
       padding: 0;
     }
 
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      position: relative;
+    }
+
     body {
       font-family: 'Courier Prime', 'Courier New', monospace;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
     /* AUTH */
@@ -194,6 +199,8 @@
     .app {
       display: flex;
       min-height: 100vh;
+      width: 100%;
+      overflow-x: hidden;
     }
 
     .sidebar {
@@ -301,11 +308,15 @@
       margin-left: 220px;
       flex: 1;
       min-height: 100vh;
+      width: calc(100% - 220px);
+      overflow-x: hidden;
     }
 
     .page {
       padding: 2rem;
-      max-width: 1400px;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     .page-header {
@@ -897,16 +908,32 @@
 
       .main {
         margin-left: 0;
+        width: 100%;
+        max-width: 100vw;
       }
 
       .page {
-        padding: 1rem;
+        padding: 0.75rem;
         padding-top: 4rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      
+      .card {
+        padding: 0.75rem;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        width: calc(100% + 1.5rem);
+        border-left: none;
+        border-right: none;
       }
 
       .stats-grid {
         grid-template-columns: 1fr;
         gap: 0.75rem;
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
       }
 
       .charts-row {
