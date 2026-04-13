@@ -113,6 +113,11 @@
   .empty{color:var(--text-muted);font-size:13px;padding:2rem;text-align:center;}
   .spinner{text-align:center;padding:3rem;color:var(--text-muted);font-size:13px;}
   .section-divider{border:none;border-top:1px solid var(--border);margin:1.25rem 0;}
+  /* PROGRESS BAR */
+  .import-progress{background:var(--green-bg);border:1px solid #c8e6c9;padding:.75rem 1rem;margin-top:.75rem;font-size:12px;color:var(--green);}
+  /* PRICE EDIT INLINE */
+  .price-edit-input{width:120px;padding:.25rem .5rem;border:1px solid var(--border);background:var(--input-bg);font-family:inherit;font-size:13px;color:var(--text);outline:none;}
+  .price-edit-input:focus{border-color:var(--text);}
   /* MOBILE */
   .menu-toggle{display:none;position:fixed;top:1rem;left:1rem;z-index:200;background:var(--sidebar-bg);color:#fff;border:none;width:36px;height:36px;font-size:18px;cursor:pointer;align-items:center;justify-content:center;}
   .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;}
@@ -135,7 +140,7 @@
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script type="text/babel">
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 
 // ── FIREBASE CONFIG ───────────────────────────────────────
 const firebaseConfig = {
@@ -377,7 +382,6 @@ function DashboardTab({transactions,stockPrices}) {
   const topGainer=[...withGain].sort((a,b)=>b.absGain-a.absGain)[0];
   const topLoser=[...withGain].sort((a,b)=>a.absGain-b.absGain)[0];
 
-  // Person bar chart data
   const byPerson={};
   portfolio.forEach(r=>{
     if(!byPerson[r.person]) byPerson[r.person]={invested:0,current:0};
@@ -390,7 +394,6 @@ function DashboardTab({transactions,stockPrices}) {
     {label:'Invested Value',data:pLabels.map(p=>byPerson[p].invested),backgroundColor:'#2B5F7A',borderWidth:0}
   ];
 
-  // Stock pie chart data
   const byStock={};
   portfolio.forEach(r=>{
     if(!byStock[r.stock]) byStock[r.stock]=0;
@@ -450,12 +453,13 @@ function DashboardTab({transactions,stockPrices}) {
 }
 
 // ── TRANSACTIONS ──────────────────────────────────────────
-function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete}) {
+function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete,onEnsurePerson}) {
   const [form,setForm]=useState({date:todayISO(),person:'',stock:'',qty:'',price:'',type:'BUY'});
   const [csvMode,setCsvMode]=useState(false);
   const [csvText,setCsvText]=useState('');
   const [preview,setPreview]=useState(null);
   const [saving,setSaving]=useState(false);
+  const [importProgress,setImportProgress]=useState(null); // {done, total}
   const [search,setSearch]=useState('');
   const [editTx,setEditTx]=useState(null);
   const set=(k,v)=>setForm(f=>({...f,[k]:v}));
@@ -463,8 +467,11 @@ function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete}) {
   const handleAdd=async()=>{
     if(!form.date||!form.person||!form.stock||!form.qty||!form.price) return;
     setSaving(true);
+    const personName=form.person.toUpperCase();
+    // Auto-add person if not in list
+    await onEnsurePerson(personName);
     const qty=form.type==='SELL'?-Math.abs(Number(form.qty)):Math.abs(Number(form.qty));
-    await onAdd({date:form.date,person:form.person.toUpperCase(),stock:form.stock.toUpperCase(),qty,price:Number(form.price)});
+    await onAdd({date:form.date,person:personName,stock:form.stock.toUpperCase(),qty,price:Number(form.price)});
     setForm({date:todayISO(),person:'',stock:'',qty:'',price:'',type:'BUY'});
     setSaving(false);
   };
@@ -485,13 +492,34 @@ function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete}) {
     setPreview(rows);
   };
 
+  // ── FIX: Import directly to Firebase with progress + auto-add persons ──
   const importCSV=async()=>{
-    if(!preview) return; setSaving(true);
-    for(const row of preview.filter(r=>r.ok)) await onAdd(row);
-    setPreview(null);setCsvText('');setCsvMode(false);setSaving(false);
+    if(!preview) return;
+    const validRows=preview.filter(r=>r.ok);
+    if(validRows.length===0) return;
+    setSaving(true);
+    setImportProgress({done:0,total:validRows.length});
+
+    // Collect unique persons from this import and ensure they exist
+    const uniquePersons=[...new Set(validRows.map(r=>r.person))];
+    for(const pName of uniquePersons) {
+      await onEnsurePerson(pName);
+    }
+
+    // Write transactions directly to Firebase one by one
+    for(let i=0;i<validRows.length;i++){
+      const row=validRows[i];
+      await onAdd({date:row.date,person:row.person,stock:row.stock,qty:row.qty,price:row.price});
+      setImportProgress({done:i+1,total:validRows.length});
+    }
+
+    setImportProgress(null);
+    setPreview(null);
+    setCsvText('');
+    setCsvMode(false);
+    setSaving(false);
   };
 
-  // Only show valid transactions (filters out invalid-date ones)
   const valid=transactions.filter(t=>isValidDate(t.date)&&t.stock&&t.person);
   const filtered=valid.filter(t=>!search||t.person?.toLowerCase().includes(search.toLowerCase())||t.stock?.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
@@ -506,7 +534,8 @@ function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete}) {
             <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
             <div><label className="form-label">Person</label>
               <select className="select-input" value={form.person} onChange={e=>set('person',e.target.value)}>
-                <option value="">Select...</option>{persons.map(p=><option key={p.name}>{p.name}</option>)}
+                <option value="">Select...</option>
+                {persons.map(p=><option key={p.name}>{p.name}</option>)}
               </select>
             </div>
             <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e=>set('stock',e.target.value)} placeholder="ADANI POWER"/></div>
@@ -529,14 +558,25 @@ function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete}) {
           <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:'.75rem',lineHeight:1.7}}>
             Format: <strong>DATE, PERSON, STOCK NAME, QTY, PRICE</strong><br/>
             Negative QTY = SELL &nbsp;|&nbsp; Date: DD/MM/YYYY or YYYY-MM-DD<br/>
-            Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100</code>
+            Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100</code><br/>
+            <span style={{color:'var(--green)',fontWeight:700}}>✓ New persons are auto-created. Transactions are saved directly to Firebase.</span>
           </div>
           <textarea className="textarea-input" value={csvText} onChange={e=>setCsvText(e.target.value)} placeholder="Paste CSV rows here..."/>
           <div style={{display:'flex',gap:'.5rem',marginTop:'.5rem'}}>
-            <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={parseCSV}>PREVIEW</button>
+            <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={parseCSV} disabled={saving}>PREVIEW</button>
             <button className="btn-secondary" onClick={()=>{setCsvMode(false);setPreview(null);setCsvText('');}}>CANCEL</button>
           </div>
-          {preview&&<>
+
+          {importProgress&&(
+            <div className="import-progress">
+              Importing... {importProgress.done} / {importProgress.total} transactions saved to Firebase
+              <div style={{marginTop:'.5rem',background:'#c8e6c9',height:6,borderRadius:3}}>
+                <div style={{background:'var(--green)',height:'100%',borderRadius:3,width:`${(importProgress.done/importProgress.total)*100}%`,transition:'width .2s'}}/>
+              </div>
+            </div>
+          )}
+
+          {preview&&!importProgress&&<>
             <hr className="section-divider"/>
             <div className="card-title">Preview — {preview.filter(r=>r.ok).length} valid, {preview.filter(r=>!r.ok).length} errors</div>
             <div className="table-wrap">
@@ -545,7 +585,7 @@ function TransactionsTab({transactions,persons,onAdd,onUpdate,onDelete}) {
                 <tbody>{preview.map((r,i)=><tr key={i} className={r.ok?'preview-ok':'preview-err'}><td>{r.date||'—'}</td><td>{r.person||'—'}</td><td>{r.stock||r.raw}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok?'✓':r.err}</td></tr>)}</tbody>
               </table>
             </div>
-            {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={importCSV} disabled={saving}>{saving?'...':`IMPORT ${preview.filter(r=>r.ok).length} ROWS`}</button>}
+            {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={importCSV} disabled={saving}>{saving?'...':`IMPORT ${preview.filter(r=>r.ok).length} ROWS → SAVE TO FIREBASE`}</button>}
           </>}
         </div>
       )}
@@ -696,11 +736,47 @@ function FIFOTab({transactions}) {
   );
 }
 
+// ── EDIT PRICE MODAL ──────────────────────────────────────
+function EditPriceModal({stock,price,onSave,onDelete,onClose}) {
+  const [newPrice,setNewPrice]=useState(String(price));
+  const [saving,setSaving]=useState(false);
+  const handleSave=async()=>{
+    const p=parseFloat(newPrice);
+    if(isNaN(p)||p<=0) return;
+    setSaving(true);
+    await onSave(stock,p);
+    setSaving(false);onClose();
+  };
+  const handleDelete=async()=>{
+    if(!confirm(`Delete price for "${stock}"?`)) return;
+    await onDelete(stock);
+    onClose();
+  };
+  return (
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{maxWidth:380}}>
+        <div className="modal-title">Edit Price: {stock} <button className="modal-close" onClick={onClose}>✕</button></div>
+        <div className="form-group">
+          <label className="form-label">Current Price ₹</label>
+          <input className="form-input" type="number" value={newPrice} onChange={e=>setNewPrice(e.target.value)} autoFocus onKeyDown={e=>e.key==='Enter'&&handleSave()}/>
+        </div>
+        <div className="modal-actions">
+          <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleSave} disabled={saving}>{saving?'...':'SAVE'}</button>
+          <button className="btn-secondary" onClick={onClose}>CANCEL</button>
+          <button className="btn-sm-danger" style={{marginLeft:'auto'}} onClick={handleDelete}>DELETE</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── STOCK PRICES ──────────────────────────────────────────
-function StockPricesTab({stockPrices,onUpdatePrices}) {
+function StockPricesTab({stockPrices,onUpdatePrices,onDeletePrice}) {
   const [csvText,setCsvText]=useState('');
   const [preview,setPreview]=useState(null);
   const [saving,setSaving]=useState(false);
+  const [editEntry,setEditEntry]=useState(null); // {stock, price}
+
   const parse=()=>{
     const lines=csvText.trim().split('\n').filter(Boolean); const rows=[];
     lines.forEach((line,i)=>{
@@ -714,14 +790,30 @@ function StockPricesTab({stockPrices,onUpdatePrices}) {
     });
     setPreview(rows);
   };
+
   const doImport=async()=>{
     if(!preview) return; setSaving(true);
     const updates={};preview.filter(r=>r.ok).forEach(r=>{updates[r.stock]=r.price;});
     await onUpdatePrices(updates);setPreview(null);setCsvText('');setSaving(false);
   };
+
+  const handleEditSave=async(stock,price)=>{
+    await onUpdatePrices({[stock]:price});
+  };
+
+  const handleDelete=async(stock)=>{
+    await onDeletePrice(stock);
+  };
+
+  const entries=Object.entries(stockPrices).sort((a,b)=>a[0].localeCompare(b[0]));
+
   return (
     <div className="page">
-      <div className="page-header"><div className="page-title">Stock Prices</div><div className="page-sub">Paste CSV to update current prices</div></div>
+      <div className="page-header">
+        <div className="page-title">Stock Prices</div>
+        <div className="page-sub">Click any row to edit or delete — paste CSV to bulk update</div>
+      </div>
+
       <div className="card">
         <div className="card-title">Import Price CSV</div>
         <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:'.75rem',lineHeight:1.7}}>
@@ -745,16 +837,43 @@ function StockPricesTab({stockPrices,onUpdatePrices}) {
           {preview.some(r=>r.ok)&&<button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem',marginTop:'.75rem'}} onClick={doImport} disabled={saving}>{saving?'...':`UPDATE ${preview.filter(r=>r.ok).length} PRICES`}</button>}
         </>}
       </div>
+
       <div className="card">
-        <div className="card-title">Stored Prices ({Object.keys(stockPrices).length})</div>
-        {Object.keys(stockPrices).length===0?<div className="empty">No prices loaded yet</div>:(
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'.75rem'}}>
+          <div className="card-title" style={{margin:0}}>Stored Prices ({entries.length})</div>
+          <span style={{fontSize:11,color:'var(--text-muted)'}}>click row to edit / delete</span>
+        </div>
+        {entries.length===0?<div className="empty">No prices loaded yet</div>:(
           <div className="table-wrap">
-            <table><thead><tr><th>Stock</th><th>Price</th></tr></thead>
-              <tbody>{Object.entries(stockPrices).map(([s,p])=><tr key={s}><td style={{fontWeight:700}}>{s}</td><td>{fmt(p)}</td></tr>)}</tbody>
+            <table>
+              <thead><tr><th>Stock</th><th>Price</th><th></th></tr></thead>
+              <tbody>
+                {entries.map(([s,p])=>(
+                  <tr key={s} className="clickable" onClick={()=>setEditEntry({stock:s,price:p})}>
+                    <td style={{fontWeight:700}}>{s}</td>
+                    <td>{fmt(p)}</td>
+                    <td style={{textAlign:'right'}}>
+                      <button className="btn-sm" onClick={e=>{e.stopPropagation();setEditEntry({stock:s,price:p});}}>EDIT</button>
+                      {' '}
+                      <button className="btn-sm-danger" onClick={e=>{e.stopPropagation();if(confirm(`Delete price for "${s}"?`))handleDelete(s);}}>DELETE</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {editEntry&&(
+        <EditPriceModal
+          stock={editEntry.stock}
+          price={editEntry.price}
+          onSave={handleEditSave}
+          onDelete={handleDelete}
+          onClose={()=>setEditEntry(null)}
+        />
+      )}
     </div>
   );
 }
@@ -765,7 +884,7 @@ function EditPersonModal({person,onSave,onClose,onDelete}) {
   const [saving,setSaving]=useState(false);
   const handleSave=async()=>{
     if(!name.trim()) return; setSaving(true);
-    await onSave(person.id,{name:name.toUpperCase().trim()});
+    await onSave(person.id,{name:name.toUpperCase().trim()},person.name);
     setSaving(false);onClose();
   };
   const handleDelete=async()=>{
@@ -776,9 +895,15 @@ function EditPersonModal({person,onSave,onClose,onDelete}) {
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
         <div className="modal-title">Edit Person <button className="modal-close" onClick={onClose}>✕</button></div>
-        <div className="form-group"><label className="form-label">Name</label><input className="form-input" type="text" value={name} onChange={e=>setName(e.target.value)} autoFocus onKeyDown={e=>e.key==='Enter'&&handleSave()}/></div>
+        <div className="form-group">
+          <label className="form-label">Name</label>
+          <input className="form-input" type="text" value={name} onChange={e=>setName(e.target.value)} autoFocus onKeyDown={e=>e.key==='Enter'&&handleSave()}/>
+        </div>
+        <div style={{fontSize:12,color:'var(--amber)',background:'var(--amber-bg)',padding:'.6rem .75rem',marginBottom:'.75rem',border:'1px solid #ffe082'}}>
+          ⚠ Renaming will also update this person's name in all their transactions.
+        </div>
         <div className="modal-actions">
-          <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleSave} disabled={saving}>{saving?'...':'SAVE'}</button>
+          <button className="btn-primary" style={{width:'auto',padding:'.55rem 1.5rem'}} onClick={handleSave} disabled={saving}>{saving?'Saving...':'SAVE & UPDATE TRANSACTIONS'}</button>
           <button className="btn-secondary" onClick={onClose}>CANCEL</button>
           <button className="btn-sm-danger" style={{marginLeft:'auto'}} onClick={handleDelete}>DELETE</button>
         </div>
@@ -799,7 +924,7 @@ function PersonsTab({persons,onAdd,onUpdate,onDelete}) {
   };
   return (
     <div className="page">
-      <div className="page-header"><div className="page-title">Persons</div><div className="page-sub">Manage investor profiles — click a row to edit</div></div>
+      <div className="page-header"><div className="page-title">Persons</div><div className="page-sub">Manage investor profiles — click a row to edit / rename</div></div>
       <div className="card">
         <div className="card-title">Add Person</div>
         <div style={{display:'flex',gap:'.5rem',alignItems:'flex-end'}}>
@@ -841,7 +966,6 @@ function App() {
   const [sidebarOpen,setSidebarOpen]=useState(false);
   const [loading,setLoading]=useState(true);
 
-  // Touch swipe for mobile sidebar
   const touchStartX=useRef(null);
   useEffect(()=>{
     const onTS=e=>{touchStartX.current=e.touches[0].clientX;};
@@ -869,18 +993,74 @@ function App() {
   },[user]);
 
   const uid=user?.uid;
-  const addTx=async tx=>{await db.collection(`users/${uid}/transactions`).add({...tx,createdAt:new Date().toISOString()});};
-  const updateTx=async(id,data)=>{await db.collection(`users/${uid}/transactions`).doc(id).update(data);};
-  const deleteTx=async id=>{await db.collection(`users/${uid}/transactions`).doc(id).delete();};
-  const addPerson=async p=>{await db.collection(`users/${uid}/persons`).add(p);};
-  const updatePerson=async(id,data)=>{await db.collection(`users/${uid}/persons`).doc(id).update(data);};
-  const deletePerson=async id=>{await db.collection(`users/${uid}/persons`).doc(id).delete();};
-  const updatePrices=async updates=>{const merged={...stockPrices,...updates};await db.collection(`users/${uid}/meta`).doc('stockPrices').set({prices:merged});};
+
+  const addTx=async tx=>{
+    await db.collection(`users/${uid}/transactions`).add({...tx,createdAt:new Date().toISOString()});
+  };
+
+  const updateTx=async(id,data)=>{
+    await db.collection(`users/${uid}/transactions`).doc(id).update(data);
+  };
+
+  const deleteTx=async id=>{
+    await db.collection(`users/${uid}/transactions`).doc(id).delete();
+  };
+
+  // ── AUTO-CREATE PERSON if not exists ─────────────────────
+  const ensurePerson=useCallback(async(personName)=>{
+    const upper=personName.toUpperCase().trim();
+    if(!upper) return;
+    // Check if already in persons list (local state)
+    const already=persons.find(p=>p.name.toUpperCase()===upper);
+    if(already) return;
+    // Check Firestore (in case state is stale)
+    const snap=await db.collection(`users/${uid}/persons`).where('name','==',upper).get();
+    if(snap.empty) {
+      await db.collection(`users/${uid}/persons`).add({name:upper});
+    }
+  },[persons,uid]);
+
+  const addPerson=async p=>{
+    await db.collection(`users/${uid}/persons`).add(p);
+  };
+
+  // ── UPDATE PERSON + CASCADE TO TRANSACTIONS ───────────────
+  const updatePerson=async(id,data,oldName)=>{
+    const newName=data.name.toUpperCase().trim();
+    // Update person doc
+    await db.collection(`users/${uid}/persons`).doc(id).update(data);
+    // Find all transactions with old name and batch-update
+    if(oldName && oldName.toUpperCase()!==newName) {
+      const snap=await db.collection(`users/${uid}/transactions`).where('person','==',oldName.toUpperCase()).get();
+      if(!snap.empty) {
+        const batch=db.batch();
+        snap.docs.forEach(doc=>{
+          batch.update(doc.ref,{person:newName});
+        });
+        await batch.commit();
+      }
+    }
+  };
+
+  const deletePerson=async id=>{
+    await db.collection(`users/${uid}/persons`).doc(id).delete();
+  };
+
+  const updatePrices=async updates=>{
+    const merged={...stockPrices,...updates};
+    await db.collection(`users/${uid}/meta`).doc('stockPrices').set({prices:merged});
+  };
+
+  // ── DELETE SINGLE STOCK PRICE ─────────────────────────────
+  const deletePrice=async(stock)=>{
+    const updated={...stockPrices};
+    delete updated[stock];
+    await db.collection(`users/${uid}/meta`).doc('stockPrices').set({prices:updated});
+  };
 
   if(user===undefined) return <div className="spinner">Loading...</div>;
   if(!user) return <AuthPage/>;
 
-  // Persons list: managed list first; fall back to inferring from transactions
   const personList=persons.length>0
     ? persons
     : [...new Set(transactions.filter(t=>t.person).map(t=>t.person))].map(n=>({id:n,name:n}));
@@ -921,11 +1101,11 @@ function App() {
         {loading?<div className="spinner">Loading data...</div>:(
           <>
             {tab==='dashboard'&&<DashboardTab transactions={transactions} stockPrices={stockPrices}/>}
-            {tab==='transactions'&&<TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onUpdate={updateTx} onDelete={deleteTx}/>}
+            {tab==='transactions'&&<TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson}/>}
             {tab==='portfolio'&&<PortfolioTab transactions={transactions} stockPrices={stockPrices}/>}
             {tab==='stocks'&&<StocksTab transactions={transactions} stockPrices={stockPrices}/>}
             {tab==='fifo'&&<FIFOTab transactions={transactions}/>}
-            {tab==='prices'&&<StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices}/>}
+            {tab==='prices'&&<StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice}/>}
             {tab==='persons'&&<PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson}/>}
           </>
         )}
