@@ -1313,34 +1313,49 @@
       return <canvas ref={ref} />;
     }
 
-    function PieChart({ labels, data, colors }) {
+    function PieChart({ labels, data, colors, hideLegend }) {
       const ref = useRef(null); const chart = useRef(null);
       useEffect(() => {
         if (!ref.current) return;
         if (chart.current) chart.current.destroy();
+        const isMobile = window.innerWidth < 480;
         chart.current = new Chart(ref.current, {
-          type: 'pie',
-          data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1, borderColor: '#fff' }] },
+          type: 'doughnut',
+          data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1, borderColor: '#1a1a1a' }] },
           options: {
             responsive: true, maintainAspectRatio: false,
+            cutout: '70%',
             plugins: {
-              legend: { position: 'bottom', labels: { font: { family: 'Courier Prime', size: 10 }, boxWidth: 10, padding: 10 } },
+              legend: { 
+                display: !hideLegend,
+                position: 'bottom', 
+                labels: { 
+                  font: { family: 'Courier Prime', size: isMobile ? 9 : 10 }, 
+                  boxWidth: 8, padding: 8, color: '#e0e0e0' 
+                } 
+              },
               tooltip: { 
+                padding: 8,
+                caretSize: 4,
+                bodyFont: { size: isMobile ? 10 : 11 },
+                titleFont: { size: isMobile ? 11 : 12 },
+                displayColors: false,
                 callbacks: { 
                   label: ctx => {
                     const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                     const val = ctx.parsed;
                     const pct = ((val / total) * 100).toFixed(1) + '%';
-                    return ` ${ctx.label}: ₹${Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 })} (${pct})`;
+                    const amount = `₹${Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+                    return [`${ctx.label}: ${pct}`, amount];
                   }
                 } 
               }
             },
-            layout: { padding: { bottom: 10 } }
+            layout: { padding: { bottom: 0 } }
           }
         });
         return () => { if (chart.current) chart.current.destroy(); };
-      }, [JSON.stringify(labels), JSON.stringify(data)]);
+      }, [JSON.stringify(labels), JSON.stringify(data), hideLegend]);
       return <canvas ref={ref} />;
     }
 
@@ -1509,6 +1524,8 @@
       const pieData = pieEntries.map(([, v]) => v);
       const pieColors = pieEntries.map(([s], i) => s === 'Others' ? '#ced4da' : PIE_COLORS[i % PIE_COLORS.length]);
 
+      const top5List = stockEntries.slice(0, 5).map(([s, v]) => ({ name: s, pct: totalCurrent > 0 ? (v / totalCurrent * 100).toFixed(1) : 0 }));
+
       return (
         <div className="page">
           {showAllocation && <StockAllocationModal stockEntries={stockEntries} totalValue={totalCurrent} onClose={() => setShowAllocation(false)} />}
@@ -1538,9 +1555,20 @@
               <div className="chart-card">
                 <div className="card-title clickable" onClick={() => setShowAllocation(true)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
                   <span>Portfolio by Stock</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>View full list ↗</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>View all ↗</span>
                 </div>
-                <div className="chart-wrap"><PieChart labels={pieLabels} data={pieData} colors={pieColors} /></div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 220 }}><PieChart labels={pieLabels} data={pieData} colors={pieColors} hideLegend /></div>
+                  <div style={{ flex: '1 1 150px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, marginBottom: '.5rem', color: 'var(--text-muted)' }}>TOP 5 ALLOCATION</div>
+                    {top5List.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '.3rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                        <span style={{ color: 'var(--amber)', fontWeight: 700, marginLeft: '.5rem' }}>{item.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
