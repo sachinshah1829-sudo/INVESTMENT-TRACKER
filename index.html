@@ -217,13 +217,7 @@
       left: 0;
       height: 100vh;
       z-index: 100;
-      transition: width .3s ease, transform .3s ease;
-      overflow: hidden;
-    }
-
-    .sidebar.collapsed {
-      width: 64px;
-      min-width: 64px;
+      transition: transform .3s ease;
     }
 
     .sidebar-brand {
@@ -319,12 +313,6 @@
       min-height: 100vh;
       width: calc(100% - 220px);
       overflow-x: hidden;
-      transition: margin-left .3s ease, width .3s ease;
-    }
-
-    .main.sidebar-collapsed {
-      margin-left: 64px;
-      width: calc(100% - 64px);
     }
 
     .page {
@@ -2113,12 +2101,14 @@
       if (!data) return null;
       const { person, stock, lots } = data;
       const [modalMode, setModalMode] = useState('txn'); // 'txn' or 'merged'
+      const showMergedTab = !person; // Only show toggle if it's a consolidated view
+      
       const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
       const now = new Date();
 
       // Aggregate by person for 'merged' view
       const personMerged = [];
-      if (modalMode === 'merged') {
+      if (modalMode === 'merged' && showMergedTab) {
         const groups = {};
         lots.forEach(l => {
           if (!groups[l.person]) groups[l.person] = [];
@@ -2154,17 +2144,19 @@
                   <div style={{ fontSize: 18 }}>{stock}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{person ? `Active Holdings for ${person}` : 'Consolidated Active Holdings'}</div>
                 </div>
-                <div className="premium-dock" style={{ padding: '3px', transform: 'scale(0.85)', transformOrigin: 'left center' }}>
-                  <div 
-                    className="dock-glass" 
-                    style={{ 
-                      left: modalMode === 'txn' ? '3px' : 'calc(50% - 1.5px)',
-                      width: 'calc(50% - 1.5px)'
-                    }} 
-                  />
-                  <button className={`dock-btn ${modalMode === 'txn' ? 'active' : ''}`} onClick={() => setModalMode('txn')} style={{ padding: '6px 16px', fontSize: 11 }}>TXN</button>
-                  <button className={`dock-btn ${modalMode === 'merged' ? 'active' : ''}`} onClick={() => setModalMode('merged')} style={{ padding: '6px 16px', fontSize: 11 }}>MERGED</button>
-                </div>
+                {showMergedTab && (
+                  <div className="premium-dock" style={{ padding: '3px', transform: 'scale(0.85)', transformOrigin: 'left center' }}>
+                    <div 
+                      className="dock-glass" 
+                      style={{ 
+                        left: modalMode === 'txn' ? '3px' : 'calc(50% - 1.5px)',
+                        width: 'calc(50% - 1.5px)'
+                      }} 
+                    />
+                    <button className={`dock-btn ${modalMode === 'txn' ? 'active' : ''}`} onClick={() => setModalMode('txn')} style={{ padding: '6px 16px', fontSize: 11 }}>TXN</button>
+                    <button className={`dock-btn ${modalMode === 'merged' ? 'active' : ''}`} onClick={() => setModalMode('merged')} style={{ padding: '6px 16px', fontSize: 11 }}>MERGED</button>
+                  </div>
+                )}
               </div>
               <button className="modal-close" onClick={onClose}>×</button>
             </div>
@@ -2649,7 +2641,8 @@
       const [stockPrices, setStockPrices] = useState({});
       const [personColors, setPersonColors] = useState({});
       const [sidebarOpen, setSidebarOpen] = useState(false);
-      const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+      const [visibleTabs, setVisibleTabs] = useState({}); // { dashboard: true, transactions: true, ... }
+      const [showNavSettings, setShowNavSettings] = useState(false);
       const [loading, setLoading] = useState(true);
       const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'] });
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
@@ -2719,7 +2712,7 @@
         const t4 = db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').onSnapshot(snap => { if (snap.exists) setPersonColors(snap.data().colors || {}); }, () => { });
         const t5 = db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').onSnapshot(snap => {
           if (snap.exists) {
-            setSidebarCollapsed(!!snap.data().sidebarCollapsed);
+            setVisibleTabs(snap.data().visibleTabs || {});
           }
         }, () => { });
         return () => { t1(); t2(); t3(); t4(); t5(); };
@@ -2772,11 +2765,11 @@
         await db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').set({ colors: updated });
       };
 
-      const toggleSidebar = async () => {
-        const newValue = !sidebarCollapsed;
-        setSidebarCollapsed(newValue);
+      const updateTabVisibility = async (key, isVisible) => {
+        const updated = { ...visibleTabs, [key]: isVisible };
+        setVisibleTabs(updated);
         if (uid) {
-          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ sidebarCollapsed: newValue }, { merge: true });
+          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ visibleTabs: updated }, { merge: true });
         }
       };
 
@@ -2790,47 +2783,60 @@
 
       return (
         <div className="app">
+          {showNavSettings && (
+            <div className="modal-overlay" onClick={() => setShowNavSettings(false)}>
+              <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '380px' }}>
+                <div className="modal-title">
+                  <span>Manage Sidebar Tabs</span>
+                  <button className="modal-close" onClick={() => setShowNavSettings(false)}>×</button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '15px 5px' }}>
+                  {navItems.map(item => (
+                    <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: 13 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={visibleTabs[item.key] !== false} 
+                        onChange={e => updateTabVisibility(item.key, e.target.checked)} 
+                      />
+                      <span>{item.icon} {item.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="modal-actions">
+                  <button className="btn-primary" onClick={() => setShowNavSettings(false)}>DONE</button>
+                </div>
+              </div>
+            </div>
+          )}
           <button className="menu-toggle" onClick={() => setSidebarOpen(o => !o)}>☰</button>
           <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
-          <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="sidebar-brand">
               <div className="sidebar-brand-sub">Premium</div>
-              <div className="sidebar-brand-name">{!sidebarCollapsed ? 'InvstTracker' : 'IT'}</div>
-            </div>
-            
-            <div style={{ padding: '0 1.25rem 0.5rem' }}>
-              <button 
-                onClick={toggleSidebar}
-                className="btn-logout" 
-                style={{ fontSize: 10, padding: '4px 8px', letterSpacing: '0.05em', width: '100%' }}
-              >
-                {sidebarCollapsed ? '→' : '← HIDE'}
-              </button>
+              <div className="sidebar-brand-name">InvstTracker</div>
             </div>
 
             <nav className="sidebar-nav">
-              {navItems.map(item => (
+              {navItems.filter(n => visibleTabs[n.key] !== false).map(item => (
                 <button 
                   key={item.key} 
                   className={`sidebar-item ${tab === item.key ? 'active' : ''}`} 
                   onClick={() => goTo(item.key)}
-                  title={sidebarCollapsed ? item.label : ''}
                 >
                   <span className="sidebar-icon">{item.icon}</span>
-                  {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
+                  <span className="nav-label">{item.label}</span>
                 </button>
               ))}
             </nav>
             <div className="sidebar-footer">
-              <div className="sidebar-user" title={user.email}>
-                {!sidebarCollapsed ? (user.displayName || user.email) : (user.email.charAt(0).toUpperCase())}
+              <div className="sidebar-user" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 10 }}>{user.email}</div>
+                <button onClick={() => setShowNavSettings(true)} style={{ background: 'none', border: 'none', color: 'var(--sidebar-muted)', cursor: 'pointer', padding: '5px' }} title="Sidebar Settings">⚙️</button>
               </div>
-              <button className="btn-logout" onClick={() => auth.signOut()}>
-                {!sidebarCollapsed ? 'LOGOUT' : '⏻'}
-              </button>
+              <button className="btn-logout" onClick={() => auth.signOut()} style={{ marginTop: '10px' }}>LOGOUT</button>
             </div>
           </aside>
-          <main className={`main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+          <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} onPersonClick={handlePersonDrilldown} />}
