@@ -2030,8 +2030,8 @@
         <div className="page">
           <div className="page-header">
             <div>
-              <div className="page-title">{viewMode === 'persons' ? 'Portfolio (Persons)' : 'Stock Sheet'}</div>
-              <div className="page-sub">{viewMode === 'persons' ? 'Per person, per stock breakdown' : 'All persons merged per stock'}</div>
+              <div className="page-title">{viewMode === 'persons' ? 'Portfolio' : 'Stocks'}</div>
+              <div className="page-sub">{viewMode === 'persons' ? 'Person-wise stock breakdown' : 'Consolidated stock holdings'}</div>
             </div>
           </div>
           <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -2654,11 +2654,11 @@
       const navItems = [
         { key: 'dashboard', label: 'Dashboard', icon: '▦' },
         { key: 'transactions', label: 'Transactions', icon: '↕' },
-        { key: 'portfolio', label: 'Portfolio (Persons)', icon: '◈' },
-        { key: 'stock_sheet', label: 'Stock Sheet', icon: '⧉' },
+        { key: 'portfolio', label: 'Portfolio', icon: '◈' },
+        { key: 'stock_sheet', label: 'Stocks', icon: '⧉' },
         { key: 'fifo', label: 'FIFO Results', icon: '⟳' },
         { key: 'prices', label: 'Stock Prices', icon: '⬆' },
-        { key: 'persons', label: 'Persons Management', icon: '◎' },
+        { key: 'persons', label: 'Persons', icon: '◎' },
       ];
 
       useEffect(() => {
@@ -2817,7 +2817,11 @@
             </div>
 
             <nav className="sidebar-nav">
-              {navItems.filter(n => visibleTabs[n.key] !== false).map(item => (
+              {navItems.filter(n => {
+                // By default, Portfolio is hidden
+                if (n.key === 'portfolio' && visibleTabs[n.key] === undefined) return false;
+                return visibleTabs[n.key] !== false;
+              }).map(item => (
                 <button 
                   key={item.key} 
                   className={`sidebar-item ${tab === item.key ? 'active' : ''}`} 
