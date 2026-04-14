@@ -41,6 +41,7 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: inherit;
     }
 
     html,
@@ -845,7 +846,7 @@
       -webkit-backdrop-filter: blur(12px);
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 1);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 2px rgba(255,255,255,0.5);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 0.5);
       z-index: 1;
       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
@@ -2017,7 +2018,7 @@
     function PortfolioTab({ transactions, stockPrices, personColors, filter, onFilterChange, viewMode }) {
       const [drilldown, setDrilldown] = useState(null);
       const { holdings } = computeFIFO(transactions);
-      
+
       const allRows = viewMode === 'persons' ? buildPortfolio(holdings, stockPrices) : buildStockSheet(holdings, stockPrices);
       const stocks = [...new Set(allRows.map(r => r.stock))].sort();
       const persons = viewMode === 'persons' ? [...new Set(allRows.map(r => r.person))].sort() : [];
@@ -2102,7 +2103,7 @@
       const { person, stock, lots } = data;
       const [modalMode, setModalMode] = useState('txn'); // 'txn' or 'merged'
       const showMergedTab = !person; // Only show toggle if it's a consolidated view
-      
+
       const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
       const now = new Date();
 
@@ -2130,7 +2131,11 @@
           const avgAge = investedVal > 0 ? weightedAge / investedVal : 0;
           const cagr = (currentVal != null && investedVal > 0 && avgAge > 0) ? (Math.pow(currentVal / investedVal, 1 / avgAge) - 1) * 100 : null;
 
-          personMerged.push({ person: p, totalQty, avgBuy, investedVal, currentVal, absGain, absGainPct, cagr });
+          const aggregated = {};
+          pLots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
+          const holdings = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+
+          personMerged.push({ person: p, totalQty, avgBuy, investedVal, currentVal, absGain, absGainPct, cagr, holdings });
         });
         personMerged.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0));
       }
@@ -2146,12 +2151,12 @@
                 </div>
                 {showMergedTab && (
                   <div className="premium-dock" style={{ padding: '3px', transform: 'scale(0.85)', transformOrigin: 'left center' }}>
-                    <div 
-                      className="dock-glass" 
-                      style={{ 
+                    <div
+                      className="dock-glass"
+                      style={{
                         left: modalMode === 'txn' ? '3px' : 'calc(50% - 1.5px)',
                         width: 'calc(50% - 1.5px)'
-                      }} 
+                      }}
                     />
                     <button className={`dock-btn ${modalMode === 'txn' ? 'active' : ''}`} onClick={() => setModalMode('txn')} style={{ padding: '6px 16px', fontSize: 11 }}>TXN</button>
                     <button className={`dock-btn ${modalMode === 'merged' ? 'active' : ''}`} onClick={() => setModalMode('merged')} style={{ padding: '6px 16px', fontSize: 11 }}>MERGED</button>
@@ -2160,7 +2165,7 @@
               </div>
               <button className="modal-close" onClick={onClose}>×</button>
             </div>
-            
+
             <div className="table-wrap">
               {modalMode === 'txn' ? (
                 <table>
@@ -2179,7 +2184,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {lots.sort((a,b) => toJSDate(b.date) - toJSDate(a.date)).map((l, i) => {
+                    {lots.sort((a, b) => toJSDate(b.date) - toJSDate(a.date)).map((l, i) => {
                       const invested = l.qty * l.price;
                       const cval = cp ? l.qty * cp : null;
                       const gain = cval != null ? cval - invested : null;
@@ -2217,6 +2222,7 @@
                       <th>Gain ₹</th>
                       <th>Gain %</th>
                       <th>CAGR</th>
+                      <th>Holdings</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2231,6 +2237,7 @@
                         <td className={(r.absGain || 0) >= 0 ? 'pos' : 'neg'}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
                         <td className={(r.absGainPct || 0) >= 0 ? 'pos' : 'neg'}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
                         <td className={(r.cagr || 0) >= 0 ? 'pos' : 'neg'}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.holdings}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2687,17 +2694,17 @@
           const newStock = (params.newStock || '').toUpperCase().trim();
           const costAllocPct = parseFloat(params.costAlloc) || 5; // e.g. 6% for Jio Finance
           const swapRatio = parseFloat(params.ratio) || 1;
-          
+
           const totalInvestment = currentQty * avgCost;
           const transferValue = totalInvestment * (costAllocPct / 100);
           const remainingValue = totalInvestment - transferValue;
-          
+
           const newQtyB = Math.floor(currentQty * swapRatio);
           const newPriceA = remainingValue / currentQty;
           const newPriceB = transferValue / newQtyB;
 
           txs.push({ person, stock, date, qty: -currentQty, price: avgCost, note: `Demerger: Cost Adjustment for ${stock}` });
-          txs.push({ person, stock, date, qty: currentQty, price: newPriceA, note: `Demerger: Remaining Cost (${(100-costAllocPct).toFixed(1)}%)` });
+          txs.push({ person, stock, date, qty: currentQty, price: newPriceA, note: `Demerger: Remaining Cost (${(100 - costAllocPct).toFixed(1)}%)` });
           txs.push({ person, stock: newStock, date, qty: newQtyB, price: newPriceB, note: `Demerger: Spun-off ${newStock} (${costAllocPct}%)` });
         } else if (action === 'delist') {
           txs.push({ person, stock, date, qty: -currentQty, price: 0, note: 'Delisting: Written off' });
@@ -2776,7 +2783,7 @@
                     { id: 'rights', label: '📉 Rights', sub: 'Purchase offer' },
                     { id: 'delist', label: '❌ Delisting', sub: 'Write off loss' }
                   ].map(a => (
-                    <button key={a.id} className={`card ${action === a.id ? 'active' : ''}`} 
+                    <button key={a.id} className={`card ${action === a.id ? 'active' : ''}`}
                       style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', border: action === a.id ? '2px solid var(--text)' : '1px solid var(--border)' }}
                       onClick={() => setAction(a.id)}>
                       <div style={{ fontWeight: 700 }}>{a.label}</div>
@@ -2788,34 +2795,34 @@
                 {action === 'bonus' && (
                   <div className="form-group">
                     <label className="form-label">Ratio (Shares received per 1 share held)</label>
-                    <input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({...params, ratio: e.target.value})} />
+                    <input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, ratio: e.target.value })} />
                   </div>
                 )}
                 {action === 'split' && (
                   <div className="form-row">
-                    <div className="form-group"><label className="form-label">New Qty</label><input type="number" className="form-input" placeholder="Default 10" onChange={e => setParams({...params, newRatio: e.target.value})} /></div>
-                    <div className="form-group"><label className="form-label">Old Qty</label><input type="number" className="form-input" placeholder="Default 1" onChange={e => setParams({...params, oldRatio: e.target.value})} /></div>
+                    <div className="form-group"><label className="form-label">New Qty</label><input type="number" className="form-input" placeholder="Default 10" onChange={e => setParams({ ...params, newRatio: e.target.value })} /></div>
+                    <div className="form-group"><label className="form-label">Old Qty</label><input type="number" className="form-input" placeholder="Default 1" onChange={e => setParams({ ...params, oldRatio: e.target.value })} /></div>
                   </div>
                 )}
                 {action === 'merger' && (
                   <div className="form-row">
-                    <div className="form-group"><label className="form-label">New Ticker</label><input type="text" className="form-input" placeholder="e.g. HDFCBANK" onChange={e => setParams({...params, newStock: e.target.value})} /></div>
-                    <div className="form-group"><label className="form-label">Ratio (New:Old)</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({...params, ratio: e.target.value})} /></div>
+                    <div className="form-group"><label className="form-label">New Ticker</label><input type="text" className="form-input" placeholder="e.g. HDFCBANK" onChange={e => setParams({ ...params, newStock: e.target.value })} /></div>
+                    <div className="form-group"><label className="form-label">Ratio (New:Old)</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, ratio: e.target.value })} /></div>
                   </div>
                 )}
                 {action === 'demerger' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <div className="form-row">
-                      <div className="form-group"><label className="form-label">New Spun-off Ticker</label><input type="text" className="form-input" placeholder="e.g. JFSL" onChange={e => setParams({...params, newStock: e.target.value})} /></div>
-                      <div className="form-group"><label className="form-label">Cost Allocation to New Stock (%)</label><input type="number" className="form-input" placeholder="e.g. 6.42" onChange={e => setParams({...params, costAlloc: e.target.value})} /></div>
+                      <div className="form-group"><label className="form-label">New Spun-off Ticker</label><input type="text" className="form-input" placeholder="e.g. JFSL" onChange={e => setParams({ ...params, newStock: e.target.value })} /></div>
+                      <div className="form-group"><label className="form-label">Cost Allocation to New Stock (%)</label><input type="number" className="form-input" placeholder="e.g. 6.42" onChange={e => setParams({ ...params, costAlloc: e.target.value })} /></div>
                     </div>
-                    <div className="form-group"><label className="form-label">Share Swap Ratio (New Shares for every 1 Old)</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({...params, ratio: e.target.value})} /></div>
+                    <div className="form-group"><label className="form-label">Share Swap Ratio (New Shares for every 1 Old)</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, ratio: e.target.value })} /></div>
                   </div>
                 )}
                 {(action === 'buyback' || action === 'rights') && (
                   <div className="form-row">
-                    <div className="form-group"><label className="form-label">Quantity</label><input type="number" className="form-input" onChange={e => setParams({...params, qty: e.target.value})} /></div>
-                    <div className="form-group"><label className="form-label">Price</label><input type="number" className="form-input" onChange={e => setParams({...params, price: e.target.value})} /></div>
+                    <div className="form-group"><label className="form-label">Quantity</label><input type="number" className="form-input" onChange={e => setParams({ ...params, qty: e.target.value })} /></div>
+                    <div className="form-group"><label className="form-label">Price</label><input type="number" className="form-input" onChange={e => setParams({ ...params, price: e.target.value })} /></div>
                   </div>
                 )}
 
@@ -2880,7 +2887,7 @@
         { key: 'fifo', label: 'FIFO Results', icon: '⟳' },
         { key: 'prices', label: 'Stock Prices', icon: '⬆' },
         { key: 'persons', label: 'Persons', icon: '◎' },
-        { key: 'actions', label: 'Corporate Actions', icon: '⚡' },
+        { key: 'actions', label: 'Corporate Actions', icon: 'ϟ' },
       ];
 
       useEffect(() => {
@@ -3015,10 +3022,10 @@
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '15px 5px' }}>
                   {navItems.map(item => (
                     <label key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: 13 }}>
-                      <input 
-                        type="checkbox" 
-                        checked={visibleTabs[item.key] !== false} 
-                        onChange={e => updateTabVisibility(item.key, e.target.checked)} 
+                      <input
+                        type="checkbox"
+                        checked={visibleTabs[item.key] !== false}
+                        onChange={e => updateTabVisibility(item.key, e.target.checked)}
                       />
                       <span>{item.icon} {item.label}</span>
                     </label>
@@ -3044,9 +3051,9 @@
                 if ((n.key === 'portfolio' || n.key === 'actions') && visibleTabs[n.key] === undefined) return false;
                 return visibleTabs[n.key] !== false;
               }).map(item => (
-                <button 
-                  key={item.key} 
-                  className={`sidebar-item ${tab === item.key ? 'active' : ''}`} 
+                <button
+                  key={item.key}
+                  className={`sidebar-item ${tab === item.key ? 'active' : ''}`}
                   onClick={() => goTo(item.key)}
                 >
                   <span className="sidebar-icon">{item.icon}</span>
