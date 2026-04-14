@@ -815,10 +815,10 @@
       padding: 4px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       position: relative;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
       user-select: none;
     }
-    
+
     .glass-toggle-btn {
       position: relative;
       padding: 6px 16px;
@@ -834,11 +834,11 @@
       transition: color 0.3s;
       text-transform: uppercase;
     }
-    
+
     .glass-toggle-btn.active {
       color: #ffffff;
     }
-    
+
     .glass-toggle-slider {
       position: absolute;
       top: 4px;
@@ -851,14 +851,17 @@
       border-radius: 999px;
       z-index: 1;
       transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
     }
-    
+
     .glass-toggle-slider::after {
       content: '';
       position: absolute;
-      top: 0; left: 10%; right: 10%; height: 50%;
-      background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 50%;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), transparent);
       border-radius: 999px;
     }
 
@@ -1561,7 +1564,8 @@
                   {stockEntries.map(([s, v]) => {
                     const pct = totalValue > 0 ? (v / totalValue) * 100 : 0;
                     return (
-                      <tr key={s}>
+                      <tr key
+                        ={s}>
                         <td style={{ fontWeight: 700 }}>{s}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v)}</span><br />
@@ -2023,7 +2027,7 @@
     function PortfolioTab({ transactions, stockPrices, personColors, filter, onFilterChange }) {
       const { holdings } = computeFIFO(transactions);
       const [viewMode, setViewMode] = useState('persons'); // 'persons' or 'stocks'
-      
+
       const allRows = viewMode === 'persons' ? buildPortfolio(holdings, stockPrices) : buildStockSheet(holdings, stockPrices);
       const stocks = [...new Set(allRows.map(r => r.stock))].sort();
       const persons = viewMode === 'persons' ? [...new Set(allRows.map(r => r.person))].sort() : [];
@@ -2041,19 +2045,19 @@
                 <div className="page-sub">{viewMode === 'persons' ? 'Per person, per stock breakdown' : 'All persons merged per stock'}</div>
               </div>
               <div className="glass-toggle-container">
-                <div 
-                  className="glass-toggle-slider" 
-                  style={{ 
+                <div
+                  className="glass-toggle-slider"
+                  style={{
                     width: 'calc(50% - 4px)',
                     transform: `translateX(${viewMode === 'persons' ? '0' : '100%'})`
-                  }} 
+                  }}
                 />
-                <button 
+                <button
                   className={`glass-toggle-btn ${viewMode === 'persons' ? 'active' : ''}`}
                   onClick={() => setViewMode('persons')}>
                   PERSONS
                 </button>
-                <button 
+                <button
                   className={`glass-toggle-btn ${viewMode === 'stocks' ? 'active' : ''}`}
                   onClick={() => setViewMode('stocks')}>
                   STOCKS
@@ -2317,7 +2321,7 @@
 
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div className="card-title" style={{ margin: 0 }}>STORED PRICES ({entries.length})</div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
                   Last updated: {priceMeta.lastUpdated ? new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not yet synced in this session'}
