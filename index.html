@@ -1791,6 +1791,8 @@
         await onAdd({ date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price) });
         setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '' });
         setSaving(false);
+      };
+
       const parseCSV = () => {
         const lines = csvText.trim().split('\n').filter(Boolean); const rows = [];
         lines.forEach((line, i) => {
