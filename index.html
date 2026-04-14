@@ -1009,6 +1009,58 @@
       z-index: 90;
     }
 
+    /* WIZARD BLOCKS */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .action-block {
+      border: 1px solid var(--border);
+      padding: 1.25rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .action-block:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      z-index: 2;
+    }
+
+    .action-block.active {
+      border: 2px solid var(--text) !important;
+      box-shadow: var(--shadow-md);
+    }
+
+    .action-block .label {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .action-block .sub {
+      font-size: 9px;
+      opacity: 0.7;
+      letter-spacing: 0.05em;
+    }
+
+    .action-block.bonus { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .action-block.split { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .action-block.merger { background: #f5f3ff; color: #6d28d2; border-color: #ddd6fe; }
+    .action-block.demerger { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+    .action-block.buyback { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+    .action-block.rights { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
+    .action-block.delist { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
     @media(max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
@@ -2669,54 +2721,70 @@
       };
 
       const handlePreview = () => {
-        const currentQty = getHoldings(person, stock, date);
-        const avgCost = getAvgCost(person, stock, date);
-        const txs = [];
+        const { holdings } = computeFIFO(transactions.filter(t => t.date <= date));
+        const stockHolders = holdings[stock] || {};
+        
+        const personsToProcess = ['buyback', 'rights'].includes(action) 
+          ? [person]
+          : Object.keys(stockHolders);
 
-        if (action === 'bonus') {
-          const ratio = parseFloat(params.ratio) || 1;
-          const bonusQty = Math.floor(currentQty * ratio);
-          txs.push({ person, stock, date, qty: bonusQty, price: 0, note: `Bonus ${params.ratio}:1` });
-        } else if (action === 'split') {
-          const newRatio = parseFloat(params.newRatio) || 10;
-          const oldRatio = parseFloat(params.oldRatio) || 1;
-          const newQty = Math.floor(currentQty * (newRatio / oldRatio));
-          const newPrice = (avgCost * oldRatio) / newRatio;
-          txs.push({ person, stock, date, qty: -currentQty, price: avgCost, note: `Split Part 1: Wipe Old` });
-          txs.push({ person, stock, date, qty: newQty, price: newPrice, note: `Split Part 2: New Qty @ ${newPrice.toFixed(2)}` });
-        } else if (action === 'merger') {
-          const newRatio = parseFloat(params.ratio) || 1;
-          const newStock = (params.newStock || '').toUpperCase().trim();
-          const newQty = Math.floor(currentQty * newRatio);
-          txs.push({ person, stock, date, qty: -currentQty, price: avgCost, note: `Merger: Exit ${stock}` });
-          txs.push({ person, stock: newStock, date, qty: newQty, price: (avgCost / newRatio), note: `Merger: Entry ${newStock}` });
-        } else if (action === 'demerger') {
-          const newStock = (params.newStock || '').toUpperCase().trim();
-          const costAllocPct = parseFloat(params.costAlloc) || 5; // e.g. 6% for Jio Finance
-          const swapRatio = parseFloat(params.ratio) || 1;
-
-          const totalInvestment = currentQty * avgCost;
-          const transferValue = totalInvestment * (costAllocPct / 100);
-          const remainingValue = totalInvestment - transferValue;
-
-          const newQtyB = Math.floor(currentQty * swapRatio);
-          const newPriceA = remainingValue / currentQty;
-          const newPriceB = transferValue / newQtyB;
-
-          txs.push({ person, stock, date, qty: -currentQty, price: avgCost, note: `Demerger: Cost Adjustment for ${stock}` });
-          txs.push({ person, stock, date, qty: currentQty, price: newPriceA, note: `Demerger: Remaining Cost (${(100 - costAllocPct).toFixed(1)}%)` });
-          txs.push({ person, stock: newStock, date, qty: newQtyB, price: newPriceB, note: `Demerger: Spun-off ${newStock} (${costAllocPct}%)` });
-        } else if (action === 'delist') {
-          txs.push({ person, stock, date, qty: -currentQty, price: 0, note: 'Delisting: Written off' });
-        } else if (action === 'buyback') {
-          const bbQty = parseInt(params.qty) || 0;
-          const bbPrice = parseFloat(params.price) || 0;
-          txs.push({ person, stock, date, qty: -bbQty, price: bbPrice, note: 'Buyback' });
-        } else if (action === 'rights') {
-          const rQty = parseInt(params.qty) || 0;
-          const rPrice = parseFloat(params.price) || 0;
-          txs.push({ person, stock, date, qty: rQty, price: rPrice, note: 'Rights Issue' });
+        if (personsToProcess.length === 0 && !['buyback', 'rights'].includes(action)) {
+          alert('No holders found for this stock on the selected date.');
+          return;
         }
+
+        const txs = [];
+        personsToProcess.forEach(p => {
+          if (!p) return;
+          const lots = stockHolders[p] || [];
+          const currentQty = lots.reduce((sum, l) => sum + l.qty, 0);
+          const totalInv = lots.reduce((sum, l) => sum + (l.qty * l.price), 0);
+          const avgCost = currentQty > 0 ? totalInv / currentQty : 0;
+          
+          if (currentQty <= 0 && !['buyback', 'rights'].includes(action)) return;
+
+          if (action === 'bonus') {
+            const ratio = parseFloat(params.ratio) || 1;
+            const bonusQty = Math.floor(currentQty * ratio);
+            txs.push({ person: p, stock, date, qty: bonusQty, price: 0, note: `Bonus ${params.ratio}:1` });
+          } else if (action === 'split') {
+            const newRatio = parseFloat(params.newRatio) || 10;
+            const oldRatio = parseFloat(params.oldRatio) || 1;
+            const newQty = Math.floor(currentQty * (newRatio / oldRatio));
+            const newPrice = (avgCost * oldRatio) / newRatio;
+            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Split Part 1: Wipe Old` });
+            txs.push({ person: p, stock, date, qty: newQty, price: newPrice, note: `Split Part 2: New Qty @ ${newPrice.toFixed(2)}` });
+          } else if (action === 'merger') {
+            const newRatio = parseFloat(params.ratio) || 1;
+            const newStock = (params.newStock || '').toUpperCase().trim();
+            const newQty = Math.floor(currentQty * newRatio);
+            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Merger: Exit ${stock}` });
+            txs.push({ person: p, stock: newStock, date, qty: newQty, price: (avgCost / newRatio), note: `Merger: Entry ${newStock}` });
+          } else if (action === 'demerger') {
+            const newStock = (params.newStock || '').toUpperCase().trim();
+            const costAllocPct = parseFloat(params.costAlloc) || 5;
+            const swapRatio = parseFloat(params.ratio) || 1;
+            const totalInvestment = currentQty * avgCost;
+            const transferValue = totalInvestment * (costAllocPct / 100);
+            const remainingValue = totalInvestment - transferValue;
+            const newQtyB = Math.floor(currentQty * swapRatio);
+            const newPriceA = remainingValue / currentQty;
+            const newPriceB = transferValue / newQtyB;
+            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Demerger: Cost Adjustment for ${stock}` });
+            txs.push({ person: p, stock, date, qty: currentQty, price: newPriceA, note: `Demerger: Remaining Cost (${(100 - costAllocPct).toFixed(1)}%)` });
+            txs.push({ person: p, stock: newStock, date, qty: newQtyB, price: newPriceB, note: `Demerger: Spun-off ${newStock} (${costAllocPct}%)` });
+          } else if (action === 'delist') {
+            txs.push({ person: p, stock, date, qty: -currentQty, price: 0, note: 'Delisting: Written off' });
+          } else if (action === 'buyback') {
+            const bbQty = parseInt(params.qty) || 0;
+            const bbPrice = parseFloat(params.price) || 0;
+            txs.push({ person: p, stock, date, qty: -bbQty, price: bbPrice, note: 'Buyback' });
+          } else if (action === 'rights') {
+            const rQty = parseInt(params.qty) || 0;
+            const rPrice = parseFloat(params.price) || 0;
+            txs.push({ person: p, stock, date, qty: rQty, price: rPrice, note: 'Rights Issue' });
+          }
+        });
 
         setPreview(txs);
         setStep(3);
@@ -2741,94 +2809,100 @@
             </div>
           </div>
 
-          <div className="card" style={{ maxWidth: 600 }}>
+          <div className="card" style={{ maxWidth: 700 }}>
             {step === 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Person</label>
-                    <select className="form-input" value={person} onChange={e => setPerson(e.target.value)}>
-                      <option value="">Select Person...</option>
-                      {allPersons.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Stock</label>
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <label className="form-label">Select Stock</label>
                     <select className="form-input" value={stock} onChange={e => setStock(e.target.value)}>
                       <option value="">Select Stock...</option>
                       {allStocks.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label">Action Date</label>
+                    <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Action Date</label>
-                  <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} />
-                </div>
-                <button className="btn-primary" disabled={!person || !stock} onClick={() => setStep(2)}>NEXT: SELECT ACTION</button>
+                <button className="btn-primary" disabled={!stock} onClick={() => setStep(2)}>NEXT: SELECT ACTION</button>
               </div>
             )}
 
             {step === 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Selected: <strong>{stock}</strong> for <strong>{person}</strong>
+                  Selected: <strong>{stock}</strong> as of {fmtDate(date)}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="action-grid">
                   {[
-                    { id: 'bonus', label: '🎁 Bonus', sub: 'Add free shares' },
-                    { id: 'split', label: '✂️ Split', sub: 'Change face value' },
-                    { id: 'merger', label: '🏢 Merger', sub: 'Move to new stock' },
-                    { id: 'demerger', label: '🏢 Demerger', sub: 'Spin-off new stock' },
-                    { id: 'buyback', label: '🔄 Buyback', sub: 'Tender offer' },
-                    { id: 'rights', label: '📉 Rights', sub: 'Purchase offer' },
-                    { id: 'delist', label: '❌ Delisting', sub: 'Write off loss' }
+                    { id: 'bonus', label: 'Bonus', sub: 'Apply free shares', cls: 'bonus' },
+                    { id: 'split', label: 'Split', sub: 'Adjust face value', cls: 'split' },
+                    { id: 'merger', label: 'Merger', sub: 'Switch to new ticker', cls: 'merger' },
+                    { id: 'demerger', label: 'Demerger', sub: 'Spin-off new entity', cls: 'demerger' },
+                    { id: 'buyback', label: 'Buyback', sub: 'Tender shares', cls: 'buyback' },
+                    { id: 'rights', label: 'Rights', sub: 'Purchase offer', cls: 'rights' },
+                    { id: 'delist', label: 'Delist', sub: 'Write off holding', cls: 'delist' }
                   ].map(a => (
-                    <button key={a.id} className={`card ${action === a.id ? 'active' : ''}`}
-                      style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', border: action === a.id ? '2px solid var(--text)' : '1px solid var(--border)' }}
+                    <div key={a.id} className={`action-block ${a.cls} ${action === a.id ? 'active' : ''}`}
                       onClick={() => setAction(a.id)}>
-                      <div style={{ fontWeight: 700 }}>{a.label}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{a.sub}</div>
-                    </button>
+                      <div className="label">{a.label}</div>
+                      <div className="sub">{a.sub}</div>
+                    </div>
                   ))}
                 </div>
 
-                {action === 'bonus' && (
-                  <div className="form-group">
-                    <label className="form-label">Ratio (Shares received per 1 share held)</label>
-                    <input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, ratio: e.target.value })} />
-                  </div>
-                )}
-                {action === 'split' && (
-                  <div className="form-row">
-                    <div className="form-group"><label className="form-label">New Qty</label><input type="number" className="form-input" placeholder="Default 10" onChange={e => setParams({ ...params, newRatio: e.target.value })} /></div>
-                    <div className="form-group"><label className="form-label">Old Qty</label><input type="number" className="form-input" placeholder="Default 1" onChange={e => setParams({ ...params, oldRatio: e.target.value })} /></div>
-                  </div>
-                )}
-                {action === 'merger' && (
-                  <div className="form-row">
-                    <div className="form-group"><label className="form-label">New Ticker</label><input type="text" className="form-input" placeholder="e.g. HDFCBANK" onChange={e => setParams({ ...params, newStock: e.target.value })} /></div>
-                    <div className="form-group"><label className="form-label">Ratio (New:Old)</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, ratio: e.target.value })} /></div>
-                  </div>
-                )}
-                {action === 'demerger' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div className="form-row">
-                      <div className="form-group"><label className="form-label">New Spun-off Ticker</label><input type="text" className="form-input" placeholder="e.g. JFSL" onChange={e => setParams({ ...params, newStock: e.target.value })} /></div>
-                      <div className="form-group"><label className="form-label">Cost Allocation to New Stock (%)</label><input type="number" className="form-input" placeholder="e.g. 6.42" onChange={e => setParams({ ...params, costAlloc: e.target.value })} /></div>
+                <div style={{ background: '#f8fafc', padding: '1.25rem', border: '1px solid var(--border)' }}>
+                  {['buyback', 'rights'].includes(action) && (
+                    <div className="form-group" style={{ marginBottom: '1rem' }}>
+                      <label className="form-label">Participating Person</label>
+                      <select className="form-input" value={person} onChange={e => setPerson(e.target.value)}>
+                        <option value="">Select Person...</option>
+                        {allPersons.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
                     </div>
-                    <div className="form-group"><label className="form-label">Share Swap Ratio (New Shares for every 1 Old)</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, ratio: e.target.value })} /></div>
-                  </div>
-                )}
-                {(action === 'buyback' || action === 'rights') && (
-                  <div className="form-row">
-                    <div className="form-group"><label className="form-label">Quantity</label><input type="number" className="form-input" onChange={e => setParams({ ...params, qty: e.target.value })} /></div>
-                    <div className="form-group"><label className="form-label">Price</label><input type="number" className="form-input" onChange={e => setParams({ ...params, price: e.target.value })} /></div>
-                  </div>
-                )}
+                  )}
+
+                  {action === 'bonus' && (
+                    <div className="form-group">
+                      <label className="form-label">Bonus Ratio (e.g. 1 if 1:1)</label>
+                      <input type="number" className="form-input" placeholder="Shares received per 1 held" onChange={e => setParams({ ...params, ratio: e.target.value })} />
+                    </div>
+                  )}
+                  {action === 'split' && (
+                    <div className="form-row">
+                      <div className="form-group"><label className="form-label">New Face Value Qty</label><input type="number" className="form-input" placeholder="e.g. 10" onChange={e => setParams({ ...params, newRatio: e.target.value })} /></div>
+                      <div className="form-group"><label className="form-label">Old Face Value Qty</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, oldRatio: e.target.value })} /></div>
+                    </div>
+                  )}
+                  {action === 'merger' && (
+                    <div className="form-row">
+                      <div className="form-group"><label className="form-label">Receiver Stock Ticker</label><input type="text" className="form-input" placeholder="e.g. HDFCBANK" onChange={e => setParams({ ...params, newStock: e.target.value })} /></div>
+                      <div className="form-group"><label className="form-label">Swap Ratio (New:Old)</label><input type="number" className="form-input" placeholder="e.g. 1.68" onChange={e => setParams({ ...params, ratio: e.target.value })} /></div>
+                    </div>
+                  )}
+                  {action === 'demerger' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div className="form-row">
+                        <div className="form-group"><label className="form-label">New Entity Ticker</label><input type="text" className="form-input" placeholder="e.g. JIOFIN" onChange={e => setParams({ ...params, newStock: e.target.value })} /></div>
+                        <div className="form-group"><label className="form-label">Cost Allocation to New Entity (%)</label><input type="number" className="form-input" placeholder="e.g. 6.42" onChange={e => setParams({ ...params, costAlloc: e.target.value })} /></div>
+                      </div>
+                      <div className="form-group"><label className="form-label">Share Swap Ratio (New for every 1 Old)</label><input type="number" className="form-input" placeholder="e.g. 1" onChange={e => setParams({ ...params, ratio: e.target.value })} /></div>
+                    </div>
+                  )}
+                  {(action === 'buyback' || action === 'rights') && (
+                    <div className="form-row">
+                      <div className="form-group"><label className="form-label">Quantity</label><input type="number" className="form-input" onChange={e => setParams({ ...params, qty: e.target.value })} /></div>
+                      <div className="form-group"><label className="form-label">Execution Price ₹</label><input type="number" className="form-input" onChange={e => setParams({ ...params, price: e.target.value })} /></div>
+                    </div>
+                  )}
+                  {action === 'delist' && <div style={{ fontSize: 13, color: 'var(--red)' }}>This will write off all active holdings for this stock across all persons at ₹0 price.</div>}
+                  {!action && <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>Please select an action from the tiles above</div>}
+                </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setStep(1)}>BACK</button>
-                  <button className="btn-primary" style={{ flex: 2 }} disabled={!action} onClick={handlePreview}>PREVIEW ADJUSTMENT</button>
+                  <button className="btn-secondary" style={{ flex: 1 }} onClick={() => { setStep(1); setAction(null); }}>BACK</button>
+                  <button className="btn-primary" style={{ flex: 2 }} disabled={!action || (['buyback', 'rights'].includes(action) && !person)} onClick={handlePreview}>PREVIEW ADJUSTMENT</button>
                 </div>
               </div>
             )}
@@ -2839,10 +2913,16 @@
                 <div style={{ fontSize: 11, marginBottom: '0.5rem' }}>The following adjustments will be added to your ledger:</div>
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Stock</th><th>Qty</th><th>Price</th><th>Note</th></tr></thead>
+                    <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Note</th></tr></thead>
                     <tbody>
                       {preview.map((p, i) => (
-                        <tr key={i}><td>{p.stock}</td><td className={p.qty > 0 ? 'pos' : 'neg'}>{p.qty}</td><td>{fmt(p.price)}</td><td style={{ fontSize: 10 }}>{p.note}</td></tr>
+                        <tr key={i}>
+                          <td><span className="tag" style={{ background: personColor(p.person, personColors), color: '#1a1a1a' }}>{p.person}</span></td>
+                          <td>{p.stock}</td>
+                          <td className={p.qty > 0 ? 'pos' : 'neg'}>{p.qty}</td>
+                          <td>{fmt(p.price)}</td>
+                          <td style={{ fontSize: 10 }}>{p.note}</td>
+                        </tr>
                       ))}
                     </tbody>
                   </table>
