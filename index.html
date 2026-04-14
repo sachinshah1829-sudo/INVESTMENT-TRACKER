@@ -1268,12 +1268,24 @@
       '#ec4899', '#f97316', '#06b6d4', '#84cc16', '#6366f1'
     ];
 
+    const DEFAULT_ASSET_TYPE_COLORS = {
+      'STOCK': '#87BFDB', 'MUTUAL FUND': '#2B5F7A', 'ETF': '#A5D6A7', 'BONDS': '#BBDEFB', 'GOLD': '#FFF9C4', 'REAL ESTATE': '#D7CCC8'
+    };
+
     const personColor = (name, customColors = {}) => {
       const u = (name || '').toUpperCase().trim();
       if (customColors && customColors[u]) return customColors[u];
       if (DEFAULT_PERSON_COLORS[u]) return DEFAULT_PERSON_COLORS[u];
       let h = 0; for (let i = 0; i < u.length; i++) h = u.charCodeAt(i) + ((h << 5) - h);
       return `hsl(${Math.abs(h) % 360},50%,80%)`;
+    };
+
+    const assetTypeColor = (name, customColors = {}) => {
+      const u = (name || '').toUpperCase().trim();
+      if (customColors && customColors[u]) return customColors[u];
+      if (DEFAULT_ASSET_TYPE_COLORS[u]) return DEFAULT_ASSET_TYPE_COLORS[u];
+      let h = 0; for (let i = 0; i < u.length; i++) h = u.charCodeAt(i) + ((h << 5) - h);
+      return `hsl(${Math.abs(h) % 360},70%,85%)`;
     };
 
     // ── FIFO ENGINE ───────────────────────────────────────────
@@ -1706,7 +1718,7 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, onPersonClick }) {
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick }) {
       const [filterPersons, setFilterPersons] = useState(['All']);
       const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
       const [drilldownPerson, setDrilldownPerson] = useState(null);
@@ -1825,7 +1837,18 @@
             </div>
             <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
               <MultiSelect label="Filter Persons" options={persons} selected={filterPersons} onChange={setFilterPersons} />
-              <MultiSelect label="Filter Asset Type" options={types} selected={filterAssetTypes} onChange={setFilterAssetTypes} />
+              <div className="filter-group">
+                <div className="filter-label">Filter Asset Type</div>
+                <select 
+                  className="select-input" 
+                  style={{ width: 140, height: 32, fontSize: 12 }} 
+                  value={filterAssetTypes[0]} 
+                  onChange={e => setFilterAssetTypes([e.target.value])}
+                >
+                  <option value="All">All</option>
+                  {types.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
               <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); }} title="Reset Filters">↺</button>
             </div>
           </div>
@@ -1873,7 +1896,7 @@
                 <div className="card-title">Wealth by Asset Type</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                   <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
-                    <PieChart labels={sortedTypes.map(([t]) => t)} data={sortedTypes.map(([, v]) => v)} colors={PIE_COLORS} hideLegend />
+                    <PieChart labels={sortedTypes.map(([t]) => t)} data={sortedTypes.map(([, v]) => v)} colors={sortedTypes.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend />
                   </div>
                   <div style={{ flex: '1 1 200px' }}>
                     {sortedTypes.map(([t, v]) => (
@@ -1901,7 +1924,7 @@
                   </div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedPersons.map(([p, v]) => (
-                      <div key={p} className="clickable" onClick={() => onPersonClick(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                      <div key={p} className={isNetWorthView ? "" : "clickable"} onClick={() => !isNetWorthView && onPersonClick(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ fontWeight: 700 }}>{p}</span>
                         <span style={{ textAlign: 'right' }}>
                           <div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div>
@@ -2191,7 +2214,7 @@
                       <td style={{ whiteSpace: 'normal' }}>{fmtDate(tx.date)}</td>
                       <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{tx.person}</span></td>
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{tx.stock}</td>
-                      <td><span className="tag" style={{ background: '#f1f5f9', color: '#475569', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
+                      <td><span className="tag" style={{ background: assetTypeColor(tx.assetType || 'STOCK', assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
                       <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(tx.price)}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>
@@ -2208,8 +2231,8 @@
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, filter, onFilterChange }) {
-      const [viewMode, setViewMode] = useState('assets'); // 'assets', 'persons', 'types'
+    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange }) {
+      const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
       const [drilldown, setDrilldown] = useState(null);
       const { holdings } = computeFIFO(transactions);
 
@@ -2260,16 +2283,25 @@
       return (
         <div className="page">
           <div className="premium-dock" style={{ marginBottom: '1.5rem' }}>
-            <div className="dock-glass" style={{ left: viewMode === 'assets' ? '4px' : viewMode === 'persons' ? '33.3%' : '66.6%', width: '33.3%' }} />
-            <button className={`dock-btn ${viewMode === 'assets' ? 'active' : ''}`} onClick={() => setViewMode('assets')} style={{ width: '33.3%' }}>By Asset</button>
+            <div className="dock-glass" style={{ left: viewMode === 'persons' ? '4px' : viewMode === 'assets' ? '33.3%' : '66.6%', width: '33.3%' }} />
             <button className={`dock-btn ${viewMode === 'persons' ? 'active' : ''}`} onClick={() => setViewMode('persons')} style={{ width: '33.3%' }}>By Person</button>
+            <button className={`dock-btn ${viewMode === 'assets' ? 'active' : ''}`} onClick={() => setViewMode('assets')} style={{ width: '33.3%' }}>By Asset</button>
             <button className={`dock-btn ${viewMode === 'types' ? 'active' : ''}`} onClick={() => setViewMode('types')} style={{ width: '33.3%' }}>By Type</button>
           </div>
 
           <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
-            <MultiSelect label="Person" options={personsList} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} />
-            <MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
+            {viewMode === 'persons' && <>
+              <MultiSelect label="Person" options={personsList} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} />
+              <MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
+              <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
+            </>}
+            {viewMode === 'assets' && <>
+              <MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
+              <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
+            </>}
+            {viewMode === 'types' && <>
+              <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
+            </>}
             <button className="btn-sm" style={{ height: 32 }} onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span></div>
           </div>
@@ -2306,7 +2338,7 @@
                         setDrilldown({ person: viewMode === 'persons' ? r.person : null, stock: r.stock, lots: lotsToShow });
                       }}>
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
-                        {viewMode === 'types' && <td><span className="tag" style={{ background: '#f1f5f9', color: '#1a1a1a' }}>{r.type}</span></td>}
+                        {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors), color: '#1a1a1a' }}>{r.type}</span></td>}
                         {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
                         {viewMode === 'types' && <td style={{ textAlign: 'right' }}>{r.stockCount}</td>}
                         <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>
@@ -2334,7 +2366,7 @@
     }
 
     // ── FIFO RESULTS ─────────────────────────────────────────
-    function FIFOTab({ transactions, personColors, assetTypes }) {
+    function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors }) {
       const { sells: allSells } = computeFIFO(transactions);
       const [filterPersons, setFilterPersons] = useState(['All']);
       const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
@@ -2383,7 +2415,7 @@
                         <td>{fmtDate(s.sellDate)}</td>
                         <td><span className="tag" style={{ background: personColor(s.person, personColors), color: '#1a1a1a' }}>{s.person}</span></td>
                         <td style={{ fontWeight: 700 }}>{s.stock}</td>
-                        <td><span className="tag" style={{ background: '#f1f5f9', color: '#475569', fontSize: 10 }}>{at}</span></td>
+                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                         <td>{s.qty}</td>
                         <td>{fmt(s.buyPrice)}</td>
                         <td>{fmt(s.sellPrice)}</td>
@@ -2500,11 +2532,6 @@
               ) : (
                 <table>
                   <thead>
-                    <tr>
-                      <th>Person</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th>
-                    </tr>
-                  </thead>
-                  <tbody>
                     {personMerged.map((r, i) => (
                       <tr key={i}>
                         <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
@@ -2576,7 +2603,7 @@
     // ── MANAGE TAB (CONSOLIDATED) ──────────────────────────────
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
-      assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType,
+      assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
       stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta
     }) {
       const [subTab, setSubTab] = useState('persons');
@@ -2584,7 +2611,7 @@
         <div className="page">
           <div className="page-header">
             <div className="page-title">Manage</div>
-            <div className="page-sub">Configure persons, asset types, and stock prices</div>
+            <div className="page-sub">Configure persons, asset types, and asset prices</div>
           </div>
 
           <div className="premium-dock" style={{ marginBottom: '1.5rem' }}>
@@ -2595,14 +2622,14 @@
           </div>
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
-          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} />}
+          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
           {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} />}
         </div>
       );
     }
 
     // ── ASSET TYPES TAB ──────────────────────────────────────
-    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete }) {
+    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetTypeColors, onColorChange }) {
       const [newName, setNewName] = useState('');
       const [saving, setSaving] = useState(false);
       const [editItem, setEditItem] = useState(null);
@@ -2667,6 +2694,7 @@
                   <thead><tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === assetTypes.length && assetTypes.length > 0} onChange={selectAll} /></th>}
                     <th>Asset Type</th>
+                    <th>Color</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr></thead>
                   <tbody>
@@ -2674,7 +2702,14 @@
                       <tr key={t.id} className="clickable" style={selected.has(t.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(t.id) : setEditItem(t)}>
                         {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
                         <td>
-                          <span className="tag" style={{ background: '#f1f5f9', color: '#1a1a1a' }}>{t.name}</span>
+                          <span className="tag" style={{ background: assetTypeColor(t.name, assetTypeColors), color: '#1a1a1a' }}>{t.name}</span>
+                        </td>
+                        <td onClick={e => e.stopPropagation()}>
+                          <ColorPicker
+                            name={t.name}
+                            color={assetTypeColor(t.name, assetTypeColors)}
+                            onChange={onColorChange}
+                          />
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
@@ -2761,7 +2796,7 @@
         <div className="page">
           <div className="page-header">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div className="page-title">Stock Prices</div>
+              <div className="page-title">Asset Prices</div>
               {priceMeta.lastUpdated && (
                 <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '4px 10px', border: '1px solid #ffe082', fontWeight: 700, letterSpacing: '.05em' }}>
                   LAST SYNCED: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -3244,6 +3279,7 @@
       const [assetTypes, setAssetTypes] = useState([]);
       const [stockPrices, setStockPrices] = useState({});
       const [personColors, setPersonColors] = useState({});
+      const [assetTypeColors, setAssetTypeColors] = useState({});
       const [sidebarOpen, setSidebarOpen] = useState(false);
       const [visibleTabs, setVisibleTabs] = useState({}); // { dashboard: true, transactions: true, ... }
       const [showNavSettings, setShowNavSettings] = useState(false);
@@ -3314,12 +3350,13 @@
           }
         }, () => { });
         const t4 = db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').onSnapshot(snap => { if (snap.exists) setPersonColors(snap.data().colors || {}); }, () => { });
+        const t4_1 = db.collection(`users/${uid}/inv_meta`).doc('inv_assetTypeColors').onSnapshot(snap => { if (snap.exists) setAssetTypeColors(snap.data().colors || {}); }, () => { });
         const t5 = db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').onSnapshot(snap => {
           if (snap.exists) {
             setVisibleTabs(snap.data().visibleTabs || {});
           }
         }, () => { });
-        return () => { t1(); t2(); t2_1(); t3(); t4(); t5(); };
+        return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t5(); };
       }, [user]);
  
       // INITIALIZE DEFAULTS & MIGRATION
@@ -3398,6 +3435,12 @@
         const upper = personName.toUpperCase().trim();
         const updated = { ...personColors, [upper]: color };
         await db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').set({ colors: updated });
+      };
+ 
+      const updateAssetTypeColor = async (typeName, color) => {
+        const upper = typeName.toUpperCase().trim();
+        const updated = { ...assetTypeColors, [upper]: color };
+        await db.collection(`users/${uid}/inv_meta`).doc('inv_assetTypeColors').set({ colors: updated });
       };
 
       const addAssetType = async t => { await db.collection(`users/${uid}/inv_assetTypes`).add(t); };
@@ -3489,15 +3532,16 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} onPersonClick={handlePersonDrilldown} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
                 {tab === 'manage' && (
                   <ManageTab
                     persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
                     personColors={personColors} onColorChange={updatePersonColor}
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
+                    assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
                   />
                 )}
