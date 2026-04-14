@@ -1570,7 +1570,8 @@
         </div>
       );
     }
-    function PersonPortfolioModal({ person, rows, personColors, onClose }) {
+    function PersonPortfolioModal({ person, rows, stockPrices, personColors, onClose }) {
+      const [drilldown, setDrilldown] = useState(null);
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
           <div className="modal" style={{ maxWidth: '95%', width: 'auto' }}>
@@ -1584,7 +1585,7 @@
                 <tbody>
                   {rows.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this person</div></td></tr>}
                   {rows.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => (
-                    <tr key={i}>
+                    <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
                       <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
@@ -1600,6 +1601,7 @@
                 </tbody>
               </table>
             </div>
+            {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
           </div>
         </div>
       );
@@ -1609,6 +1611,7 @@
     function DashboardTab({ transactions, stockPrices, personColors, onPersonClick }) {
       const [filterPersons, setFilterPersons] = useState(['All']);
       const [drilldownPerson, setDrilldownPerson] = useState(null);
+      const [drilldown, setDrilldown] = useState(null);
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
 
@@ -1690,6 +1693,7 @@
             <PersonPortfolioModal
               person={drilldownPerson}
               rows={allPortfolio.filter(r => r.person === drilldownPerson)}
+              stockPrices={stockPrices}
               personColors={personColors}
               onClose={() => setDrilldownPerson(null)}
             />
@@ -1796,7 +1800,7 @@
                   <tbody>
                     {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data for selected filter</div></td></tr>}
                     {portfolio.sort((a, b) => b.currentVal - a.currentVal).map((r, i) => (
-                      <tr key={i}>
+                      <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                         <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
                         <td style={{ fontWeight: 700 }}>{r.stock}</td>
                         <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
@@ -1817,6 +1821,7 @@
               </div>
             </div>
           )}
+          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
         </div>
       );
     }
