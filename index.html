@@ -440,17 +440,18 @@
       padding: 1rem .75rem;
       border-bottom: 2px solid var(--border);
       font-weight: 700;
-      white-space: nowrap;
       background: var(--surface);
       position: sticky;
       top: 0;
       z-index: 10;
+      overflow-wrap: break-word;
     }
 
     td {
       padding: 1rem .75rem;
       border-bottom: 1px solid var(--border);
       transition: background 0.1s;
+      overflow-wrap: break-word;
     }
 
     /* Sticky First Column on Mobile - REMOVED AS PER USER REQUEST */
@@ -470,10 +471,12 @@
     /* TAGS */
     .tag {
       display: inline-block;
-      padding: 1px 8px;
+      padding: 2px 8px;
       font-size: 11px;
       border-radius: 2px;
       font-weight: 700;
+      overflow-wrap: break-word;
+      line-height: 1.4;
     }
 
     .badge-green {
@@ -800,6 +803,63 @@
       height: 15px;
       cursor: pointer;
       accent-color: var(--text);
+    }
+
+    /* LIQUID GLASS TOGGLE */
+    .glass-toggle-container {
+      display: inline-flex;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 999px;
+      padding: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
+      user-select: none;
+    }
+    
+    .glass-toggle-btn {
+      position: relative;
+      padding: 6px 16px;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      color: rgba(255, 255, 255, 0.5);
+      background: none;
+      border: none;
+      cursor: pointer;
+      z-index: 2;
+      transition: color 0.3s;
+      text-transform: uppercase;
+    }
+    
+    .glass-toggle-btn.active {
+      color: #ffffff;
+    }
+    
+    .glass-toggle-slider {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      z-index: 1;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2);
+    }
+    
+    .glass-toggle-slider::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%; height: 50%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+      border-radius: 999px;
     }
 
     /* COLOR PICKER */
@@ -1503,7 +1563,7 @@
                     return (
                       <tr key={s}>
                         <td style={{ fontWeight: 700 }}>{s}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v)}</span><br />
                           <span style={{ fontSize: 11, opacity: .7 }}>{fmt(v)}</span>
                         </td>
@@ -1536,12 +1596,12 @@
                   {rows.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this person</div></td></tr>}
                   {rows.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => (
                     <tr key={i}>
-                      <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{r.stock}</td>
+                      <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.avgBuy)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.investedVal)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
@@ -1695,7 +1755,7 @@
                   <div style={{ fontSize: 11, fontWeight: 700, marginBottom: '.5rem', color: 'var(--text-muted)' }}>TOP 5 ALLOCATION</div>
                   {top5List.map((item, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '.3rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                      <span style={{ fontWeight: 700, whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
                       <span style={{ color: 'var(--amber)', fontWeight: 700, marginLeft: '.5rem' }}>{item.pct}%</span>
                     </div>
                   ))}
@@ -1748,19 +1808,19 @@
                     {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data for selected filter</div></td></tr>}
                     {portfolio.sort((a, b) => b.currentVal - a.currentVal).map((r, i) => (
                       <tr key={i}>
-                        <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>
+                        <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
                         <td style={{ fontWeight: 700 }}>{r.stock}</td>
                         <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.avgBuy)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.investedVal)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
                         </td>
                         <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
                         <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
                         <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.breakup}</td>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1941,12 +2001,12 @@
                   {filtered.map(tx => (
                     <tr key={tx.id} className="clickable" onClick={() => selectMode ? toggleSelect(tx.id) : setEditTx(tx)} style={selected.has(tx.id) ? { background: '#fffde7' } : {}}>
                       {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(tx.id)} onChange={() => toggleSelect(tx.id)} /></td>}
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(tx.date)}</td>
-                      <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{tx.person}</span></td>
-                      <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{tx.stock}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmtDate(tx.date)}</td>
+                      <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{tx.person}</span></td>
+                      <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{tx.stock}</td>
                       <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(tx.price)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmt(tx.price)}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1980,21 +2040,24 @@
                 <div className="page-title">Portfolio</div>
                 <div className="page-sub">{viewMode === 'persons' ? 'Per person, per stock breakdown' : 'All persons merged per stock'}</div>
               </div>
-              <div style={{ display: 'inline-flex', background: 'var(--sidebar-bg)', padding: '2px', borderRadius: '4px' }}>
-                <button 
-                  onClick={() => setViewMode('persons')} 
+              <div className="glass-toggle-container">
+                <div 
+                  className="glass-toggle-slider" 
                   style={{ 
-                    padding: '6px 12px', fontSize: '11px', fontWeight: 700, border: 'none', borderRadius: '3px', cursor: 'pointer',
-                    background: viewMode === 'persons' ? 'var(--sidebar-active-bg)' : 'transparent',
-                    color: viewMode === 'persons' ? 'var(--sidebar-active)' : 'var(--sidebar-muted)'
-                  }}>PERSONS</button>
+                    width: 'calc(50% - 4px)',
+                    transform: `translateX(${viewMode === 'persons' ? '0' : '100%'})`
+                  }} 
+                />
                 <button 
-                  onClick={() => setViewMode('stocks')} 
-                  style={{ 
-                    padding: '6px 12px', fontSize: '11px', fontWeight: 700, border: 'none', borderRadius: '3px', cursor: 'pointer',
-                    background: viewMode === 'stocks' ? 'var(--sidebar-active-bg)' : 'transparent',
-                    color: viewMode === 'stocks' ? 'var(--sidebar-active)' : 'var(--sidebar-muted)'
-                  }}>STOCKS</button>
+                  className={`glass-toggle-btn ${viewMode === 'persons' ? 'active' : ''}`}
+                  onClick={() => setViewMode('persons')}>
+                  PERSONS
+                </button>
+                <button 
+                  className={`glass-toggle-btn ${viewMode === 'stocks' ? 'active' : ''}`}
+                  onClick={() => setViewMode('stocks')}>
+                  STOCKS
+                </button>
               </div>
             </div>
           </div>
@@ -2028,15 +2091,15 @@
 
                     return (
                       <tr key={i}>
-                        {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>}
-                        <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{r.stock}</td>
-                        <td>{r.totalQty}</td><td style={{ whiteSpace: 'nowrap' }}>{fmt(r.avgBuy)}</td><td style={{ whiteSpace: 'nowrap' }}>{fmt(r.investedVal)}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
-                        <td className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
+                        {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
+                        <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
+                        <td>{r.totalQty}</td><td style={{ whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td><td style={{ whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                        <td style={{ whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                        <td style={{ whiteSpace: 'normal' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
+                        <td className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'normal' }}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
                         <td className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
-                        <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayHoldings}</td>
+                        <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'normal' }}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{displayHoldings}</td>
                       </tr>
                     );
                   })}
@@ -2090,14 +2153,14 @@
                   {filtered.length === 0 && <tr><td colSpan="9"><div className="empty">No realized trades yet</div></td></tr>}
                   {filtered.map((r, i) => (
                     <tr key={i}>
-                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>
-                      <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{r.stock}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(r.buyDate)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(r.buyPrice)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(r.sellDate)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(r.sellPrice)}</td>
+                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
+                      <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmtDate(r.buyDate)}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmt(r.buyPrice)}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmtDate(r.sellDate)}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmt(r.sellPrice)}</td>
                       <td>{r.qty}</td>
-                      <td className={r.profit >= 0 ? 'pos' : 'neg'} style={{ whiteSpace: 'nowrap' }}>{fmt(r.profit)}</td>
+                      <td className={r.profit >= 0 ? 'pos' : 'neg'} style={{ whiteSpace: 'normal' }}>{fmt(r.profit)}</td>
                       <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                     </tr>
                   ))}
@@ -2288,8 +2351,8 @@
                       <tr key={s} className="clickable" style={selected.has(s) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(s) : setEditEntry({ stock: s, price: p })}>
                         {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(s)} onChange={() => toggleSelect(s)} /></td>}
                         <td style={{ fontWeight: 700 }}>{s}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{fmt(p)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td style={{ whiteSpace: 'normal' }}>{fmt(p)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditEntry({ stock: s, price: p }); }}>EDIT</button>
                           {' '}
                           <button className="btn-sm-danger" onClick={e => { e.stopPropagation(); if (confirm(`Delete "${s}"?`)) handleDelete(s); }}>DEL</button>
