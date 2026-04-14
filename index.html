@@ -805,60 +805,49 @@
       accent-color: var(--text);
     }
 
-    /* LIQUID GLASS SWITCH */
-    .glass-switch-container {
+    /* PREMIUM DOCK TOGGLE */
+    .premium-dock {
       display: inline-flex;
-      align-items: center;
-      gap: 16px;
-      user-select: none;
+      background: #ffffff;
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      position: relative;
     }
 
-    .glass-switch-label {
+    .dock-btn {
+      padding: 8px 24px;
       font-size: 13px;
       font-weight: 700;
-      letter-spacing: .05em;
+      color: #94a3b8;
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
       transition: color 0.3s;
+      background: none;
+      border: none;
+      font-family: inherit;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
-    .glass-switch-track {
-      width: 56px;
-      height: 28px;
-      background: rgba(15, 23, 42, 0.8);
+    .dock-btn.active {
+      color: #0f172a;
+    }
+
+    .dock-glass {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      background: rgba(255, 255, 255, 0.01);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-radius: 999px;
-      padding: 3px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      position: relative;
-      cursor: pointer;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    .glass-switch-knob {
-      width: 22px;
-      height: 22px;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: 999px;
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2);
-      position: relative;
-    }
-
-    .glass-switch-knob::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 10%; right: 10%; height: 50%;
-      background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
-      border-radius: 999px;
-    }
-
-    .glass-switch-knob.active {
-      transform: translateX(28px);
-      background: rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 2px rgba(255,255,255,0.5);
+      z-index: 1;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     /* COLOR PICKER */
@@ -1202,7 +1191,7 @@
       sorted.forEach(tx => {
         const key = `${tx.person}|${tx.stock}`;
         if (!buys[key]) buys[key] = [];
-        if (tx.qty > 0) { buys[key].push({ date: tx.date, price: tx.price, qty: tx.qty }); }
+        if (tx.qty > 0) { buys[key].push({ date: tx.date, price: tx.price, qty: tx.qty, person: tx.person }); }
         else if (tx.qty < 0) {
           let sq = Math.abs(tx.qty); const q = buys[key] || [];
           while (sq > 0 && q.length > 0) {
@@ -2041,12 +2030,24 @@
                 <div className="page-title">Portfolio</div>
                 <div className="page-sub">{viewMode === 'persons' ? 'Per person, per stock breakdown' : 'All persons merged per stock'}</div>
               </div>
-              <div className="glass-switch-container">
-                <span className="glass-switch-label" style={{ color: viewMode === 'persons' ? 'var(--text)' : 'var(--text-muted)' }}>PERSONS</span>
-                <div className="glass-switch-track" onClick={() => setViewMode(v => v === 'persons' ? 'stocks' : 'persons')}>
-                  <div className={`glass-switch-knob ${viewMode === 'stocks' ? 'active' : ''}`} />
-                </div>
-                <span className="glass-switch-label" style={{ color: viewMode === 'stocks' ? 'var(--text)' : 'var(--text-muted)' }}>STOCKS</span>
+              <div className="premium-dock">
+                <div 
+                  className="dock-glass" 
+                  style={{ 
+                    left: viewMode === 'persons' ? '4px' : 'calc(50% - 2px)',
+                    width: 'calc(50% - 2px)'
+                  }} 
+                />
+                <button 
+                  className={`dock-btn ${viewMode === 'persons' ? 'active' : ''}`}
+                  onClick={() => setViewMode('persons')}>
+                  PERSONS
+                </button>
+                <button 
+                  className={`dock-btn ${viewMode === 'stocks' ? 'active' : ''}`}
+                  onClick={() => setViewMode('stocks')}>
+                  STOCKS
+                </button>
               </div>
             </div>
           </div>
@@ -2134,6 +2135,7 @@
               <table>
                 <thead>
                   <tr>
+                    <th>Person</th>
                     <th>Buy Date</th>
                     <th>Qty</th>
                     <th>Buy ₹</th>
@@ -2156,6 +2158,7 @@
 
                     return (
                       <tr key={i}>
+                        <td><span className="tag" style={{ background: personColor(l.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{l.person}</span></td>
                         <td>{fmtDate(l.date)}</td>
                         <td>{l.qty}</td>
                         <td>{fmt(l.price)}</td>
