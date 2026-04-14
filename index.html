@@ -1053,13 +1053,47 @@
       letter-spacing: 0.05em;
     }
 
-    .action-block.bonus { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-    .action-block.split { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-    .action-block.merger { background: #f5f3ff; color: #6d28d2; border-color: #ddd6fe; }
-    .action-block.demerger { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
-    .action-block.buyback { background: #fffbeb; color: #b45309; border-color: #fde68a; }
-    .action-block.rights { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
-    .action-block.delist { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+    .action-block.bonus {
+      background: #f0fdf4;
+      color: #15803d;
+      border-color: #bbf7d0;
+    }
+
+    .action-block.split {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+
+    .action-block.merger {
+      background: #f5f3ff;
+      color: #6d28d2;
+      border-color: #ddd6fe;
+    }
+
+    .action-block.demerger {
+      background: #f0f9ff;
+      color: #0369a1;
+      border-color: #bae6fd;
+    }
+
+    .action-block.buyback {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fde68a;
+    }
+
+    .action-block.rights {
+      background: #fdf2f8;
+      color: #be185d;
+      border-color: #fbcfe8;
+    }
+
+    .action-block.delist {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
 
     @media(max-width: 768px) {
       .sidebar {
@@ -1226,6 +1260,12 @@
       '#b3e0f7', '#fff9c4', '#d7ccc8', '#f0f4c3', '#a5d6a7',
       '#90caf9', '#ce93d8', '#ffcdd2', '#b2dfdb', '#fff3e0',
       '#fce4ec', '#e8eaf6', '#e0f2f1', '#e6ee9c', '#80deea'
+    ];
+ 
+    const PIE_COLORS = [
+      '#1a1a1a', '#4a4a4a', '#7a7a7a', '#aaaaaa', '#d3d3d3',
+      '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6',
+      '#ec4899', '#f97316', '#06b6d4', '#84cc16', '#6366f1'
     ];
 
     const personColor = (name, customColors = {}) => {
@@ -1544,15 +1584,15 @@
     }
 
     // ── EDIT TX MODAL ─────────────────────────────────────────
-    function EditTxModal({ tx, persons, onSave, onDelete, onClose }) {
-      const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '' });
+    function EditTxModal({ tx, persons, assetTypes, onSave, onDelete, onClose }) {
+      const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '', assetType: tx.assetType || 'STOCK' });
       const [saveState, setSaveState] = useState('idle');
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
       const handleSave = async () => {
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
         setSaveState('saving');
         const qty = Number(form.qty);
-        await onSave(tx.id, { date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price) });
+        await onSave(tx.id, { date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price), assetType: form.assetType });
         setSaveState('saved');
         setTimeout(() => onClose(), 400);
       };
@@ -1566,6 +1606,11 @@
               <div><label className="form-label">Person</label>
                 <select className="select-input" value={form.person} onChange={e => set('person', e.target.value)}>
                   <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+              <div><label className="form-label">Asset Type</label>
+                <select className="select-input" value={form.assetType} onChange={e => set('assetType', e.target.value)}>
+                  {assetTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                 </select>
               </div>
             </div>
@@ -1661,16 +1706,27 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, onPersonClick }) {
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, onPersonClick }) {
       const [filterPersons, setFilterPersons] = useState(['All']);
+      const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const [drilldown, setDrilldown] = useState(null);
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
 
       const persons = [...new Set([...allPortfolio.map(r => r.person), ...sells.map(r => r.person)])].sort();
-      const portfolio = allPortfolio.filter(r => filterPersons.includes('All') || filterPersons.includes(r.person));
-      const filteredSells = sells.filter(r => filterPersons.includes('All') || filterPersons.includes(r.person));
+      const types = assetTypes.map(t => t.name).sort();
+
+      const portfolio = allPortfolio.filter(r => {
+        const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
+        return (filterPersons.includes('All') || filterPersons.includes(r.person)) &&
+               (filterAssetTypes.includes('All') || filterAssetTypes.includes(at));
+      });
+      const filteredSells = sells.filter(r => {
+        const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
+        return (filterPersons.includes('All') || filterPersons.includes(r.person)) &&
+               (filterAssetTypes.includes('All') || filterAssetTypes.includes(at));
+      });
 
       const totalInvested = portfolio.reduce((s, r) => s + r.investedVal, 0);
       const totalCurrent = portfolio.reduce((s, r) => s + (r.currentVal || r.investedVal), 0);
@@ -1739,6 +1795,17 @@
 
       const top5List = stockEntries.slice(0, 5).map(([s, v]) => ({ name: s, pct: totalCurrent > 0 ? (v / totalCurrent * 100).toFixed(1) : 0 }));
 
+      const isNetWorthView = filterPersons.includes('All') && filterAssetTypes.includes('All');
+
+      // Net Worth Breakdown
+      const byType = {};
+      allPortfolio.forEach(r => {
+        const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
+        if (!byType[at]) byType[at] = 0;
+        byType[at] += (r.currentVal || r.investedVal);
+      });
+      const sortedTypes = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+
       return (
         <div className="page">
           {showAllocation && <StockAllocationModal stockEntries={stockEntries} totalValue={totalCurrent} onClose={() => setShowAllocation(false)} />}
@@ -1753,26 +1820,41 @@
           )}
           <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <div className="page-title">Dashboard</div>
-              <div className="page-sub">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
+              <div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div>
+              <div className="page-sub">{isNetWorthView ? 'Combined wealth across all assets' : new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
             </div>
             <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
               <MultiSelect label="Filter Persons" options={persons} selected={filterPersons} onChange={setFilterPersons} />
-              <button className="btn-sm" style={{ height: 32 }} onClick={() => setFilterPersons(['All'])} title="Reset Filters">↺</button>
+              <MultiSelect label="Filter Asset Type" options={types} selected={filterAssetTypes} onChange={setFilterAssetTypes} />
+              <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); }} title="Reset Filters">↺</button>
             </div>
           </div>
           <div className="stats-grid">
-            <div className="stat-card"><div className="stat-label">Invested Value</div><div className="stat-val">{fmt(totalInvested)}</div></div>
-            <div className="stat-card"><div className="stat-label">Current Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
             <div className="stat-card">
-              <div className="stat-label">Unrealized Gain</div>
+              <div className="stat-label">{isNetWorthView ? 'Net Worth' : 'Current Value'}</div>
+              <div className="stat-val">{fmt(totalCurrent)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Invested</div>
+              <div className="stat-val">{fmt(totalInvested)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">{totalGain >= 0 ? 'Total profit' : 'Total Loss'}</div>
               <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div>
               <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Unrealized Net CAGR</div>
-              <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
-            </div>
+            {isNetWorthView ? (
+              <div className="stat-card">
+                <div className="stat-label">Most Capital Allocated</div>
+                <div className="stat-val" style={{ fontSize: 18 }}>{sortedTypes[0]?.[0] || '—'}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{((sortedTypes[0]?.[1] || 0) / totalCurrent * 100).toFixed(1)}% of wealth</div>
+              </div>
+            ) : (
+              <div className="stat-card">
+                <div className="stat-label">Unrealized Net CAGR</div>
+                <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
+              </div>
+            )}
             <div className="stat-card">
               <div className="stat-label">Combined Net CAGR</div>
               <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
@@ -1785,94 +1867,144 @@
             {topLoser && topLoser.stock !== (topGainer?.stock) && <div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{ fontWeight: 700 }}>{topLoser.stock}</div><div className="neg" style={{ fontSize: 20 }}>{fmt(topLoser.absGain)}</div></div>}
           </div>
 
-          <div className="charts-row">
-            <div className="chart-card">
-              <div className="card-title">Current vs Invested Value by Person</div>
-              <div className="chart-wrap"><BarChart labels={pLabels} datasets={barDatasets} /></div>
-            </div>
-            <div className="chart-card">
-              <div className="card-title clickable" onClick={() => setShowAllocation(true)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-                <span>Portfolio by Stock</span>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>View all ↗</span>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                <div className="chart-wrap" style={{ flex: '1 1 200px', height: 220 }}><PieChart labels={pieLabels} data={pieData} colors={pieColors} hideLegend /></div>
-                <div style={{ flex: '1 1 150px' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, marginBottom: '.5rem', color: 'var(--text-muted)' }}>TOP 5 ALLOCATION</div>
-                  {top5List.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '.3rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ fontWeight: 700, whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                      <span style={{ color: 'var(--amber)', fontWeight: 700, marginLeft: '.5rem' }}>{item.pct}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {filterPersons.includes('All') ? (
-            <div className="card">
-              <div className="card-title">Portfolio breakdown by Person</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', justifyContent: 'center' }}>
-                <div className="chart-wrap" style={{ flex: '1 1 250px', height: 280 }}>
-                  <PieChart
-                    labels={sortedPersons.map(([p]) => p)}
-                    data={sortedPersons.map(([, v]) => v.current)}
-                    colors={sortedPersons.map(([p]) => personColor(p, personColors))}
-                    hideLegend={true}
-                  />
-                </div>
-                <div style={{ flex: '1 1 280px', maxHeight: 280, overflowY: 'auto', paddingRight: '10px' }}>
-                  {sortedPersons.map(([p, v]) => {
-                    const pct = totalCurrent > 0 ? (v.current / totalCurrent * 100).toFixed(1) : 0;
-                    return (
-                      <div key={p} className="clickable" onClick={() => setDrilldownPerson(p)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '.5rem 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: 10, height: 10, background: personColor(p, personColors), borderRadius: '2px' }}></div>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{p}</div>
-                            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{pct}%</div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 700, fontSize: 13 }}>{fmtWords(v.current)}</div>
-                          <div style={{ fontSize: 9, color: 'var(--text-muted)', opacity: 0.8 }}>{fmt(v.current)}</div>
-                        </div>
+          {isNetWorthView ? (
+            <div className="charts-row">
+              <div className="chart-card">
+                <div className="card-title">Wealth by Asset Type</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
+                    <PieChart labels={sortedTypes.map(([t]) => t)} data={sortedTypes.map(([, v]) => v)} colors={PIE_COLORS} hideLegend />
+                  </div>
+                  <div style={{ flex: '1 1 200px' }}>
+                    {sortedTypes.map(([t, v]) => (
+                      <div key={t} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{t}</span>
+                        <span style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 700 }}>{fmtWords(v)}</div>
+                          <div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div>
+                        </span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="chart-card">
+                <div className="card-title">Wealth by Person</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
+                    <PieChart
+                      labels={sortedPersons.map(([p]) => p)}
+                      data={sortedPersons.map(([, v]) => v.current)}
+                      colors={sortedPersons.map(([p]) => personColor(p, personColors))}
+                      hideLegend
+                    />
+                  </div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedPersons.map(([p, v]) => (
+                      <div key={p} className="clickable" onClick={() => onPersonClick(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{p}</span>
+                        <span style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div>
+                          <div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="card" style={{ padding: 0 }}>
-              <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Portfolio Breakdown</div>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Person</th><th>Stock</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
-                  <tbody>
-                    {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data for selected filter</div></td></tr>}
-                    {portfolio.sort((a, b) => b.currentVal - a.currentVal).map((r, i) => (
-                      <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
-                        <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
-                        <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                        <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
-                          <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
-                        </td>
-                        <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
-                        <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
-                        <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <>
+              <div className="charts-row">
+                <div className="chart-card">
+                  <div className="card-title">Current vs Invested Value by Person</div>
+                  <div className="chart-wrap"><BarChart labels={pLabels} datasets={barDatasets} /></div>
+                </div>
+                <div className="chart-card">
+                  <div className="card-title clickable" onClick={() => setShowAllocation(true)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                    <span>Portfolio by Stock</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 400 }}>View all ↗</span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 220 }}><PieChart labels={pieLabels} data={pieData} colors={pieColors} hideLegend /></div>
+                    <div style={{ flex: '1 1 150px' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, marginBottom: '.5rem', color: 'var(--text-muted)' }}>TOP 5 ALLOCATION</div>
+                      {top5List.map((item, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '.3rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span style={{ fontWeight: 700, whiteSpace: 'normal', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                          <span style={{ color: 'var(--amber)', fontWeight: 700, marginLeft: '.5rem' }}>{item.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+
+              {filterPersons.includes('All') ? (
+                <div className="card">
+                  <div className="card-title">Portfolio breakdown by Person</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 250px', height: 280 }}>
+                      <PieChart
+                        labels={sortedPersons.map(([p]) => p)}
+                        data={sortedPersons.map(([, v]) => v.current)}
+                        colors={sortedPersons.map(([p]) => personColor(p, personColors))}
+                        hideLegend={true}
+                      />
+                    </div>
+                    <div style={{ flex: '1 1 280px', maxHeight: 280, overflowY: 'auto', paddingRight: '10px' }}>
+                      {sortedPersons.map(([p, v]) => {
+                        const pct = totalCurrent > 0 ? (v.current / totalCurrent * 100).toFixed(1) : 0;
+                        return (
+                          <div key={p} className="clickable" onClick={() => setDrilldownPerson(p)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '.5rem 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{ width: 10, height: 10, background: personColor(p, personColors), borderRadius: '2px' }}></div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{p}</div>
+                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{pct}%</div>
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 700, fontSize: 13 }}>{fmtWords(v.current)}</div>
+                              <div style={{ fontSize: 9, color: 'var(--text-muted)', opacity: 0.8 }}>{fmt(v.current)}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="card" style={{ padding: 0 }}>
+                  <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Portfolio Breakdown</div>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>Person</th><th>Stock</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
+                      <tbody>
+                        {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data for selected filter</div></td></tr>}
+                        {portfolio.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => (
+                          <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
+                            <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
+                            <td style={{ fontWeight: 700 }}>{r.stock}</td>
+                            <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+                            <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
+                            <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                            <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                            <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
+                              <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
+                            </td>
+                            <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                            <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
+                            <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>
+                            <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
         </div>
@@ -1880,8 +2012,8 @@
     }
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors }) {
-      const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '' });
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors }) {
+      const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
@@ -1890,6 +2022,7 @@
       const [search, setSearch] = useState('');
       const [filterPersons, setFilterPersons] = useState(['All']);
       const [filterStocks, setFilterStocks] = useState(['All']);
+      const [filterAssetType, setFilterAssetType] = useState(['All']);
       const [editTx, setEditTx] = useState(null);
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
@@ -1901,7 +2034,7 @@
         setSaving(true);
         await onEnsurePerson(form.person.toUpperCase());
         const qty = Number(form.qty);
-        await onAdd({ date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price) });
+        await onAdd({ date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price), assetType: form.assetType });
         setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '' });
         setSaving(false);
       };
@@ -1911,12 +2044,12 @@
         lines.forEach((line, i) => {
           const parts = line.split(',').map(s => s.trim());
           if (parts.length < 5) { rows.push({ err: `Row ${i + 1}: need 5 cols`, raw: line }); return; }
-          const [date, person, stock, qtyRaw, priceRaw] = parts;
+          const [date, person, stock, qtyRaw, priceRaw, assetTypeRaw] = parts;
           const qty = Number(qtyRaw); const price = Number(priceRaw);
           if (!date || !person || !stock) { rows.push({ err: `Row ${i + 1}: missing field`, raw: line }); return; }
           if (isNaN(qty) || qty === 0) { rows.push({ err: `Row ${i + 1}: invalid qty`, raw: line }); return; }
           if (isNaN(price) || price <= 0) { rows.push({ err: `Row ${i + 1}: invalid price`, raw: line }); return; }
-          rows.push({ date, person: person.toUpperCase(), stock: stock.toUpperCase(), qty, price, ok: true });
+          rows.push({ date, person: person.toUpperCase(), stock: stock.toUpperCase(), qty, price, assetType: (assetTypeRaw || 'STOCK').toUpperCase(), ok: true });
         });
         setPreview(rows);
       };
@@ -1931,7 +2064,7 @@
         const chunkSize = 100;
         for (let i = 0; i < validRows.length; i += chunkSize) {
           const chunk = validRows.slice(i, i + chunkSize);
-          await onBulkAdd(chunk.map(r => ({ date: r.date, person: r.person, stock: r.stock, qty: r.qty, price: r.price })));
+          await onBulkAdd(chunk.map(r => ({ date: r.date, person: r.person, stock: r.stock, qty: r.qty, price: r.price, assetType: r.assetType })));
           setImportProgress({ done: Math.min(i + chunkSize, validRows.length), total: validRows.length });
         }
         setImportProgress(null); setPreview(null); setCsvText(''); setCsvMode(false); setSaving(false);
@@ -1939,10 +2072,11 @@
 
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person);
       const filtered = valid.filter(t => {
-        const matchesSearch = !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase());
+        const matchesSearch = !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase()) || t.assetType?.toLowerCase().includes(search.toLowerCase());
         const matchesPerson = filterPersons.includes('All') || filterPersons.includes(t.person);
         const matchesStock = filterStocks.includes('All') || filterStocks.includes(t.stock);
-        return matchesSearch && matchesPerson && matchesStock;
+        const matchesAssetType = filterAssetType.includes('All') || filterAssetType.includes(t.assetType);
+        return matchesSearch && matchesPerson && matchesStock && matchesAssetType;
       }).sort((a, b) => toJSDate(b.date) - toJSDate(a.date));
 
       const toggleSelect = (id) => { setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
@@ -1971,6 +2105,11 @@
                 <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" /></div>
                 <div><label className="form-label">Qty (- for Sell)</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" /></div>
                 <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" /></div>
+                <div><label className="form-label">Asset Type</label>
+                  <select className="select-input" value={form.assetType} onChange={e => set('assetType', e.target.value)}>
+                    {assetTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  </select>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
                 <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
@@ -2003,8 +2142,8 @@
                 <div className="card-title">Preview — {preview.filter(r => r.ok).length} valid, {preview.filter(r => !r.ok).length} errors</div>
                 <div className="table-wrap">
                   <table className="preview-table">
-                    <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
-                    <tbody>{preview.map((r, i) => <tr key={i} className={r.ok ? 'preview-ok' : 'preview-err'}><td>{r.date || '—'}</td><td>{r.person || '—'}</td><td>{r.stock || r.raw}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok ? '✓' : r.err}</td></tr>)}</tbody>
+                    <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Type</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
+                    <tbody>{preview.map((r, i) => <tr key={i} className={r.ok ? 'preview-ok' : 'preview-err'}><td>{r.date || '—'}</td><td>{r.person || '—'}</td><td>{r.stock || r.raw}</td><td>{r.assetType || '—'}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok ? '✓' : r.err}</td></tr>)}</tbody>
                   </table>
                 </div>
                 {preview.some(r => r.ok) && <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem', marginTop: '.75rem' }} onClick={importCSV} disabled={saving}>{saving ? '...' : `IMPORT ${preview.filter(r => r.ok).length} ROWS`}</button>}
@@ -2018,11 +2157,12 @@
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <MultiSelect label="Person" options={[...new Set(valid.map(t => t.person))].sort()} selected={filterPersons} onChange={setFilterPersons} />
                 <MultiSelect label="Stock" options={[...new Set(valid.map(t => t.stock))].sort()} selected={filterStocks} onChange={setFilterStocks} />
+                <MultiSelect label="Asset Type" options={[...new Set(valid.map(t => t.assetType || 'STOCK'))].sort()} selected={filterAssetType} onChange={setFilterAssetType} />
                 <div className="filter-group">
                   <div className="filter-label">Search</div>
                   <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
-                <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSearch(''); setFilterPersons(['All']); setFilterStocks(['All']); }} title="Reset Filters">↺</button>
+                <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSearch(''); setFilterPersons(['All']); setFilterStocks(['All']); setFilterAssetType(['All']); }} title="Reset Filters">↺</button>
                 <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
               </div>
             </div>
@@ -2040,7 +2180,7 @@
                 <thead>
                   <tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={selectAll} /></th>}
-                    <th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th>
+                    <th>Date</th><th>Person</th><th>Stock</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2051,6 +2191,7 @@
                       <td style={{ whiteSpace: 'normal' }}>{fmtDate(tx.date)}</td>
                       <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{tx.person}</span></td>
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{tx.stock}</td>
+                      <td><span className="tag" style={{ background: '#f1f5f9', color: '#475569', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
                       <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(tx.price)}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>
@@ -2061,36 +2202,75 @@
             </div>
           </div>
 
-          {editTx && <EditTxModal tx={editTx} persons={persons} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} />}
+          {editTx && <EditTxModal tx={editTx} persons={persons} assetTypes={assetTypes} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} />}
         </div>
       );
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices, personColors, filter, onFilterChange, viewMode }) {
+    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, filter, onFilterChange }) {
+      const [viewMode, setViewMode] = useState('assets'); // 'assets', 'persons', 'types'
       const [drilldown, setDrilldown] = useState(null);
       const { holdings } = computeFIFO(transactions);
 
-      const allRows = viewMode === 'persons' ? buildPortfolio(holdings, stockPrices) : buildStockSheet(holdings, stockPrices);
-      const stocks = [...new Set(allRows.map(r => r.stock))].sort();
-      const persons = viewMode === 'persons' ? [...new Set(allRows.map(r => r.person))].sort() : [];
+      // Pre-process for different views
+      const allAssetRows = buildStockSheet(holdings, stockPrices); // By Asset
+      const allPersonRows = buildPortfolio(holdings, stockPrices); // By Person
 
-      const filtered = allRows.filter(r =>
-        (viewMode === 'stocks' || filter.persons.includes('All') || filter.persons.includes(r.person)) &&
-        (filter.stocks.includes('All') || filter.stocks.includes(r.stock))
-      );
+      // By Asset Type View
+      const buildTypeSheet = (h, prices) => {
+        const types = {};
+        transactions.forEach(t => {
+          if (t.qty > 0) {
+            const at = t.assetType || 'STOCK';
+            if (!types[at]) types[at] = { type: at, investedVal: 0, currentVal: 0, stocks: new Set() };
+          }
+        });
+
+        const rows = buildPortfolio(h, prices);
+        rows.forEach(r => {
+          const tx = transactions.find(t => t.stock === r.stock && t.person === r.person) || {}; // Simplified
+          const at = tx.assetType || 'STOCK';
+          if (!types[at]) types[at] = { type: at, investedVal: 0, currentVal: 0, stocks: new Set() };
+          types[at].investedVal += r.investedVal;
+          types[at].currentVal += (r.currentVal || r.investedVal);
+          types[at].stocks.add(r.stock);
+        });
+
+        return Object.values(types).map(t => ({
+          ...t,
+          absGain: t.currentVal - t.investedVal,
+          absGainPct: t.investedVal > 0 ? ((t.currentVal - t.investedVal) / t.investedVal) * 100 : 0,
+          stockCount: t.stocks.size
+        }));
+      };
+
+      const allTypeRows = buildTypeSheet(holdings, stockPrices);
+
+      const stocksList = [...new Set(transactions.map(t => t.stock))].sort();
+      const personsList = [...new Set(transactions.map(t => t.person))].sort();
+      const typesList = assetTypes.map(t => t.name).sort();
+
+      const filtered = (viewMode === 'assets' ? allAssetRows : viewMode === 'persons' ? allPersonRows : allTypeRows).filter(r => {
+        const at = (viewMode === 'types' ? r.type : (viewMode === 'persons' ? (transactions.find(t => t.person === r.person && t.stock === r.stock)?.assetType || 'STOCK') : (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK')));
+        return (filter.persons.includes('All') || (viewMode === 'persons' ? filter.persons.includes(r.person) : true)) &&
+          (filter.stocks.includes('All') || (viewMode === 'assets' ? filter.stocks.includes(r.stock) : true)) &&
+          (filter.assetTypes?.includes('All') || filter.assetTypes?.includes(at));
+      });
       return (
         <div className="page">
-          <div className="page-header">
-            <div>
-              <div className="page-title">{viewMode === 'persons' ? 'Portfolio' : 'Stocks'}</div>
-              <div className="page-sub">{viewMode === 'persons' ? 'Person-wise stock breakdown' : 'Consolidated stock holdings'}</div>
-            </div>
+          <div className="premium-dock" style={{ marginBottom: '1.5rem' }}>
+            <div className="dock-glass" style={{ left: viewMode === 'assets' ? '4px' : viewMode === 'persons' ? '33.3%' : '66.6%', width: '33.3%' }} />
+            <button className={`dock-btn ${viewMode === 'assets' ? 'active' : ''}`} onClick={() => setViewMode('assets')} style={{ width: '33.3%' }}>By Asset</button>
+            <button className={`dock-btn ${viewMode === 'persons' ? 'active' : ''}`} onClick={() => setViewMode('persons')} style={{ width: '33.3%' }}>By Person</button>
+            <button className={`dock-btn ${viewMode === 'types' ? 'active' : ''}`} onClick={() => setViewMode('types')} style={{ width: '33.3%' }}>By Type</button>
           </div>
+
           <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            {viewMode === 'persons' && <MultiSelect label="Person" options={persons} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} />}
-            <MultiSelect label="Stock" options={stocks} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
-            <button className="btn-sm" style={{ height: 32 }} onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'] })} title="Reset Filters">↺</button>
+            <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
+            <MultiSelect label="Person" options={personsList} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} />
+            <MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
+            <button className="btn-sm" style={{ height: 32 }} onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span></div>
           </div>
           <div className="card" style={{ padding: 0 }}>
@@ -2099,41 +2279,48 @@
                 <thead>
                   <tr>
                     {viewMode === 'persons' && <th>Person</th>}
-                    <th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th>
+                    {viewMode === 'types' && <th>Asset Type</th>}
+                    {viewMode !== 'types' && <th>Asset</th>}
+                    {viewMode === 'types' && <th style={{ textAlign: 'right' }}>Assets</th>}
+                    <th style={{ textAlign: 'right' }}>Qty</th>
+                    <th style={{ textAlign: 'right' }}>Avg Buy</th>
+                    <th style={{ textAlign: 'right' }}>Invested</th>
+                    <th style={{ textAlign: 'right' }}>Curr Price</th>
+                    <th style={{ textAlign: 'right' }}>Curr Value</th>
+                    <th style={{ textAlign: 'right' }}>Gain ₹</th>
+                    <th style={{ textAlign: 'right' }}>Gain %</th>
+                    <th style={{ textAlign: 'right' }}>CAGR</th>
+                    {viewMode !== 'types' && <th>Holdings</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 11 : 10}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
-                    // Pre-process for stocks view if needed (hText calculation)
-                    let displayHoldings = r.breakup || '';
-                    if (viewMode === 'stocks') {
-                      const aggregated = {};
-                      Object.values(r.persons || {}).forEach(d => {
-                        (d.lots || []).forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
-                      });
-                      displayHoldings = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
-                    }
-
+                    const at = (viewMode === 'types' ? r.type : (viewMode === 'persons' ? (transactions.find(t => t.person === r.person && t.stock === r.stock)?.assetType || 'STOCK') : (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK')));
                     return (
                       <tr key={i} className="clickable" onClick={() => {
                         let lotsToShow = [];
-                        if (viewMode === 'persons') {
-                          lotsToShow = r.lots;
-                        } else {
-                          Object.values(r.persons).forEach(p => { lotsToShow.push(...p.lots); });
-                        }
+                        if (viewMode === 'persons') lotsToShow = r.lots;
+                        else if (viewMode === 'assets') Object.values(r.persons).forEach(p => lotsToShow.push(...p.lots));
+                        else return; // No drilldown for 'types' yet or handle differently
                         setDrilldown({ person: viewMode === 'persons' ? r.person : null, stock: r.stock, lots: lotsToShow });
                       }}>
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
-                        <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
-                        <td>{r.totalQty}</td><td style={{ whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td><td style={{ whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                        <td style={{ whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                        <td style={{ whiteSpace: 'normal' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
-                        <td className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'normal' }}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
-                        <td className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
-                        <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'normal' }}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{displayHoldings}</td>
+                        {viewMode === 'types' && <td><span className="tag" style={{ background: '#f1f5f9', color: '#1a1a1a' }}>{r.type}</span></td>}
+                        {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
+                        {viewMode === 'types' && <td style={{ textAlign: 'right' }}>{r.stockCount}</td>}
+                        <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
+                          <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
+                          {viewMode !== 'types' && <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{at}</div>}
+                        </td>
+                        <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                        <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
+                        <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>
+                        {viewMode !== 'types' && <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup || (viewMode === 'assets' ? 'Click for info' : '')}</td>}
                       </tr>
                     );
                   })}
@@ -2146,9 +2333,71 @@
       );
     }
 
-    // ── STOCKS ────────────────────────────────────────────────
-    // StocksTab removed - merged into PortfolioTab
+    // ── FIFO RESULTS ─────────────────────────────────────────
+    function FIFOTab({ transactions, personColors, assetTypes }) {
+      const { sells: allSells } = computeFIFO(transactions);
+      const [filterPersons, setFilterPersons] = useState(['All']);
+      const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
+      const [stockFilter, setStockFilter] = useState('');
 
+      const sells = allSells.filter(s => {
+        const at = transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK';
+        return (filterPersons.includes('All') || filterPersons.includes(s.person)) &&
+               (filterAssetTypes.includes('All') || filterAssetTypes.includes(at)) &&
+               (!stockFilter || s.stock.toLowerCase().includes(stockFilter.toLowerCase()));
+      });
+
+      const persons = [...new Set(allSells.map(s => s.person))].sort();
+      const typesList = assetTypes.map(t => t.name).sort();
+
+      return (
+        <div className="page">
+          <div className="page-header">
+            <div className="page-title">FIFO Reporting</div>
+            <div className="page-sub">Tax harvesting & realized gains</div>
+          </div>
+          <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <MultiSelect label="Person" options={persons} selected={filterPersons} onChange={setFilterPersons} />
+            <MultiSelect label="Asset Type" options={typesList} selected={filterAssetTypes} onChange={setFilterAssetTypes} />
+            <div className="filter-group">
+              <div className="filter-label">Stock Search</div>
+              <input className="form-input" style={{ width: 140, fontSize: 12 }} placeholder="Search..." value={stockFilter} onChange={e => setStockFilter(e.target.value)} />
+            </div>
+            <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); setStockFilter(''); }} title="Reset Filters">↺</button>
+            <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{sells.length} records</span></div>
+          </div>
+
+          <div className="card" style={{ padding: 0 }}>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Sell Date</th><th>Person</th><th>Stock</th><th>Type</th><th>Qty</th><th>Buy Price</th><th>Sell Price</th><th>Total Profit</th><th>Holding Days</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sells.map((s, i) => {
+                    const at = transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK';
+                    return (
+                      <tr key={i}>
+                        <td>{fmtDate(s.sellDate)}</td>
+                        <td><span className="tag" style={{ background: personColor(s.person, personColors), color: '#1a1a1a' }}>{s.person}</span></td>
+                        <td style={{ fontWeight: 700 }}>{s.stock}</td>
+                        <td><span className="tag" style={{ background: '#f1f5f9', color: '#475569', fontSize: 10 }}>{at}</span></td>
+                        <td>{s.qty}</td>
+                        <td>{fmt(s.buyPrice)}</td>
+                        <td>{fmt(s.sellPrice)}</td>
+                        <td className={s.realizedGain >= 0 ? 'pos' : 'neg'}>{fmt(s.realizedGain)}</td>
+                        <td>{s.days}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
     // ── PORTFOLIO DRILLDOWN MODAL ──────────────────────────────
     function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose }) {
       if (!data) return null;
@@ -2203,13 +2452,7 @@
                 </div>
                 {showMergedTab && (
                   <div className="premium-dock" style={{ padding: '3px', transform: 'scale(0.85)', transformOrigin: 'left center' }}>
-                    <div
-                      className="dock-glass"
-                      style={{
-                        left: modalMode === 'txn' ? '3px' : 'calc(50% - 1.5px)',
-                        width: 'calc(50% - 1.5px)'
-                      }}
-                    />
+                    <div className="dock-glass" style={{ left: modalMode === 'txn' ? '3px' : 'calc(50% - 1.5px)', width: 'calc(50% - 1.5px)' }} />
                     <button className={`dock-btn ${modalMode === 'txn' ? 'active' : ''}`} onClick={() => setModalMode('txn')} style={{ padding: '6px 16px', fontSize: 11 }}>TXN</button>
                     <button className={`dock-btn ${modalMode === 'merged' ? 'active' : ''}`} onClick={() => setModalMode('merged')} style={{ padding: '6px 16px', fontSize: 11 }}>MERGED</button>
                   </div>
@@ -2223,16 +2466,7 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Person</th>
-                      <th>Buy Date</th>
-                      <th>Qty</th>
-                      <th>Buy ₹</th>
-                      <th>Invested</th>
-                      <th>Curr ₹</th>
-                      <th>Curr Val</th>
-                      <th>Gain</th>
-                      <th>Gain%</th>
-                      <th>CAGR</th>
+                      <th>Person</th><th>Buy Date</th><th>Qty</th><th>Buy ₹</th><th>Invested</th><th>Curr ₹</th><th>Curr Val</th><th>Gain</th><th>Gain%</th><th>CAGR</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2265,16 +2499,7 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Person</th>
-                      <th>Qty</th>
-                      <th>Avg Buy</th>
-                      <th>Invested</th>
-                      <th>Curr Price</th>
-                      <th>Curr Value</th>
-                      <th>Gain ₹</th>
-                      <th>Gain %</th>
-                      <th>CAGR</th>
-                      <th>Holdings</th>
+                      <th>Person</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2295,64 +2520,6 @@
                   </tbody>
                 </table>
               )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ── FIFO RESULTS ──────────────────────────────────────────
-    function FIFOTab({ transactions, personColors }) {
-      const { sells } = computeFIFO(transactions);
-      const [filterPersons, setFilterPersons] = useState(['All']);
-      const [filterStocks, setFilterStocks] = useState(['All']);
-      const persons = [...new Set(sells.map(r => r.person))].sort();
-      const stocks = [...new Set(sells.map(r => r.stock))].sort();
-      const filtered = sells.filter(r =>
-        (filterPersons.includes('All') || filterPersons.includes(r.person)) &&
-        (filterStocks.includes('All') || filterStocks.includes(r.stock))
-      );
-      const totalProfit = filtered.reduce((s, r) => s + r.profit, 0);
-
-      const fCost = filtered.reduce((s, r) => s + (r.qty * r.buyPrice), 0);
-      const fVal = filtered.reduce((s, r) => s + (r.qty * r.sellPrice), 0);
-      const fAgeSum = filtered.reduce((s, r) => s + (r.qty * r.buyPrice * (r.yrs || 0)), 0);
-      const fAvgAge = fCost > 0 ? fAgeSum / fCost : 0;
-      const realizedNetCAGR = (fCost > 0 && fAvgAge > 0) ? (Math.pow(fVal / fCost, 1 / fAvgAge) - 1) * 100 : 0;
-
-      return (
-        <div className="page">
-          <div className="page-header"><div className="page-title">FIFO Results</div><div className="page-sub">Realized gains from completed trades</div></div>
-          <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <MultiSelect label="Person" options={persons} selected={filterPersons} onChange={setFilterPersons} />
-            <MultiSelect label="Stock" options={stocks} selected={filterStocks} onChange={setFilterStocks} />
-            <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterStocks(['All']); }} title="Reset Filters">↺</button>
-            <div style={{ marginLeft: 'auto', textAlign: 'right', marginBottom: 6 }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>Total Realized: <span className={totalProfit >= 0 ? 'pos' : 'neg'}>{fmt(totalProfit)}</span></div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Net Realized CAGR: <span className={realizedNetCAGR >= 0 ? 'pos' : 'neg'}>{fmtPct(realizedNetCAGR)}</span></div>
-            </div>
-          </div>
-          <div className="card" style={{ padding: 0 }}>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Buy Date</th><th>Buy ₹</th><th>Sell Date</th><th>Sell ₹</th><th>Qty</th><th>Profit</th><th>CAGR</th></tr></thead>
-                <tbody>
-                  {filtered.length === 0 && <tr><td colSpan="9"><div className="empty">No realized trades yet</div></td></tr>}
-                  {filtered.map((r, i) => (
-                    <tr key={i}>
-                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
-                      <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
-                      <td style={{ whiteSpace: 'normal' }}>{fmtDate(r.buyDate)}</td>
-                      <td style={{ whiteSpace: 'normal' }}>{fmt(r.buyPrice)}</td>
-                      <td style={{ whiteSpace: 'normal' }}>{fmtDate(r.sellDate)}</td>
-                      <td style={{ whiteSpace: 'normal' }}>{fmt(r.sellPrice)}</td>
-                      <td>{r.qty}</td>
-                      <td className={r.profit >= 0 ? 'pos' : 'neg'} style={{ whiteSpace: 'normal' }}>{fmt(r.profit)}</td>
-                      <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         </div>
@@ -2404,8 +2571,130 @@
       );
     }
 
-    // ── STOCK PRICES ──────────────────────────────────────────
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta }) {
+    // ── MANAGE TAB (CONSOLIDATED) ──────────────────────────────
+    function ManageTab({
+      persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
+      assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType,
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta
+    }) {
+      const [subTab, setSubTab] = useState('persons');
+      return (
+        <div className="page">
+          <div className="page-header">
+            <div className="page-title">Manage</div>
+            <div className="page-sub">Configure persons, asset types, and stock prices</div>
+          </div>
+
+          <div className="premium-dock" style={{ marginBottom: '1.5rem' }}>
+            <div className="dock-glass" style={{ left: subTab === 'persons' ? '4px' : subTab === 'assets' ? '33.3%' : '66.6%', width: '33.3%' }} />
+            <button className={`dock-btn ${subTab === 'persons' ? 'active' : ''}`} onClick={() => setSubTab('persons')} style={{ width: '33.3%' }}>Persons</button>
+            <button className={`dock-btn ${subTab === 'assets' ? 'active' : ''}`} onClick={() => setSubTab('assets')} style={{ width: '33.3%' }}>Asset Types</button>
+            <button className={`dock-btn ${subTab === 'prices' ? 'active' : ''}`} onClick={() => setSubTab('prices')} style={{ width: '33.3%' }}>Prices</button>
+          </div>
+
+          {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
+          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} />}
+        </div>
+      );
+    }
+
+    // ── ASSET TYPES TAB ──────────────────────────────────────
+    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete }) {
+      const [newName, setNewName] = useState('');
+      const [saving, setSaving] = useState(false);
+      const [editItem, setEditItem] = useState(null);
+      const [dupError, setDupError] = useState('');
+      const [selected, setSelected] = useState(new Set());
+      const [selectMode, setSelectMode] = useState(false);
+      const [deleting, setDeleting] = useState(false);
+
+      const handleAdd = async () => {
+        if (!newName.trim()) return;
+        const upper = newName.toUpperCase().trim();
+        if (assetTypes.some(t => t.name.toUpperCase() === upper)) { setDupError(`"${upper}" already exists!`); return; }
+        setDupError(''); setSaving(true);
+        await onAdd({ name: upper });
+        setNewName(''); setSaving(false);
+      };
+
+      const toggleSelect = (id) => { setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
+      const selectAll = () => { if (selected.size === assetTypes.length) setSelected(new Set()); else setSelected(new Set(assetTypes.map(t => t.id))); };
+      const deleteSelected = async () => {
+        if (!confirm(`Delete ${selected.size} asset type(s)?\nThis will NOT delete transactions, but they will show as "STOCK" default if their type is removed.`)) return;
+        setDeleting(true);
+        for (const id of selected) await onDelete(id);
+        setSelected(new Set()); setSelectMode(false); setDeleting(false);
+      };
+
+      return (
+        <div>
+          <div className="card">
+            <div className="card-title">Add Asset Type</div>
+            <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <label className="form-label">Type Name</label>
+                <input className="form-input" type="text" value={newName} onChange={e => { setNewName(e.target.value); setDupError(''); }} placeholder="E.g. MUTUAL FUND" onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+                {dupError && <div className="dup-error">{dupError}</div>}
+              </div>
+              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.25rem', flexShrink: 0 }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD'}</button>
+            </div>
+          </div>
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
+              <div className="card-title" style={{ margin: 0 }}>All Asset Types ({assetTypes.length})</div>
+              <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
+            </div>
+
+            {selectMode && selected.size > 0 && (
+              <div className="bulk-bar">
+                <span className="bulk-bar-text">{selected.size} selected</span>
+                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting ? 'DELETING...' : 'DELETE SELECTED'}</button>
+                <button className="btn-secondary" onClick={() => setSelected(new Set())}>CLEAR</button>
+              </div>
+            )}
+            {selectMode && (
+              <div style={{ marginBottom: '.5rem' }}>
+                <button className="btn-sm" onClick={selectAll}>{selected.size === assetTypes.length ? 'DESELECT ALL' : 'SELECT ALL'}</button>
+              </div>
+            )}
+
+            {assetTypes.length === 0 ? <div className="empty">No asset types yet.</div> : (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr>
+                    {selectMode && <th><input type="checkbox" checked={selected.size === assetTypes.length && assetTypes.length > 0} onChange={selectAll} /></th>}
+                    <th>Asset Type</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {assetTypes.map(t => (
+                      <tr key={t.id} className="clickable" style={selected.has(t.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(t.id) : setEditItem(t)}>
+                        {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
+                        <td>
+                          <span className="tag" style={{ background: '#f1f5f9', color: '#1a1a1a' }}>{t.name}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          {editItem && (
+            <EditPersonModal
+              person={editItem}
+              onSave={(id, data) => onUpdate(id, data, editItem.name)}
+              onDelete={onDelete}
+              onClose={() => setEditItem(null)}
+            />
+          )}
+        </div>
+      );
+    }
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -2724,8 +3013,8 @@
         // Use all transactions to find current stockholders, ignoring the action date for the basis
         const { holdings } = computeFIFO(transactions);
         const stockHolders = holdings[stock] || {};
-        
-        const personsToProcess = ['buyback', 'rights'].includes(action) 
+
+        const personsToProcess = ['buyback', 'rights'].includes(action)
           ? [person]
           : Object.keys(stockHolders);
 
@@ -2741,7 +3030,7 @@
           const currentQty = lots.reduce((sum, l) => sum + l.qty, 0);
           const totalInv = lots.reduce((sum, l) => sum + (l.qty * l.price), 0);
           const avgCost = currentQty > 0 ? totalInv / currentQty : 0;
-          
+
           if (currentQty <= 0 && !['buyback', 'rights'].includes(action)) return;
 
           if (action === 'bonus') {
@@ -2947,13 +3236,14 @@
       const [tab, setTab] = useState('dashboard');
       const [transactions, setTransactions] = useState([]);
       const [persons, setPersons] = useState([]);
+      const [assetTypes, setAssetTypes] = useState([]);
       const [stockPrices, setStockPrices] = useState({});
       const [personColors, setPersonColors] = useState({});
       const [sidebarOpen, setSidebarOpen] = useState(false);
       const [visibleTabs, setVisibleTabs] = useState({}); // { dashboard: true, transactions: true, ... }
       const [showNavSettings, setShowNavSettings] = useState(false);
       const [loading, setLoading] = useState(true);
-      const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'] });
+      const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] });
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
 
       const touchStartX = useRef(null);
@@ -2964,10 +3254,8 @@
         { key: 'dashboard', label: 'Dashboard', icon: '▦' },
         { key: 'transactions', label: 'Transactions', icon: '↕' },
         { key: 'portfolio', label: 'Portfolio', icon: '◈' },
-        { key: 'stock_sheet', label: 'Stocks', icon: '⧉' },
         { key: 'fifo', label: 'FIFO Results', icon: '⟳' },
-        { key: 'prices', label: 'Stock Prices', icon: '⬆' },
-        { key: 'persons', label: 'Persons', icon: '◎' },
+        { key: 'manage', label: 'Manage', icon: '⚙' },
         { key: 'actions', label: 'Corporate Actions', icon: 'ϟ' },
       ];
 
@@ -3013,6 +3301,7 @@
         const uid = user.uid; setLoading(true);
         const t1 = db.collection(`users/${uid}/inv_transactions`).onSnapshot(snap => { setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false));
         const t2 = db.collection(`users/${uid}/inv_persons`).onSnapshot(snap => { setPersons(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
+        const t2_1 = db.collection(`users/${uid}/inv_assetTypes`).onSnapshot(snap => { setAssetTypes(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
         const t3 = db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').onSnapshot(snap => {
           if (snap.exists) {
             setStockPrices(snap.data().prices || {});
@@ -3025,8 +3314,39 @@
             setVisibleTabs(snap.data().visibleTabs || {});
           }
         }, () => { });
-        return () => { t1(); t2(); t3(); t4(); t5(); };
+        return () => { t1(); t2(); t2_1(); t3(); t4(); t5(); };
       }, [user]);
+ 
+      // INITIALIZE DEFAULTS & MIGRATION
+      useEffect(() => {
+        if (!uid || loading) return;
+        const init = async () => {
+          try {
+            // Initialize Default Asset Types
+            const existingTypes = await db.collection(`users/${uid}/inv_assetTypes`).get();
+            if (existingTypes.empty) {
+              const defaults = ['STOCK', 'MUTUAL FUND', 'ETF', 'BONDS', 'GOLD', 'REAL ESTATE'];
+              const batch = db.batch();
+              defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), { name: t }));
+              await batch.commit();
+            }
+
+            // Data Migration: Mark existing transactions as STOCK
+            const txSnap = await db.collection(`users/${uid}/inv_transactions`).get();
+            const batchTx = db.batch();
+            let count = 0;
+            txSnap.docs.forEach(doc => {
+              if (!doc.data().assetType) {
+                batchTx.update(doc.ref, { assetType: 'STOCK' });
+                count++;
+                if (count >= 450) { /* Limit to avoid 500 batch limit issues */ }
+              }
+            });
+            if (count > 0) await batchTx.commit();
+          } catch (e) { console.error("Init error:", e); }
+        };
+        init();
+      }, [uid, loading]);
 
       const uid = user?.uid;
 
@@ -3074,6 +3394,17 @@
         const updated = { ...personColors, [upper]: color };
         await db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').set({ colors: updated });
       };
+
+      const addAssetType = async t => { await db.collection(`users/${uid}/inv_assetTypes`).add(t); };
+      const updateAssetType = async (id, data, oldName) => {
+        const newName = data.name.toUpperCase().trim();
+        await db.collection(`users/${uid}/inv_assetTypes`).doc(id).update(data);
+        if (oldName && oldName.toUpperCase() !== newName) {
+          const snap = await db.collection(`users/${uid}/inv_transactions`).where('assetType', '==', oldName.toUpperCase()).get();
+          if (!snap.empty) { const batch = db.batch(); snap.docs.forEach(doc => batch.update(doc.ref, { assetType: newName })); await batch.commit(); }
+        }
+      };
+      const deleteAssetType = async id => { await db.collection(`users/${uid}/inv_assetTypes`).doc(id).delete(); };
 
       const updateTabVisibility = async (key, isVisible) => {
         const updated = { ...visibleTabs, [key]: isVisible };
@@ -3153,14 +3484,19 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} onPersonClick={handlePersonDrilldown} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} viewMode="persons" />}
-                {tab === 'stock_sheet' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} viewMode="stocks" />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} />}
-                {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta} />}
-                {tab === 'persons' && <PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor} />}
-                {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} onPersonClick={handlePersonDrilldown} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} />}
+                {tab === 'manage' && (
+                  <ManageTab
+                    persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
+                    personColors={personColors} onColorChange={updatePersonColor}
+                    assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
+                    stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
+                  />
+                )}
+                {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
               </>
             )}
           </main>
