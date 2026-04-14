@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>Investment Tracker</title>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap"
     rel="stylesheet">
@@ -33,7 +33,8 @@
       --input-bg: #ffffff;
       --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --radius: 0px; /* Keeping it sharp for the monochrome look */
+      --radius: 0px;
+      /* Keeping it sharp for the monochrome look */
     }
 
     * {
@@ -42,7 +43,8 @@
       padding: 0;
     }
 
-    html, body {
+    html,
+    body {
       overflow-x: hidden;
       width: 100%;
       position: relative;
@@ -408,15 +410,19 @@
     .table-wrap::after {
       content: '';
       position: absolute;
-      top: 0; right: 0; bottom: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
       width: 30px;
-      background: linear-gradient(90deg, transparent, rgba(0,0,0,0.03));
+      background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.03));
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.3s;
     }
-    
-    .table-wrap:has(table:not([style*="width: 100%"]))::after { opacity: 1; }
+
+    .table-wrap:has(table:not([style*="width: 100%"]))::after {
+      opacity: 1;
+    }
 
     table {
       width: 100%;
@@ -854,6 +860,7 @@
       flex-direction: column;
       gap: 4px;
     }
+
     .filter-label {
       font-size: 10px;
       letter-spacing: .08em;
@@ -861,10 +868,12 @@
       color: var(--text-muted);
       font-weight: 700;
     }
+
     .multi-select-wrap {
       position: relative;
       min-width: 160px;
     }
+
     .multi-select-trigger {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -876,7 +885,11 @@
       align-items: center;
       transition: border-color .15s;
     }
-    .multi-select-trigger:hover { border-color: var(--text-muted); }
+
+    .multi-select-trigger:hover {
+      border-color: var(--text-muted);
+    }
+
     .multi-select-dropdown {
       position: absolute;
       top: 100%;
@@ -891,6 +904,7 @@
       overflow-y: auto;
       padding: 4px;
     }
+
     .multi-select-opt {
       padding: 6px 10px;
       font-size: 12px;
@@ -899,8 +913,15 @@
       align-items: center;
       gap: 8px;
     }
-    .multi-select-opt:hover { background: var(--bg); }
-    .multi-select-opt input { cursor: pointer; }
+
+    .multi-select-opt:hover {
+      background: var(--bg);
+    }
+
+    .multi-select-opt input {
+      cursor: pointer;
+    }
+
     .multi-select-search {
       width: 100%;
       padding: 6px 10px;
@@ -942,7 +963,7 @@
     @media(max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
-        box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
       }
 
       .sidebar.open {
@@ -956,7 +977,7 @@
 
       .menu-toggle {
         display: flex;
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: var(--shadow-md);
       }
 
@@ -976,7 +997,7 @@
         width: 100%;
         box-sizing: border-box;
       }
-      
+
       .card {
         padding: 0.75rem;
         margin-left: -0.75rem;
@@ -1033,8 +1054,9 @@
       .page-title {
         font-size: 20px;
       }
-      
-      .btn-primary, .btn-secondary {
+
+      .btn-primary,
+      .btn-secondary {
         padding: 0.75rem 1rem;
         font-size: 14px;
       }
@@ -1156,7 +1178,7 @@
           const currentVal = cp ? totalQty * cp : null;
           const absGain = currentVal != null ? currentVal - investedVal : null;
           const absGainPct = absGain != null ? (absGain / investedVal) * 100 : null;
-          
+
           let weightedAge = 0; const now = new Date();
           lots.forEach(l => {
             const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
@@ -1168,7 +1190,7 @@
           const aggregated = {};
           lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
           const breakup = Object.entries(aggregated).map(([p, q]) => `${q}@${p}`).join(', ');
-          
+
           rows.push({ person, stock, totalQty, avgBuy, investedVal, currentPrice: cp, currentVal, absGain, absGainPct, breakup, cagr, weightedAge });
         });
       });
@@ -1193,7 +1215,7 @@
         const currentVal = cp ? s.totalQty * cp : null;
         const absGain = currentVal != null ? currentVal - s.investedVal : null;
         const absGainPct = absGain != null ? (absGain / s.investedVal) * 100 : null;
-        
+
         let weightedAgeSum = 0; const now = new Date();
         Object.values(s.persons).forEach(p => {
           p.lots.forEach(l => {
@@ -1333,7 +1355,7 @@
       return <canvas ref={ref} />;
     }
 
-    function PieChart({ labels, data, colors, hideLegend }) {
+    function PieChart({ labels, data, colors, hideLegend, onClick }) {
       const ref = useRef(null); const chart = useRef(null);
       useEffect(() => {
         if (!ref.current) return;
@@ -1345,22 +1367,28 @@
           options: {
             responsive: true, maintainAspectRatio: false,
             cutout: '70%',
+            onClick: (evt, elements) => {
+              if (elements && elements.length > 0 && onClick) {
+                const index = elements[0].index;
+                onClick(labels[index]);
+              }
+            },
             plugins: {
-              legend: { 
+              legend: {
                 display: !hideLegend,
-                position: 'bottom', 
-                labels: { 
-                  font: { family: 'Courier Prime', size: isMobile ? 9 : 10 }, 
-                  boxWidth: 8, padding: 8, color: '#e0e0e0' 
-                } 
+                position: 'bottom',
+                labels: {
+                  font: { family: 'Courier Prime', size: isMobile ? 9 : 10 },
+                  boxWidth: 8, padding: 8, color: '#e0e0e0'
+                }
               },
-              tooltip: { 
+              tooltip: {
                 padding: 8,
                 caretSize: 4,
                 bodyFont: { size: isMobile ? 10 : 11 },
                 titleFont: { size: isMobile ? 11 : 12 },
                 displayColors: false,
-                callbacks: { 
+                callbacks: {
                   label: ctx => {
                     const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                     const val = ctx.parsed;
@@ -1368,7 +1396,7 @@
                     const amount = `₹${Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
                     return [`${ctx.label}: ${pct}`, amount];
                   }
-                } 
+                }
               }
             },
             layout: { padding: { bottom: 0 } }
@@ -1416,13 +1444,13 @@
 
     // ── EDIT TX MODAL ─────────────────────────────────────────
     function EditTxModal({ tx, persons, onSave, onDelete, onClose }) {
-      const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: Math.abs(tx.qty) || '', price: tx.price || '', type: tx.qty < 0 ? 'SELL' : 'BUY' });
+      const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '' });
       const [saveState, setSaveState] = useState('idle');
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
       const handleSave = async () => {
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
         setSaveState('saving');
-        const qty = form.type === 'SELL' ? -Math.abs(Number(form.qty)) : Math.abs(Number(form.qty));
+        const qty = Number(form.qty);
         await onSave(tx.id, { date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price) });
         setSaveState('saved');
         setTimeout(() => onClose(), 400);
@@ -1442,14 +1470,9 @@
             </div>
             <div className="form-row">
               <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
-              <div><label className="form-label">Type</label>
-                <select className="select-input" value={form.type} onChange={e => set('type', e.target.value)}>
-                  <option value="BUY">BUY</option><option value="SELL">SELL</option>
-                </select>
-              </div>
+              <div><label className="form-label">Qty (- for Sell)</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
             </div>
             <div className="form-row">
-              <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
               <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} /></div>
             </div>
             <div className="modal-actions">
@@ -1464,7 +1487,7 @@
         </div>
       );
     }
-    
+
     // ── STOCK ALLOCATION MODAL ────────────────────────────────
     function StockAllocationModal({ stockEntries, totalValue, onClose }) {
       return (
@@ -1481,7 +1504,7 @@
                       <tr key={s}>
                         <td style={{ fontWeight: 700 }}>{s}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v)}</span><br/>
+                          <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v)}</span><br />
                           <span style={{ fontSize: 11, opacity: .7 }}>{fmt(v)}</span>
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 700 }}>{pct.toFixed(1)}%</td>
@@ -1539,7 +1562,7 @@
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
-      
+
       const persons = [...new Set([...allPortfolio.map(r => r.person), ...sells.map(r => r.person)])].sort();
       const portfolio = allPortfolio.filter(r => filterPersons.includes('All') || filterPersons.includes(r.person));
       const filteredSells = sells.filter(r => filterPersons.includes('All') || filterPersons.includes(r.person));
@@ -1557,7 +1580,7 @@
       const totalCostCombined = totalInvested + realizedCostSum;
       const totalValueCombined = totalCurrent + realizedValueSum;
       const totalWeightedAgeCombined = totalWeightedAgeSum + realizedWeightedAgeSum;
-      
+
       const portfolioAvgAge = totalInvested > 0 ? totalWeightedAgeSum / totalInvested : 0;
       const unrealizedCAGR = (totalInvested > 0 && portfolioAvgAge > 0) ? (Math.pow(totalCurrent / totalInvested, 1 / portfolioAvgAge) - 1) * 100 : 0;
 
@@ -1568,7 +1591,7 @@
 
       // We still build the stock sheet data based on filtered portfolio for charts
       const stockGroups = {};
-      portfolio.forEach(r => { 
+      portfolio.forEach(r => {
         if (!stockGroups[r.stock]) stockGroups[r.stock] = { stock: r.stock, totalQty: 0, investedVal: 0, absGain: 0, currentVal: 0 };
         stockGroups[r.stock].totalQty += r.totalQty;
         stockGroups[r.stock].investedVal += r.investedVal;
@@ -1596,14 +1619,14 @@
       const byStock = {};
       portfolio.forEach(r => { if (!byStock[r.stock]) byStock[r.stock] = 0; byStock[r.stock] += (r.currentVal || r.investedVal); });
       const stockEntries = Object.entries(byStock).sort((a, b) => b[1] - a[1]);
-      
+
       const top10 = stockEntries.slice(0, 10);
       const others = stockEntries.slice(10);
       const otherVal = others.reduce((s, [, v]) => s + v, 0);
-      
+
       const pieEntries = [...top10];
       if (otherVal > 0) pieEntries.push(['Others', otherVal]);
-      
+
       const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac', '#54a0e8', '#f87171', '#34d399', '#a78bfa', '#fb923c'];
       const pieLabels = pieEntries.map(([s]) => s);
       const pieData = pieEntries.map(([, v]) => v);
@@ -1615,11 +1638,11 @@
         <div className="page">
           {showAllocation && <StockAllocationModal stockEntries={stockEntries} totalValue={totalCurrent} onClose={() => setShowAllocation(false)} />}
           {drilldownPerson && (
-            <PersonPortfolioModal 
-              person={drilldownPerson} 
-              rows={allPortfolio.filter(r => r.person === drilldownPerson)} 
-              personColors={personColors} 
-              onClose={() => setDrilldownPerson(null)} 
+            <PersonPortfolioModal
+              person={drilldownPerson}
+              rows={allPortfolio.filter(r => r.person === drilldownPerson)}
+              personColors={personColors}
+              onClose={() => setDrilldownPerson(null)}
             />
           )}
           <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
@@ -1647,10 +1670,7 @@
               <div className="stat-label">Combined Net CAGR</div>
               <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Net Realized</div>
-              <div className="stat-val">{fmt(sells.reduce((s, r) => s + r.profit, 0))}</div>
-            </div>
+
           </div>
 
           <div className="cards-row">
@@ -1686,18 +1706,32 @@
           {filterPersons.includes('All') ? (
             <div className="card">
               <div className="card-title">Portfolio breakdown by Person</div>
-              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-                {sortedPersons.map(([p, v]) => (
-                  <div key={p} 
-                    className="clickable"
-                    onClick={() => setDrilldownPerson(p)}
-                    style={{ background: personColor(p, personColors), padding: '.5rem .9rem', fontSize: 13, minWidth: 120, cursor: 'pointer' }}
-                  >
-                    <span style={{ fontWeight: 700 }}>{p}</span><br />
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v.current)}</span><br />
-                    <span style={{ fontSize: 11, opacity: .7 }}>{fmt(v.current)}</span>
-                  </div>
-                ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="chart-wrap" style={{ flex: '1 1 300px', height: 300 }}>
+                  <PieChart
+                    labels={sortedPersons.map(([p]) => p)}
+                    data={sortedPersons.map(([, v]) => v.current)}
+                    colors={sortedPersons.map(([p]) => personColor(p, personColors))}
+                    onClick={setDrilldownPerson}
+                  />
+                </div>
+                <div style={{ flex: '1 1 200px' }}>
+                  {sortedPersons.map(([p, v]) => {
+                    const pct = totalCurrent > 0 ? (v.current / totalCurrent * 100).toFixed(1) : 0;
+                    return (
+                      <div key={p} className="clickable" onClick={() => setDrilldownPerson(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.4rem 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: 10, height: 10, background: personColor(p, personColors) }}></div>
+                          <span style={{ fontWeight: 700, fontSize: 13 }}>{p}</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 700, fontSize: 13 }}>{fmtWords(v.current)}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{pct}%</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           ) : (
@@ -1736,7 +1770,7 @@
 
     // ── TRANSACTIONS ──────────────────────────────────────────
     function TransactionsTab({ transactions, persons, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors }) {
-      const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', type: 'BUY' });
+      const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
@@ -1753,12 +1787,10 @@
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
         setSaving(true);
         await onEnsurePerson(form.person.toUpperCase());
-        const qty = form.type === 'SELL' ? -Math.abs(Number(form.qty)) : Math.abs(Number(form.qty));
+        const qty = Number(form.qty);
         await onAdd({ date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price) });
-        setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '', type: 'BUY' });
+        setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '' });
         setSaving(false);
-      };
-
       const parseCSV = () => {
         const lines = csvText.trim().split('\n').filter(Boolean); const rows = [];
         lines.forEach((line, i) => {
@@ -1817,12 +1849,7 @@
                   </select>
                 </div>
                 <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" /></div>
-                <div><label className="form-label">Type</label>
-                  <select className="select-input" value={form.type} onChange={e => set('type', e.target.value)}>
-                    <option value="BUY">BUY</option><option value="SELL">SELL</option>
-                  </select>
-                </div>
-                <div><label className="form-label">Quantity</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" /></div>
+                <div><label className="form-label">Qty (- for Sell)</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" /></div>
                 <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" /></div>
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
@@ -1890,11 +1917,11 @@
                 <thead>
                   <tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={selectAll} /></th>}
-                    <th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th><th>Type</th>
+                    <th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan={selectMode ? 8 : 7}><div className="empty">No transactions</div></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={selectMode ? 7 : 6}><div className="empty">No transactions</div></td></tr>}
                   {filtered.map(tx => (
                     <tr key={tx.id} className="clickable" onClick={() => selectMode ? toggleSelect(tx.id) : setEditTx(tx)} style={selected.has(tx.id) ? { background: '#fffde7' } : {}}>
                       {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(tx.id)} onChange={() => toggleSelect(tx.id)} /></td>}
@@ -1904,7 +1931,6 @@
                       <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>{fmt(tx.price)}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>
-                      <td><span className={`tag ${tx.qty > 0 ? 'badge-green' : 'badge-red'}`}>{tx.qty > 0 ? 'BUY' : 'SELL'}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1923,8 +1949,8 @@
       const rows = buildPortfolio(holdings, stockPrices);
       const persons = [...new Set(rows.map(r => r.person))].sort();
       const stocks = [...new Set(rows.map(r => r.stock))].sort();
-      const filtered = rows.filter(r => 
-        (filter.persons.includes('All') || filter.persons.includes(r.person)) && 
+      const filtered = rows.filter(r =>
+        (filter.persons.includes('All') || filter.persons.includes(r.person)) &&
         (filter.stocks.includes('All') || filter.stocks.includes(r.stock))
       );
       return (
@@ -1980,7 +2006,7 @@
                     Object.values(s.persons || {}).forEach(d => {
                       (d.lots || []).forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
                     });
-                    const hText = Object.entries(aggregated).sort((a,b) => b[1]-a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+                    const hText = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
                     return (
                       <tr key={i}>
                         <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{s.stock}</td>
@@ -2008,8 +2034,13 @@
     function FIFOTab({ transactions, personColors }) {
       const { sells } = computeFIFO(transactions);
       const [filterPersons, setFilterPersons] = useState(['All']);
+      const [filterStocks, setFilterStocks] = useState(['All']);
       const persons = [...new Set(sells.map(r => r.person))].sort();
-      const filtered = sells.filter(r => filterPersons.includes('All') || filterPersons.includes(r.person));
+      const stocks = [...new Set(sells.map(r => r.stock))].sort();
+      const filtered = sells.filter(r =>
+        (filterPersons.includes('All') || filterPersons.includes(r.person)) &&
+        (filterStocks.includes('All') || filterStocks.includes(r.stock))
+      );
       const totalProfit = filtered.reduce((s, r) => s + r.profit, 0);
 
       const fCost = filtered.reduce((s, r) => s + (r.qty * r.buyPrice), 0);
@@ -2023,6 +2054,7 @@
           <div className="page-header"><div className="page-title">FIFO Results</div><div className="page-sub">Realized gains from completed trades</div></div>
           <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <MultiSelect label="Person" options={persons} selected={filterPersons} onChange={setFilterPersons} />
+            <MultiSelect label="Stock" options={stocks} selected={filterStocks} onChange={setFilterStocks} />
             <div style={{ marginLeft: 'auto', textAlign: 'right', marginBottom: 6 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>Total Realized: <span className={totalProfit >= 0 ? 'pos' : 'neg'}>{fmt(totalProfit)}</span></div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Net Realized CAGR: <span className={realizedNetCAGR >= 0 ? 'pos' : 'neg'}>{fmtPct(realizedNetCAGR)}</span></div>
@@ -2452,9 +2484,9 @@
         const uid = user.uid; setLoading(true);
         const t1 = db.collection(`users/${uid}/inv_transactions`).onSnapshot(snap => { setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }, () => setLoading(false));
         const t2 = db.collection(`users/${uid}/inv_persons`).onSnapshot(snap => { setPersons(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
-        const t3 = db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').onSnapshot(snap => { 
+        const t3 = db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').onSnapshot(snap => {
           if (snap.exists) {
-            setStockPrices(snap.data().prices || {}); 
+            setStockPrices(snap.data().prices || {});
             setPriceMeta({ lastUpdated: snap.data().lastUpdated || null });
           }
         }, () => { });
