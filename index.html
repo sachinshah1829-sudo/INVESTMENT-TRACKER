@@ -1916,7 +1916,6 @@
                   <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
                 <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSearch(''); setFilterPersons(['All']); setFilterStocks(['All']); }} title="Reset Filters">↺</button>
-              </div>
                 <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
               </div>
             </div>
