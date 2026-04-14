@@ -2532,6 +2532,11 @@
               ) : (
                 <table>
                   <thead>
+                    <tr>
+                      <th>Person</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {personMerged.map((r, i) => (
                       <tr key={i}>
                         <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
