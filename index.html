@@ -2398,6 +2398,8 @@
           </div>
         </div>
       );
+    }
+ 
     // ── PORTFOLIO DRILLDOWN MODAL ──────────────────────────────
     function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose }) {
       if (!data) return null;
@@ -2695,6 +2697,8 @@
         </div>
       );
     }
+ 
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -2980,7 +2984,7 @@
       );
     }
     // ── CORPORATE ACTIONS WIZARD ──────────────────────────────
-    function CorporateActionsTab({ transactions, onBulkAdd, personColors }) {
+    function CorporateActionsTab({ transactions, onBulkAdd, personColors, assetTypes }) {
       const [step, setStep] = useState(1);
       const [person, setPerson] = useState('');
       const [stock, setStock] = useState('');
@@ -3233,6 +3237,7 @@
     // ── MAIN APP ──────────────────────────────────────────────
     function App() {
       const [user, setUser] = useState(undefined);
+      const uid = user?.uid;
       const [tab, setTab] = useState('dashboard');
       const [transactions, setTransactions] = useState([]);
       const [persons, setPersons] = useState([]);
@@ -3348,7 +3353,7 @@
         init();
       }, [uid, loading]);
 
-      const uid = user?.uid;
+ 
 
       const addTx = async tx => { await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, createdAt: new Date().toISOString() }); };
       const bulkAddTx = async (txs) => {
