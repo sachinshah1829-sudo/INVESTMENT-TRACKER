@@ -1596,7 +1596,7 @@
     }
 
     // ── EDIT TX MODAL ─────────────────────────────────────────
-    function EditTxModal({ tx, persons, assetTypes, onSave, onDelete, onClose }) {
+    function EditTxModal({ tx, persons, assetTypes, onSave, onDelete, onClose, assetTypeColors }) {
       const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '', assetType: tx.assetType || 'STOCK' });
       const [saveState, setSaveState] = useState('idle');
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -2035,7 +2035,7 @@
     }
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors }) {
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
@@ -2225,7 +2225,7 @@
             </div>
           </div>
 
-          {editTx && <EditTxModal tx={editTx} persons={persons} assetTypes={assetTypes} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} />}
+          {editTx && <EditTxModal tx={editTx} persons={persons} assetTypes={assetTypes} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} assetTypeColors={assetTypeColors} />}
         </div>
       );
     }
@@ -2328,7 +2328,7 @@
                 <tbody>
                   {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 11 : 10}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
-                    const at = (viewMode === 'types' ? r.type : (viewMode === 'persons' ? (transactions.find(t => t.person === r.person && t.stock === r.stock)?.assetType || 'STOCK') : (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK')));
+                    const at = r.type || r.assetType || (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK');
                     return (
                       <tr key={i} className="clickable" onClick={() => {
                         let lotsToShow = [];
