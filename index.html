@@ -1932,17 +1932,24 @@
               </>}
             </div>
           )}
-
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
-            <div className="card-title" style={{ padding: '0 0 .75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>All Transactions ({filtered.length})</span>
-              <TableConfig 
-                tableKey="transactions" 
-                columns={['Date', 'Person', 'Stock', 'Qty', 'Price', 'Value', 'Type']} 
-                settings={settings} 
-                onUpdate={onUpdateSettings} 
-              />
+              <div className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+                <span>All Transactions ({filtered.length})</span>
+                <TableConfig 
+                  tableKey="transactions" 
+                  columns={['Date', 'Person', 'Stock', 'Qty', 'Price', 'Value', 'Type']} 
+                  settings={settings} 
+                  onUpdate={onUpdateSettings} 
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div className="filter-group">
+                  <div className="filter-label">Search</div>
+                  <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Person, stock..." value={search} onChange={e => setSearch(e.target.value)} />
+                </div>
+                <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
+              </div>
             </div>
             <div className="table-wrap">
               <table style={{ "--col-width": `${settings.colWidth}px` }}>
@@ -2074,14 +2081,14 @@
                 <thead>
                   <tr>
                     {(!settings?.hiddenColumns?.stocks?.includes('Stock')) && <th>Stock</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('Total Qty')) && <th style={{ textAlign: styleData }}>Total Qty</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('Avg Buy')) && <th style={{ textAlign: styleData }}>Avg Buy</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('Invested')) && <th style={{ textAlign: styleData }}>Invested</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('Curr Price')) && <th style={{ textAlign: styleData }}>Curr Price</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('Curr Value')) && <th style={{ textAlign: styleData }}>Curr Value</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('Gain ₹')) && <th style={{ textAlign: styleData }}>Gain ₹</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('Gain %')) && <th style={{ textAlign: styleData }}>Gain %</th>}
-                    {(!settings?.hiddenColumns?.stocks?.includes('CAGR')) && <th style={{ textAlign: styleData }}>CAGR</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('Total Qty')) && <th style={{ textAlign: 'right' }}>Total Qty</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('Avg Buy')) && <th style={{ textAlign: 'right' }}>Avg Buy</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('Invested')) && <th style={{ textAlign: 'right' }}>Invested</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('Curr Price')) && <th style={{ textAlign: 'right' }}>Curr Price</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('Curr Value')) && <th style={{ textAlign: 'right' }}>Curr Value</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('Gain ₹')) && <th style={{ textAlign: 'right' }}>Gain ₹</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('Gain %')) && <th style={{ textAlign: 'right' }}>Gain %</th>}
+                    {(!settings?.hiddenColumns?.stocks?.includes('CAGR')) && <th style={{ textAlign: 'right' }}>CAGR</th>}
                     {(!settings?.hiddenColumns?.stocks?.includes('Holdings')) && <th>Holdings</th>}
                   </tr>
                 </thead>
@@ -2503,20 +2510,20 @@
                 <table style={{ "--col-width": `${settings.colWidth}px` }}>
                   <thead><tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === persons.length && persons.length > 0} onChange={selectAll} /></th>}
-                    {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Person')) && <th>Person</th>}
-                    {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Color')) && <th>Color</th>}
-                    {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Actions')) && <th style={{ textAlign: 'right' }}>Actions</th>}
+                    {(!settings?.hiddenColumns?.persons || !settings?.hiddenColumns?.persons?.includes('Person')) && <th>Person</th>}
+                    {(!settings?.hiddenColumns?.persons || !settings?.hiddenColumns?.persons?.includes('Color')) && <th>Color</th>}
+                    {(!settings?.hiddenColumns?.persons || !settings?.hiddenColumns?.persons?.includes('Actions')) && <th style={{ textAlign: 'right' }}>Actions</th>}
                   </tr></thead>
                   <tbody>
                     {persons.map(p => (
                       <tr key={p.id} className="clickable" style={selected.has(p.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(p.id) : setEditPerson(p)}>
                         {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>}
-                        {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Person')) && (
+                        {(!settings?.hiddenColumns?.persons || !settings?.hiddenColumns?.persons?.includes('Person')) && (
                           <td>
                             <span className="tag" style={{ background: personColor(p.name, personColors), color: '#1a1a1a' }}>{p.name}</span>
                           </td>
                         )}
-                        {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Color')) && (
+                        {(!settings?.hiddenColumns?.persons || !settings?.hiddenColumns?.persons?.includes('Color')) && (
                           <td onClick={e => e.stopPropagation()}>
                             <ColorPicker
                               name={p.name}
@@ -2525,7 +2532,7 @@
                             />
                           </td>
                         )}
-                        {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Actions')) && (
+                        {(!settings?.hiddenColumns?.persons || !settings?.hiddenColumns?.persons?.includes('Actions')) && (
                           <td style={{ textAlign: 'right' }}>
                             <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditPerson(p); }}>EDIT</button>
                           </td>
