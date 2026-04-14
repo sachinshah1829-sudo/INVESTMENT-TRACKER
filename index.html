@@ -1706,14 +1706,35 @@
           {filterPersons.includes('All') ? (
             <div className="card">
               <div className="card-title">Portfolio breakdown by Person</div>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div className="chart-wrap" style={{ flex: '0 1 400px', height: 400 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="chart-wrap" style={{ flex: '1 1 300px', height: 350 }}>
                   <PieChart
                     labels={sortedPersons.map(([p]) => p)}
                     data={sortedPersons.map(([, v]) => v.current)}
                     colors={sortedPersons.map(([p]) => personColor(p, personColors))}
                     onClick={setDrilldownPerson}
+                    hideLegend={true}
                   />
+                </div>
+                <div style={{ flex: '1 1 280px', maxHeight: 350, overflowY: 'auto', paddingRight: '10px' }}>
+                  {sortedPersons.map(([p, v]) => {
+                    const pct = totalCurrent > 0 ? (v.current / totalCurrent * 100).toFixed(1) : 0;
+                    return (
+                      <div key={p} className="clickable" onClick={() => setDrilldownPerson(p)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '.75rem 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: 12, height: 12, background: personColor(p, personColors), borderRadius: '2px' }}></div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{p}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pct}% distribution</div>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>{fmtWords(v.current)}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', opacity: 0.8 }}>{fmt(v.current)}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -2180,16 +2201,18 @@
       return (
         <div className="page">
           <div className="page-header">
-            <div className="page-title">Stock Prices</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div className="page-title">Stock Prices</div>
+              {priceMeta.lastUpdated && (
+                <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '4px 10px', border: '1px solid #ffe082', fontWeight: 700, letterSpacing: '.05em' }}>
+                  LAST SYNCED: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                </div>
+              )}
+            </div>
             <div className="page-sub">Click any row to edit — paste CSV to bulk update</div>
           </div>
 
           <div className="card">
-            {priceMeta.lastUpdated && (
-              <div style={{ float: 'right', fontSize: 10, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '2px 8px', borderRadius: 4, marginTop: -4 }}>
-                Last Updated: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-              </div>
-            )}
             <div className="card-title">Import Price CSV</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '.75rem', lineHeight: 1.7 }}>
               Format: <strong>STOCK NAME, CURRENT PRICE</strong><br />
