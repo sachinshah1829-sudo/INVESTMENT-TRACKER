@@ -48,13 +48,14 @@
       overflow-x: hidden;
       width: 100%;
       position: relative;
-    }
-
-    body {
       font-family: 'Courier Prime', 'Courier New', monospace;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+    }
+
+    button, input, select, textarea {
+      font-family: inherit;
     }
 
     /* AUTH */
@@ -2853,6 +2854,44 @@
       );
     }
 
+    // ── MANAGE TAB ───────────────────────────────────────────
+    function ManageTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, persons, onAdd, onUpdate, onDelete, personColors, onColorChange }) {
+      return (
+        <div className="page" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <div className="page-header">
+            <div>
+              <div className="page-title">Management Center</div>
+              <div className="page-sub">Configure stock prices and person settings</div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+            <div style={{ flex: 1 }}>
+              <div className="card-title" style={{ marginBottom: '1rem' }}>Stock Prices</div>
+              <StockPricesTab 
+                stockPrices={stockPrices} 
+                onUpdatePrices={onUpdatePrices} 
+                onDeletePrice={onDeletePrice} 
+                uid={uid} 
+                priceMeta={priceMeta} 
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div className="card-title" style={{ marginBottom: '1rem' }}>Person Settings</div>
+              <PersonsTab 
+                persons={persons} 
+                onAdd={onAdd} 
+                onUpdate={onUpdate} 
+                onDelete={onDelete} 
+                personColors={personColors} 
+                onColorChange={onColorChange} 
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // ── MAIN APP ──────────────────────────────────────────────
     function App() {
       const [user, setUser] = useState(undefined);
@@ -2873,14 +2912,8 @@
       const ignoreSwipe = useRef(false);
 
       const navItems = [
-        { key: 'dashboard', label: 'Dashboard', icon: '▦' },
-        { key: 'transactions', label: 'Transactions', icon: '↕' },
-        { key: 'portfolio', label: 'Portfolio', icon: '◈' },
-        { key: 'stock_sheet', label: 'Stocks', icon: '⧉' },
-        { key: 'fifo', label: 'FIFO Results', icon: '⟳' },
-        { key: 'prices', label: 'Stock Prices', icon: '⬆' },
-        { key: 'persons', label: 'Persons', icon: '◎' },
-        { key: 'actions', label: 'Corporate Actions', icon: '⚡' },
+        { key: 'manage', label: 'Manage', icon: '⚙' },
+        { key: 'actions', label: 'Corporate Actions', icon: 'ϟ' },
       ];
 
       useEffect(() => {
@@ -3070,8 +3103,21 @@
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} viewMode="persons" />}
                 {tab === 'stock_sheet' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} viewMode="stocks" />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} />}
-                {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta} />}
-                {tab === 'persons' && <PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor} />}
+                {tab === 'manage' && (
+                  <ManageTab 
+                    stockPrices={stockPrices} 
+                    onUpdatePrices={updatePrices} 
+                    onDeletePrice={deletePrice} 
+                    uid={uid} 
+                    priceMeta={priceMeta}
+                    persons={personList}
+                    onAdd={addPerson}
+                    onUpdate={updatePerson}
+                    onDelete={deletePerson}
+                    personColors={personColors}
+                    onColorChange={updatePersonColor}
+                  />
+                )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} />}
               </>
             )}
