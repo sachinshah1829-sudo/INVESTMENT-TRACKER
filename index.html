@@ -33,6 +33,7 @@
       --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --radius: 0px; /* Keeping it sharp for the monochrome look */
+      --col-width: 150px;
     }
 
     * {
@@ -440,10 +441,14 @@
       z-index: 10;
     }
 
-    td {
+    td, th {
       padding: 1rem .75rem;
       border-bottom: 1px solid var(--border);
       transition: background 0.1s;
+      max-width: var(--col-width);
+      white-space: normal;
+      word-break: break-word; /* Wrap anywhere if needed */
+      overflow-wrap: anywhere;
     }
 
     /* Sticky First Column on Mobile - REMOVED AS PER USER REQUEST */
@@ -1497,31 +1502,76 @@
         </div>
       );
     }
-    function PersonPortfolioModal({ person, rows, personColors, onClose }) {
+    function TableConfig({ tableKey, columns, settings, onUpdate }) {
+      const [open, setOpen] = useState(false);
+      const hidden = settings.hiddenColumns[tableKey] || [];
+      const toggle = (col) => {
+        const nextHidden = hidden.includes(col) ? hidden.filter(c => c !== col) : [...hidden, col];
+        onUpdate({ ...settings, hiddenColumns: { ...settings.hiddenColumns, [tableKey]: nextHidden } });
+      };
+      return (
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <button className="btn-sm" onClick={() => setOpen(!open)} style={{ marginLeft: '.5rem', padding: '2px 6px', opacity: .6 }}>⚙</button>
+          {open && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, z-index: 998 }} onClick={() => setOpen(false)} />
+              <div style={{ position: 'absolute', top: '100%', right: 0, background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: var(--shadow-md), zIndex: 999, padding: '.75rem', minWidth: 180, marginTop: 4 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '.25rem' }}>Visible Columns</div>
+                {columns.map(col => (
+                  <label key={col} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: 12, padding: '.25rem 0', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!hidden.includes(col)} onChange={() => toggle(col)} />
+                    {col}
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    function PersonPortfolioModal({ person, rows, personColors, onClose, settings, onUpdateSettings }) {
+      const allCols = ['Stock', 'Qty', 'Avg Buy', 'Invested', 'Curr Price', 'Curr Value', 'Gain ₹', 'Gain %', 'CAGR', 'Holdings'];
+      const hidden = settings.hiddenColumns['drilldown'] || [];
+      const visibleCols = allCols.filter(c => !hidden.includes(c));
+      
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
           <div className="modal" style={{ maxWidth: '95%', width: 'auto' }}>
-            <div className="modal-title" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Portfolio: {person}</span>
+            <div className="modal-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Portfolio: {person} <TableConfig tableKey="drilldown" columns={allCols} settings={settings} onUpdate={onUpdateSettings} /></span>
               <button className="modal-close" onClick={onClose}>✕</button>
             </div>
             <div className="table-wrap" style={{ maxHeight: '70vh' }}>
-              <table>
-                <thead><tr><th>Stock</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
+              <table style={{ "--col-width": `${settings.colWidth}px` }}>
+                <thead>
+                  <tr>
+                    {visibleCols.includes('Stock') && <th>Stock</th>}
+                    {visibleCols.includes('Qty') && <th style={{ textAlign: 'right' }}>Qty</th>}
+                    {visibleCols.includes('Avg Buy') && <th style={{ textAlign: 'right' }}>Avg Buy</th>}
+                    {visibleCols.includes('Invested') && <th style={{ textAlign: 'right' }}>Invested</th>}
+                    {visibleCols.includes('Curr Price') && <th style={{ textAlign: 'right' }}>Curr Price</th>}
+                    {visibleCols.includes('Curr Value') && <th style={{ textAlign: 'right' }}>Curr Value</th>}
+                    {visibleCols.includes('Gain ₹') && <th style={{ textAlign: 'right' }}>Gain ₹</th>}
+                    {visibleCols.includes('Gain %') && <th style={{ textAlign: 'right' }}>Gain %</th>}
+                    {visibleCols.includes('CAGR') && <th style={{ textAlign: 'right' }}>CAGR</th>}
+                    {visibleCols.includes('Holdings') && <th>Holdings</th>}
+                  </tr>
+                </thead>
                 <tbody>
-                  {rows.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this person</div></td></tr>}
+                  {rows.length === 0 && <tr><td colSpan={visibleCols.length}><div className="empty">No holdings for this person</div></td></tr>}
                   {rows.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => (
                     <tr key={i}>
-                      <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{r.stock}</td>
-                      <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.avgBuy)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.investedVal)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
-                      <td style={{ textAlign: 'right' }} className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
-                      <td style={{ textAlign: 'right' }} className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
-                      <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                      <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
+                      {visibleCols.includes('Stock') && <td style={{ fontWeight: 700 }}>{r.stock}</td>}
+                      {visibleCols.includes('Qty') && <td style={{ textAlign: 'right' }}>{r.totalQty}</td>}
+                      {visibleCols.includes('Avg Buy') && <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>}
+                      {visibleCols.includes('Invested') && <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>}
+                      {visibleCols.includes('Curr Price') && <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>}
+                      {visibleCols.includes('Curr Value') && <td style={{ textAlign: 'right' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>}
+                      {visibleCols.includes('Gain ₹') && <td style={{ textAlign: 'right' }} className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>}
+                      {visibleCols.includes('Gain %') && <td style={{ textAlign: 'right' }} className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>}
+                      {visibleCols.includes('CAGR') && <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>}
+                      {visibleCols.includes('Holdings') && <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.breakup}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -1533,7 +1583,7 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, onPersonClick }) {
+    function DashboardTab({ transactions, stockPrices, personColors, onPersonClick, settings, onUpdateSettings }) {
       const [filterPersons, setFilterPersons] = useState(['All']);
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const { sells, holdings } = computeFIFO(transactions);
@@ -1619,6 +1669,8 @@
               rows={allPortfolio.filter(r => r.person === drilldownPerson)} 
               personColors={personColors} 
               onClose={() => setDrilldownPerson(null)} 
+              settings={settings}
+              onUpdateSettings={onUpdateSettings}
             />
           )}
           <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
@@ -1646,10 +1698,7 @@
               <div className="stat-label">Combined Net CAGR</div>
               <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Net Realized</div>
-              <div className="stat-val">{fmt(sells.reduce((s, r) => s + r.profit, 0))}</div>
-            </div>
+
           </div>
 
           <div className="cards-row">
@@ -1701,27 +1750,47 @@
             </div>
           ) : (
             <div className="card" style={{ padding: 0 }}>
-              <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Portfolio Breakdown</div>
+              <div className="card-title" style={{ padding: '1.25rem 1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Portfolio Breakdown</span>
+                <TableConfig 
+                  tableKey="dashboard" 
+                  columns={['Person', 'Stock', 'Qty', 'Avg Buy', 'Invested', 'Curr Price', 'Curr Value', 'Gain ₹', 'Gain %', 'CAGR', 'Holdings']} 
+                  settings={settings} 
+                  onUpdate={onUpdateSettings} 
+                />
+              </div>
               <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Person</th><th>Stock</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
+                <table style={{ "--col-width": `${settings.colWidth}px` }}>
+                  <thead>
+                    <tr>
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Person')) && <th>Person</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Stock')) && <th>Stock</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Qty')) && <th style={{ textAlign: 'right' }}>Qty</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Avg Buy')) && <th style={{ textAlign: 'right' }}>Avg Buy</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Invested')) && <th style={{ textAlign: 'right' }}>Invested</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Curr Price')) && <th style={{ textAlign: 'right' }}>Curr Price</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Curr Value')) && <th style={{ textAlign: 'right' }}>Curr Value</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Gain ₹')) && <th style={{ textAlign: 'right' }}>Gain ₹</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Gain %')) && <th style={{ textAlign: 'right' }}>Gain %</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('CAGR')) && <th style={{ textAlign: 'right' }}>CAGR</th>}
+                      {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Holdings')) && <th>Holdings</th>}
+                    </tr>
+                  </thead>
                   <tbody>
                     {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data for selected filter</div></td></tr>}
                     {portfolio.sort((a, b) => b.currentVal - a.currentVal).map((r, i) => (
                       <tr key={i}>
-                        <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>
-                        <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                        <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.avgBuy)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{fmt(r.investedVal)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
-                        </td>
-                        <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
-                        <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
-                        <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.breakup}</td>
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Person')) && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Stock')) && <td style={{ fontWeight: 700 }}>{r.stock}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Qty')) && <td style={{ textAlign: 'right' }}>{r.totalQty}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Avg Buy')) && <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Invested')) && <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Curr Price')) && <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Curr Value')) && <td style={{ textAlign: 'right' }}>{fmt(r.currentVal)}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Gain ₹')) && <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Gain %')) && <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('CAGR')) && <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>}
+                        {(!settings.hiddenColumns.dashboard || !settings.hiddenColumns.dashboard.includes('Holdings')) && <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.breakup}</td>}
                       </tr>
                     ))}
                   </tbody>
@@ -1734,7 +1803,7 @@
     }
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors }) {
+    function TransactionsTab({ transactions, persons, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, settings, onUpdateSettings }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', type: 'BUY' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
@@ -1866,30 +1935,27 @@
 
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
-              <span className="card-title" style={{ margin: 0 }}>All Transactions ({filtered.length})</span>
-              <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <div className="filter-group">
-                  <div className="filter-label">Search</div>
-                  <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Person, stock..." value={search} onChange={e => setSearch(e.target.value)} />
-                </div>
-                <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
-              </div>
+            <div className="card-title" style={{ padding: '0 0 .75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>All Transactions ({filtered.length})</span>
+              <TableConfig 
+                tableKey="transactions" 
+                columns={['Date', 'Person', 'Stock', 'Qty', 'Price', 'Value', 'Type']} 
+                settings={settings} 
+                onUpdate={onUpdateSettings} 
+              />
             </div>
-
-            {selectMode && selected.size > 0 && (
-              <div className="bulk-bar">
-                <span className="bulk-bar-text">{selected.size} selected</span>
-                <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting ? 'DELETING...' : 'DELETE SELECTED'}</button>
-                <button className="btn-secondary" onClick={() => setSelected(new Set())}>CLEAR</button>
-              </div>
-            )}
-
             <div className="table-wrap">
-              <table>
+              <table style={{ "--col-width": `${settings.colWidth}px` }}>
                 <thead>
                   <tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={selectAll} /></th>}
-                    <th>Date</th><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Value</th><th>Type</th>
+                    {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Date')) && <th>Date</th>}
+                    {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Person')) && <th>Person</th>}
+                    {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Stock')) && <th>Stock</th>}
+                    {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Qty')) && <th style={{ textAlign: 'right' }}>Qty</th>}
+                    {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Price')) && <th style={{ textAlign: 'right' }}>Price</th>}
+                    {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Value')) && <th style={{ textAlign: 'right' }}>Value</th>}
+                    {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Type')) && <th>Type</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -1897,13 +1963,13 @@
                   {filtered.map(tx => (
                     <tr key={tx.id} className="clickable" onClick={() => selectMode ? toggleSelect(tx.id) : setEditTx(tx)} style={selected.has(tx.id) ? { background: '#fffde7' } : {}}>
                       {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(tx.id)} onChange={() => toggleSelect(tx.id)} /></td>}
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(tx.date)}</td>
-                      <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{tx.person}</span></td>
-                      <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{tx.stock}</td>
-                      <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(tx.price)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>
-                      <td><span className={`tag ${tx.qty > 0 ? 'badge-green' : 'badge-red'}`}>{tx.qty > 0 ? 'BUY' : 'SELL'}</span></td>
+                      {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Date')) && <td>{fmtDate(tx.date)}</td>}
+                      {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Person')) && <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a' }}>{tx.person}</span></td>}
+                      {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Stock')) && <td style={{ fontWeight: 700 }}>{tx.stock}</td>}
+                      {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Qty')) && <td className={tx.qty > 0 ? 'pos' : 'neg'} style={{ textAlign: 'right' }}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>}
+                      {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Price')) && <td style={{ textAlign: 'right' }}>{fmt(tx.price)}</td>}
+                      {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Value')) && <td style={{ textAlign: 'right' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>}
+                      {(!settings.hiddenColumns.transactions || !settings.hiddenColumns.transactions.includes('Type')) && <td><span className={`tag ${tx.qty > 0 ? 'badge-green' : 'badge-red'}`}>{tx.qty > 0 ? 'BUY' : 'SELL'}</span></td>}
                     </tr>
                   ))}
                 </tbody>
@@ -1917,7 +1983,7 @@
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices, personColors, filter, onFilterChange }) {
+    function PortfolioTab({ transactions, stockPrices, personColors, filter, onFilterChange, settings, onUpdateSettings }) {
       const { holdings } = computeFIFO(transactions);
       const rows = buildPortfolio(holdings, stockPrices);
       const persons = [...new Set(rows.map(r => r.person))].sort();
@@ -1935,22 +2001,47 @@
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span></div>
           </div>
           <div className="card" style={{ padding: 0 }}>
+            <div className="card-title" style={{ padding: '1.25rem 1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Detailed Breakdown</span>
+              <TableConfig 
+                tableKey="portfolio" 
+                columns={['Person', 'Stock', 'Qty', 'Avg Buy', 'Invested', 'Curr Price', 'Curr Value', 'Gain ₹', 'Gain %', 'CAGR', 'Holdings']} 
+                settings={settings} 
+                onUpdate={onUpdateSettings} 
+              />
+            </div>
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th></tr></thead>
+              <table style={{ "--col-width": `${settings.colWidth}px` }}>
+                <thead>
+                  <tr>
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Person')) && <th>Person</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Stock')) && <th>Stock</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Qty')) && <th style={{ textAlign: 'right' }}>Qty</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Avg Buy')) && <th style={{ textAlign: 'right' }}>Avg Buy</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Invested')) && <th style={{ textAlign: 'right' }}>Invested</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Curr Price')) && <th style={{ textAlign: 'right' }}>Curr Price</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Curr Value')) && <th style={{ textAlign: 'right' }}>Curr Value</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Gain ₹')) && <th style={{ textAlign: 'right' }}>Gain ₹</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Gain %')) && <th style={{ textAlign: 'right' }}>Gain %</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('CAGR')) && <th style={{ textAlign: 'right' }}>CAGR</th>}
+                    {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Holdings')) && <th>Holdings</th>}
+                  </tr>
+                </thead>
                 <tbody>
                   {filtered.length === 0 && <tr><td colSpan="11"><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => (
                     <tr key={i}>
-                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>
-                      <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{r.stock}</td>
-                      <td>{r.totalQty}</td><td style={{ whiteSpace: 'nowrap' }}>{fmt(r.avgBuy)}</td><td style={{ whiteSpace: 'nowrap' }}>{fmt(r.investedVal)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
-                      <td className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
-                      <td className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
-                      <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                      <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.breakup}</td>
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Person')) && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Stock')) && <td style={{ fontWeight: 700 }}>{r.stock}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Qty')) && <td style={{ textAlign: 'right' }}>{r.totalQty}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Avg Buy')) && <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Invested')) && <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Curr Price')) && <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Curr Value')) && <td style={{ textAlign: 'right' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Gain ₹')) && <td className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ textAlign: 'right' }}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Gain %')) && <td className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''} style={{ textAlign: 'right' }}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('CAGR')) && <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ textAlign: 'right' }}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>}
+                      {(!settings.hiddenColumns.portfolio || !settings.hiddenColumns.portfolio.includes('Holdings')) && <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.breakup}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -1962,16 +2053,38 @@
     }
 
     // ── STOCKS ────────────────────────────────────────────────
-    function StocksTab({ transactions, stockPrices, personColors }) {
+    function StocksTab({ transactions, stockPrices, personColors, settings, onUpdateSettings }) {
       const { holdings } = computeFIFO(transactions);
       const stocks = buildStockSheet(holdings, stockPrices);
       return (
         <div className="page">
           <div className="page-header"><div className="page-title">Stocks</div><div className="page-sub">All persons merged per stock</div></div>
           <div className="card" style={{ padding: 0 }}>
+            <div className="card-title" style={{ padding: '1.25rem 1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Stock Summary</span>
+              <TableConfig 
+                tableKey="stocks" 
+                columns={['Stock', 'Total Qty', 'Avg Buy', 'Invested', 'Curr Price', 'Curr Value', 'Gain ₹', 'Gain %', 'CAGR', 'Holdings']} 
+                settings={settings} 
+                onUpdate={onUpdateSettings} 
+              />
+            </div>
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>Stock</th><th>Total Qty</th><th>Avg Buy</th><th>Invested</th><th>Curr Price</th><th>Curr Value</th><th>Gain ₹</th><th>Gain %</th><th>CAGR</th><th>Holdings</th></tr></thead>
+              <table style={{ "--col-width": `${settings.colWidth}px` }}>
+                <thead>
+                  <tr>
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Stock')) && <th>Stock</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Total Qty')) && <th style={{ textAlign: 'right' }}>Total Qty</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Avg Buy')) && <th style={{ textAlign: 'right' }}>Avg Buy</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Invested')) && <th style={{ textAlign: 'right' }}>Invested</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Curr Price')) && <th style={{ textAlign: 'right' }}>Curr Price</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Curr Value')) && <th style={{ textAlign: 'right' }}>Curr Value</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Gain ₹')) && <th style={{ textAlign: 'right' }}>Gain ₹</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Gain %')) && <th style={{ textAlign: 'right' }}>Gain %</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('CAGR')) && <th style={{ textAlign: 'right' }}>CAGR</th>}
+                    {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Holdings')) && <th>Holdings</th>}
+                  </tr>
+                </thead>
                 <tbody>
                   {stocks.length === 0 && <tr><td colSpan="10"><div className="empty">No data</div></td></tr>}
                   {stocks.map((s, i) => {
@@ -1982,16 +2095,16 @@
                     const hText = Object.entries(aggregated).sort((a,b) => b[1]-a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
                     return (
                       <tr key={i}>
-                        <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{s.stock}</td>
-                        <td>{s.totalQty}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{fmt(s.avgBuy)}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{fmt(s.investedVal)}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{s.currentPrice ? fmt(s.currentPrice) : '—'}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{s.currentVal ? fmt(s.currentVal) : '—'}</td>
-                        <td className={s.absGain != null ? (s.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ whiteSpace: 'nowrap' }}>{s.absGain != null ? fmt(s.absGain) : '—'}</td>
-                        <td className={s.absGainPct != null ? (s.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{s.absGainPct != null ? fmtPct(s.absGainPct) : '—'}</td>
-                        <td className={s.cagr != null ? (s.cagr >= 0 ? 'pos' : 'neg') : ''}>{s.cagr != null ? fmtPct(s.cagr) : '—'}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{hText}</td>
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Stock')) && <td style={{ fontWeight: 700 }}>{s.stock}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Total Qty')) && <td style={{ textAlign: 'right' }}>{s.totalQty}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Avg Buy')) && <td style={{ textAlign: 'right' }}>{fmt(s.avgBuy)}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Invested')) && <td style={{ textAlign: 'right' }}>{fmt(s.investedVal)}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Curr Price')) && <td style={{ textAlign: 'right' }}>{s.currentPrice ? fmt(s.currentPrice) : '—'}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Curr Value')) && <td style={{ textAlign: 'right' }}>{s.currentVal ? fmt(s.currentVal) : '—'}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Gain ₹')) && <td className={s.absGain != null ? (s.absGain >= 0 ? 'pos' : 'neg') : ''} style={{ textAlign: 'right' }}>{s.absGain != null ? fmt(s.absGain) : '—'}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Gain %')) && <td className={s.absGainPct != null ? (s.absGainPct >= 0 ? 'pos' : 'neg') : ''} style={{ textAlign: 'right' }}>{s.absGainPct != null ? fmtPct(s.absGainPct) : '—'}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('CAGR')) && <td className={s.cagr != null ? (s.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ textAlign: 'right' }}>{s.cagr != null ? fmtPct(s.cagr) : '—'}</td>}
+                        {(!settings.hiddenColumns.stocks || !settings.hiddenColumns.stocks.includes('Holdings')) && <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{hText}</td>}
                       </tr>
                     );
                   })}
@@ -2004,7 +2117,7 @@
     }
 
     // ── FIFO RESULTS ──────────────────────────────────────────
-    function FIFOTab({ transactions, personColors }) {
+    function FIFOTab({ transactions, personColors, settings, onUpdateSettings }) {
       const { sells } = computeFIFO(transactions);
       const [filterPersons, setFilterPersons] = useState(['All']);
       const persons = [...new Set(sells.map(r => r.person))].sort();
@@ -2028,22 +2141,43 @@
             </div>
           </div>
           <div className="card" style={{ padding: 0 }}>
+            <div className="card-title" style={{ padding: '1.25rem 1.25rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Realized Trades</span>
+              <TableConfig 
+                tableKey="fifo" 
+                columns={['Person', 'Stock', 'Buy Date', 'Buy ₹', 'Sell Date', 'Sell ₹', 'Qty', 'Profit', 'CAGR']} 
+                settings={settings} 
+                onUpdate={onUpdateSettings} 
+              />
+            </div>
             <div className="table-wrap">
-              <table>
-                <thead><tr><th>Person</th><th>Stock</th><th>Buy Date</th><th>Buy ₹</th><th>Sell Date</th><th>Sell ₹</th><th>Qty</th><th>Profit</th><th>CAGR</th></tr></thead>
+              <table style={{ "--col-width": `${settings.colWidth}px` }}>
+                <thead>
+                  <tr>
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Person')) && <th>Person</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Stock')) && <th>Stock</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Buy Date')) && <th>Buy Date</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Buy ₹')) && <th style={{ textAlign: 'right' }}>Buy ₹</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Sell Date')) && <th>Sell Date</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Sell ₹')) && <th style={{ textAlign: 'right' }}>Sell ₹</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Qty')) && <th style={{ textAlign: 'right' }}>Qty</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Profit')) && <th style={{ textAlign: 'right' }}>Profit</th>}
+                    {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('CAGR')) && <th style={{ textAlign: 'right' }}>CAGR</th>}
+                  </tr>
+                </thead>
                 <tbody>
                   {filtered.length === 0 && <tr><td colSpan="9"><div className="empty">No realized trades yet</div></td></tr>}
                   {filtered.map((r, i) => (
                     <tr key={i}>
-                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'nowrap' }}>{r.person}</span></td>
-                      <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{r.stock}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(r.buyDate)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(r.buyPrice)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(r.sellDate)}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{fmt(r.sellPrice)}</td>
-                      <td>{r.qty}</td>
-                      <td className={r.profit >= 0 ? 'pos' : 'neg'} style={{ whiteSpace: 'nowrap' }}>{fmt(r.profit)}</td>
-                      <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Person')) && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Stock')) && <td style={{ fontWeight: 700 }}>{r.stock}</td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Buy Date')) && <td>{fmtDate(r.buyDate)}</td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Buy ₹')) && <td style={{ textAlign: 'right' }}>{fmt(r.buyPrice)}</td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Sell Date')) && <td>{fmtDate(r.sellDate)}</td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Sell ₹')) && <td style={{ textAlign: 'right' }}>{fmt(r.sellPrice)}</td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Qty')) && <td style={{ textAlign: 'right' }}>{r.qty}</td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('Profit')) && <td className={r.profit >= 0 ? 'pos' : 'neg'} style={{ textAlign: 'right' }}>{fmt(r.profit)}</td>}
+                      {(!settings.hiddenColumns.fifo || !settings.hiddenColumns.fifo.includes('CAGR')) && <td className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''} style={{ textAlign: 'right' }}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -2100,7 +2234,7 @@
     }
 
     // ── STOCK PRICES ──────────────────────────────────────────
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, settings, onUpdateSettings }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -2197,8 +2331,16 @@
 
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <div className="card-title" style={{ margin: 0 }}>Stored Prices ({entries.length})</div>
-              <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
+              <div className="card-title" style={{ margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span>Stored Prices ({entries.length})</span>
+                <TableConfig 
+                  tableKey="prices" 
+                  columns={['Stock', 'Price', 'Actions']} 
+                  settings={settings} 
+                  onUpdate={onUpdateSettings} 
+                />
+              </div>
+              <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }} style={{ marginTop: '.5rem' }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
             </div>
 
             {selectMode && selected.size > 0 && (
@@ -2216,22 +2358,26 @@
 
             {entries.length === 0 ? <div className="empty">No prices loaded yet</div> : (
               <div className="table-wrap">
-                <table>
+                <table style={{ "--col-width": `${settings.colWidth}px` }}>
                   <thead><tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === entries.length && entries.length > 0} onChange={selectAll} /></th>}
-                    <th>Stock</th><th>Price</th><th style={{ textAlign: 'right' }}>Actions</th>
+                    {(!settings.hiddenColumns.prices || !settings.hiddenColumns.prices.includes('Stock')) && <th>Stock</th>}
+                    {(!settings.hiddenColumns.prices || !settings.hiddenColumns.prices.includes('Price')) && <th>Price</th>}
+                    {(!settings.hiddenColumns.prices || !settings.hiddenColumns.prices.includes('Actions')) && <th style={{ textAlign: 'right' }}>Actions</th>}
                   </tr></thead>
                   <tbody>
                     {entries.map(([s, p]) => (
                       <tr key={s} className="clickable" style={selected.has(s) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(s) : setEditEntry({ stock: s, price: p })}>
                         {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(s)} onChange={() => toggleSelect(s)} /></td>}
-                        <td style={{ fontWeight: 700 }}>{s}</td>
-                        <td style={{ whiteSpace: 'nowrap' }}>{fmt(p)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                          <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditEntry({ stock: s, price: p }); }}>EDIT</button>
-                          {' '}
-                          <button className="btn-sm-danger" onClick={e => { e.stopPropagation(); if (confirm(`Delete "${s}"?`)) handleDelete(s); }}>DEL</button>
-                        </td>
+                        {(!settings.hiddenColumns.prices || !settings.hiddenColumns.prices.includes('Stock')) && <td style={{ fontWeight: 700 }}>{s}</td>}
+                        {(!settings.hiddenColumns.prices || !settings.hiddenColumns.prices.includes('Price')) && <td>{fmt(p)}</td>}
+                        {(!settings.hiddenColumns.prices || !settings.hiddenColumns.prices.includes('Actions')) && (
+                          <td style={{ textAlign: 'right' }}>
+                            <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditEntry({ stock: s, price: p }); }}>EDIT</button>
+                            {' '}
+                            <button className="btn-sm-danger" onClick={e => { e.stopPropagation(); if (confirm(`Delete "${s}"?`)) handleDelete(s); }}>DEL</button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -2284,7 +2430,7 @@
     }
 
     // ── PERSONS TAB ───────────────────────────────────────────
-    function PersonsTab({ persons, onAdd, onUpdate, onDelete, personColors, onColorChange }) {
+    function PersonsTab({ persons, onAdd, onUpdate, onDelete, personColors, onColorChange, settings, onUpdateSettings }) {
       const [newName, setNewName] = useState('');
       const [saving, setSaving] = useState(false);
       const [editPerson, setEditPerson] = useState(null);
@@ -2327,8 +2473,16 @@
           </div>
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <div className="card-title" style={{ margin: 0 }}>All Persons ({persons.length})</div>
-              <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
+              <div className="card-title" style={{ margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span>All Persons ({persons.length})</span>
+                <TableConfig 
+                  tableKey="persons" 
+                  columns={['Person', 'Color', 'Actions']} 
+                  settings={settings} 
+                  onUpdate={onUpdateSettings} 
+                />
+              </div>
+              <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }} style={{ marginTop: '.5rem' }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
             </div>
 
             {selectMode && selected.size > 0 && (
@@ -2346,30 +2500,36 @@
 
             {persons.length === 0 ? <div className="empty">No persons yet.</div> : (
               <div className="table-wrap">
-                <table>
+                <table style={{ "--col-width": `${settings.colWidth}px` }}>
                   <thead><tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === persons.length && persons.length > 0} onChange={selectAll} /></th>}
-                    <th>Person</th>
-                    <th>Color</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
+                    {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Person')) && <th>Person</th>}
+                    {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Color')) && <th>Color</th>}
+                    {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Actions')) && <th style={{ textAlign: 'right' }}>Actions</th>}
                   </tr></thead>
                   <tbody>
                     {persons.map(p => (
                       <tr key={p.id} className="clickable" style={selected.has(p.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(p.id) : setEditPerson(p)}>
-                        {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>}
-                        <td>
-                          <span className="tag" style={{ background: personColor(p.name, personColors), color: '#1a1a1a' }}>{p.name}</span>
-                        </td>
-                        <td onClick={e => e.stopPropagation()}>
-                          <ColorPicker
-                            name={p.name}
-                            color={personColor(p.name, personColors)}
-                            onChange={onColorChange}
-                          />
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditPerson(p); }}>EDIT</button>
-                        </td>
+                        {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={p.id} onChange={() => toggleSelect(p.id)} /></td>}
+                        {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Person')) && (
+                          <td>
+                            <span className="tag" style={{ background: personColor(p.name, personColors), color: '#1a1a1a' }}>{p.name}</span>
+                          </td>
+                        )}
+                        {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Color')) && (
+                          <td onClick={e => e.stopPropagation()}>
+                            <ColorPicker
+                              name={p.name}
+                              color={personColor(p.name, personColors)}
+                              onChange={onColorChange}
+                            />
+                          </td>
+                        )}
+                        {(!settings.hiddenColumns.persons || !settings.hiddenColumns.persons.includes('Actions')) && (
+                          <td style={{ textAlign: 'right' }}>
+                            <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditPerson(p); }}>EDIT</button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -2394,7 +2554,22 @@
       const [loading, setLoading] = useState(true);
       const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'] });
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
+      const [tableSettings, setTableSettings] = useState({ colWidth: 150, hiddenColumns: {} });
+      const [tableSettingsLoading, setTableSettingsLoading] = useState(true);
 
+      useEffect(() => {
+        if (!uid) return;
+        return db.collection(`users/${uid}/inv_meta`).doc('tableSettings').onSnapshot(doc => {
+          if (doc.exists) setTableSettings(doc.data());
+          setTableSettingsLoading(false);
+        });
+      }, [uid]);
+
+      const updateTableSettings = async s => {
+        const next = typeof s === 'function' ? s(tableSettings) : s;
+        setTableSettings(next);
+        await db.collection(`users/${uid}/inv_meta`).doc('tableSettings').set(next);
+      };
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
       const ignoreSwipe = useRef(false);
@@ -2533,6 +2708,17 @@
               ))}
             </div>
             <div className="sidebar-footer">
+              <div style={{ marginBottom: '1rem', padding: '0 .25rem' }}>
+                <div style={{ fontSize: 10, color: 'var(--sidebar-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.5rem' }}>Column Width</div>
+                <input 
+                  type="range" 
+                  min="60" 
+                  max="400" 
+                  value={tableSettings.colWidth || 150} 
+                  onChange={e => updateTableSettings(prev => ({ ...prev, colWidth: Number(e.target.value) }))}
+                  style={{ width: '100%', accentColor: 'var(--sidebar-active)' }}
+                />
+              </div>
               <div className="sidebar-user">{user.displayName || user.email}</div>
               <button className="btn-logout" onClick={() => auth.signOut()}>LOGOUT</button>
             </div>
@@ -2540,13 +2726,13 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} onPersonClick={handlePersonDrilldown} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
-                {tab === 'stocks' && <StocksTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} />}
-                {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta} />}
-                {tab === 'persons' && <PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} onPersonClick={handlePersonDrilldown} settings={tableSettings} onUpdateSettings={updateTableSettings} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} settings={tableSettings} onUpdateSettings={updateTableSettings} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} settings={tableSettings} onUpdateSettings={updateTableSettings} />}
+                {tab === 'stocks' && <StocksTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} settings={tableSettings} onUpdateSettings={updateTableSettings} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} settings={tableSettings} onUpdateSettings={updateTableSettings} />}
+                {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta} settings={tableSettings} onUpdateSettings={updateTableSettings} />}
+                {tab === 'persons' && <PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor} settings={tableSettings} onUpdateSettings={updateTableSettings} />}
               </>
             )}
           </main>
