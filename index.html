@@ -1650,8 +1650,9 @@
               <div className="page-title">Dashboard</div>
               <div className="page-sub">{new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
             </div>
-            <div style={{ minWidth: 200 }}>
+            <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
               <MultiSelect label="Filter Persons" options={persons} selected={filterPersons} onChange={setFilterPersons} />
+              <button className="btn-sm" style={{ height: 32 }} onClick={() => setFilterPersons(['All'])} title="Reset Filters">↺</button>
             </div>
           </div>
           <div className="stats-grid">
@@ -1712,7 +1713,6 @@
                     labels={sortedPersons.map(([p]) => p)}
                     data={sortedPersons.map(([, v]) => v.current)}
                     colors={sortedPersons.map(([p]) => personColor(p, personColors))}
-                    onClick={setDrilldownPerson}
                     hideLegend={true}
                   />
                 </div>
@@ -1781,6 +1781,8 @@
       const [saving, setSaving] = useState(false);
       const [importProgress, setImportProgress] = useState(null);
       const [search, setSearch] = useState('');
+      const [filterPersons, setFilterPersons] = useState(['All']);
+      const [filterStocks, setFilterStocks] = useState(['All']);
       const [editTx, setEditTx] = useState(null);
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
@@ -1829,7 +1831,12 @@
       };
 
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person);
-      const filtered = valid.filter(t => !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase())).sort((a, b) => toJSDate(b.date) - toJSDate(a.date));
+      const filtered = valid.filter(t => {
+        const matchesSearch = !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase());
+        const matchesPerson = filterPersons.includes('All') || filterPersons.includes(t.person);
+        const matchesStock = filterStocks.includes('All') || filterStocks.includes(t.stock);
+        return matchesSearch && matchesPerson && matchesStock;
+      }).sort((a, b) => toJSDate(b.date) - toJSDate(a.date));
 
       const toggleSelect = (id) => { setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
       const selectAll = () => { if (selected.size === filtered.length) setSelected(new Set()); else setSelected(new Set(filtered.map(t => t.id))); };
@@ -1902,10 +1909,14 @@
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
               <span className="card-title" style={{ margin: 0 }}>All Transactions ({filtered.length})</span>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <MultiSelect label="Person" options={[...new Set(valid.map(t => t.person))].sort()} selected={filterPersons} onChange={setFilterPersons} />
+                <MultiSelect label="Stock" options={[...new Set(valid.map(t => t.stock))].sort()} selected={filterStocks} onChange={setFilterStocks} />
                 <div className="filter-group">
                   <div className="filter-label">Search</div>
-                  <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Person, stock..." value={search} onChange={e => setSearch(e.target.value)} />
+                  <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
+                <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSearch(''); setFilterPersons(['All']); setFilterStocks(['All']); }} title="Reset Filters">↺</button>
+              </div>
                 <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
               </div>
             </div>
@@ -1962,9 +1973,10 @@
       return (
         <div className="page">
           <div className="page-header"><div className="page-title">Portfolio</div><div className="page-sub">Per person, per stock breakdown</div></div>
-          <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <MultiSelect label="Person" options={persons} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} />
             <MultiSelect label="Stock" options={stocks} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
+            <button className="btn-sm" style={{ height: 32 }} onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'] })} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span></div>
           </div>
           <div className="card" style={{ padding: 0 }}>
@@ -2061,6 +2073,7 @@
           <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <MultiSelect label="Person" options={persons} selected={filterPersons} onChange={setFilterPersons} />
             <MultiSelect label="Stock" options={stocks} selected={filterStocks} onChange={setFilterStocks} />
+            <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterStocks(['All']); }} title="Reset Filters">↺</button>
             <div style={{ marginLeft: 'auto', textAlign: 'right', marginBottom: 6 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>Total Realized: <span className={totalProfit >= 0 ? 'pos' : 'neg'}>{fmt(totalProfit)}</span></div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Net Realized CAGR: <span className={realizedNetCAGR >= 0 ? 'pos' : 'neg'}>{fmtPct(realizedNetCAGR)}</span></div>
@@ -2238,7 +2251,10 @@
 
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <div className="card-title" style={{ margin: 0 }}>Stored Prices ({entries.length})</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div className="card-title" style={{ margin: 0 }}>Stored Prices ({entries.length})</div>
+                {priceMeta.lastUpdated && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Last updated: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</div>}
+              </div>
               <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
             </div>
 
