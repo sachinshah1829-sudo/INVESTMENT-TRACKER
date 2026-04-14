@@ -2105,7 +2105,7 @@
               </table>
             </div>
           </div>
-          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} onClose={() => setDrilldown(null)} />}
+          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
         </div>
       );
     }
@@ -2114,7 +2114,7 @@
     // StocksTab removed - merged into PortfolioTab
 
     // ── PORTFOLIO DRILLDOWN MODAL ──────────────────────────────
-    function PortfolioDrilldownModal({ data, stockPrices, onClose }) {
+    function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose }) {
       if (!data) return null;
       const { person, stock, lots } = data;
       const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
