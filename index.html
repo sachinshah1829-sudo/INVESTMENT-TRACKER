@@ -2721,7 +2721,8 @@
       };
 
       const handlePreview = () => {
-        const { holdings } = computeFIFO(transactions.filter(t => t.date <= date));
+        // Use all transactions to find current stockholders, ignoring the action date for the basis
+        const { holdings } = computeFIFO(transactions);
         const stockHolders = holdings[stock] || {};
         
         const personsToProcess = ['buyback', 'rights'].includes(action) 
@@ -2832,7 +2833,7 @@
             {step === 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  Selected: <strong>{stock}</strong> as of {fmtDate(date)}
+                  Record Action for <strong>{stock}</strong>
                 </div>
                 <div className="action-grid">
                   {[
