@@ -217,7 +217,13 @@
       left: 0;
       height: 100vh;
       z-index: 100;
-      transition: transform .3s ease;
+      transition: width .3s ease, transform .3s ease;
+      overflow: hidden;
+    }
+
+    .sidebar.collapsed {
+      width: 64px;
+      min-width: 64px;
     }
 
     .sidebar-brand {
@@ -313,6 +319,12 @@
       min-height: 100vh;
       width: calc(100% - 220px);
       overflow-x: hidden;
+      transition: margin-left .3s ease, width .3s ease;
+    }
+
+    .main.sidebar-collapsed {
+      margin-left: 64px;
+      width: calc(100% - 64px);
     }
 
     .page {
@@ -2014,11 +2026,10 @@
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices, personColors, filter, onFilterChange }) {
-      const { holdings } = computeFIFO(transactions);
-      const [viewMode, setViewMode] = useState('persons'); // 'persons' or 'stocks'
+    function PortfolioTab({ transactions, stockPrices, personColors, filter, onFilterChange, viewMode }) {
       const [drilldown, setDrilldown] = useState(null);
-
+      const { holdings } = computeFIFO(transactions);
+      
       const allRows = viewMode === 'persons' ? buildPortfolio(holdings, stockPrices) : buildStockSheet(holdings, stockPrices);
       const stocks = [...new Set(allRows.map(r => r.stock))].sort();
       const persons = viewMode === 'persons' ? [...new Set(allRows.map(r => r.person))].sort() : [];
@@ -2030,30 +2041,9 @@
       return (
         <div className="page">
           <div className="page-header">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <div className="page-title">Portfolio</div>
-                <div className="page-sub">{viewMode === 'persons' ? 'Per person, per stock breakdown' : 'All persons merged per stock'}</div>
-              </div>
-              <div className="premium-dock">
-                <div 
-                  className="dock-glass" 
-                  style={{ 
-                    left: viewMode === 'persons' ? '4px' : 'calc(50% - 2px)',
-                    width: 'calc(50% - 2px)'
-                  }} 
-                />
-                <button 
-                  className={`dock-btn ${viewMode === 'persons' ? 'active' : ''}`}
-                  onClick={() => setViewMode('persons')}>
-                  PERSONS
-                </button>
-                <button 
-                  className={`dock-btn ${viewMode === 'stocks' ? 'active' : ''}`}
-                  onClick={() => setViewMode('stocks')}>
-                  STOCKS
-                </button>
-              </div>
+            <div>
+              <div className="page-title">{viewMode === 'persons' ? 'Portfolio (Persons)' : 'Stock Sheet'}</div>
+              <div className="page-sub">{viewMode === 'persons' ? 'Per person, per stock breakdown' : 'All persons merged per stock'}</div>
             </div>
           </div>
           <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -2659,6 +2649,7 @@
       const [stockPrices, setStockPrices] = useState({});
       const [personColors, setPersonColors] = useState({});
       const [sidebarOpen, setSidebarOpen] = useState(false);
+      const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
       const [loading, setLoading] = useState(true);
       const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'] });
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
@@ -2670,10 +2661,11 @@
       const navItems = [
         { key: 'dashboard', label: 'Dashboard', icon: '▦' },
         { key: 'transactions', label: 'Transactions', icon: '↕' },
-        { key: 'portfolio', label: 'Portfolio', icon: '◈' },
+        { key: 'portfolio', label: 'Portfolio (Persons)', icon: '◈' },
+        { key: 'stock_sheet', label: 'Stock Sheet', icon: '⧉' },
         { key: 'fifo', label: 'FIFO Results', icon: '⟳' },
         { key: 'prices', label: 'Stock Prices', icon: '⬆' },
-        { key: 'persons', label: 'Persons', icon: '◎' },
+        { key: 'persons', label: 'Persons Management', icon: '◎' },
       ];
 
       useEffect(() => {
@@ -2725,7 +2717,12 @@
           }
         }, () => { });
         const t4 = db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').onSnapshot(snap => { if (snap.exists) setPersonColors(snap.data().colors || {}); }, () => { });
-        return () => { t1(); t2(); t3(); t4(); };
+        const t5 = db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').onSnapshot(snap => {
+          if (snap.exists) {
+            setSidebarCollapsed(!!snap.data().sidebarCollapsed);
+          }
+        }, () => { });
+        return () => { t1(); t2(); t3(); t4(); t5(); };
       }, [user]);
 
       const uid = user?.uid;
@@ -2775,6 +2772,14 @@
         await db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').set({ colors: updated });
       };
 
+      const toggleSidebar = async () => {
+        const newValue = !sidebarCollapsed;
+        setSidebarCollapsed(newValue);
+        if (uid) {
+          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ sidebarCollapsed: newValue }, { merge: true });
+        }
+      };
+
       if (user === undefined) return <div className="spinner">Loading...</div>;
       if (!user) return <AuthPage />;
 
@@ -2787,29 +2792,51 @@
         <div className="app">
           <button className="menu-toggle" onClick={() => setSidebarOpen(o => !o)}>☰</button>
           <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
-          <nav className={`sidebar${sidebarOpen ? ' open' : ''}`}>
+          <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
             <div className="sidebar-brand">
-              <div className="sidebar-brand-sub">Investment</div>
-              <div className="sidebar-brand-name">Tracker</div>
+              <div className="sidebar-brand-sub">Premium</div>
+              <div className="sidebar-brand-name">{!sidebarCollapsed ? 'InvstTracker' : 'IT'}</div>
             </div>
-            <div className="sidebar-nav">
+            
+            <div style={{ padding: '0 1.25rem 0.5rem' }}>
+              <button 
+                onClick={toggleSidebar}
+                className="btn-logout" 
+                style={{ fontSize: 10, padding: '4px 8px', letterSpacing: '0.05em', width: '100%' }}
+              >
+                {sidebarCollapsed ? '→' : '← HIDE'}
+              </button>
+            </div>
+
+            <nav className="sidebar-nav">
               {navItems.map(item => (
-                <button key={item.key} className={`sidebar-item${tab === item.key ? ' active' : ''}`} onClick={() => goTo(item.key)}>
-                  <span className="sidebar-icon">{item.icon}</span>{item.label}
+                <button 
+                  key={item.key} 
+                  className={`sidebar-item ${tab === item.key ? 'active' : ''}`} 
+                  onClick={() => goTo(item.key)}
+                  title={sidebarCollapsed ? item.label : ''}
+                >
+                  <span className="sidebar-icon">{item.icon}</span>
+                  {!sidebarCollapsed && <span className="nav-label">{item.label}</span>}
                 </button>
               ))}
-            </div>
+            </nav>
             <div className="sidebar-footer">
-              <div className="sidebar-user">{user.displayName || user.email}</div>
-              <button className="btn-logout" onClick={() => auth.signOut()}>LOGOUT</button>
+              <div className="sidebar-user" title={user.email}>
+                {!sidebarCollapsed ? (user.displayName || user.email) : (user.email.charAt(0).toUpperCase())}
+              </div>
+              <button className="btn-logout" onClick={() => auth.signOut()}>
+                {!sidebarCollapsed ? 'LOGOUT' : '⏻'}
+              </button>
             </div>
-          </nav>
-          <main className="main">
+          </aside>
+          <main className={`main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} onPersonClick={handlePersonDrilldown} />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} viewMode="persons" />}
+                {tab === 'stock_sheet' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} viewMode="stocks" />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} />}
                 {tab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta} />}
                 {tab === 'persons' && <PersonsTab persons={personList} onAdd={addPerson} onUpdate={updatePerson} onDelete={deletePerson} personColors={personColors} onColorChange={updatePersonColor} />}
