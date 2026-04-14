@@ -2122,62 +2122,138 @@
     function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose }) {
       if (!data) return null;
       const { person, stock, lots } = data;
+      const [modalMode, setModalMode] = useState('txn'); // 'txn' or 'merged'
       const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
       const now = new Date();
 
+      // Aggregate by person for 'merged' view
+      const personMerged = [];
+      if (modalMode === 'merged') {
+        const groups = {};
+        lots.forEach(l => {
+          if (!groups[l.person]) groups[l.person] = [];
+          groups[l.person].push(l);
+        });
+        Object.entries(groups).forEach(([p, pLots]) => {
+          const totalQty = pLots.reduce((s, l) => s + l.qty, 0);
+          const investedVal = pLots.reduce((s, l) => s + l.qty * l.price, 0);
+          const avgBuy = investedVal / totalQty;
+          const currentVal = cp ? totalQty * cp : null;
+          const absGain = currentVal != null ? currentVal - investedVal : null;
+          const absGainPct = absGain != null ? (absGain / investedVal) * 100 : null;
+
+          let weightedAge = 0;
+          pLots.forEach(l => {
+            const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
+            weightedAge += (l.qty * l.price) * age;
+          });
+          const avgAge = investedVal > 0 ? weightedAge / investedVal : 0;
+          const cagr = (currentVal != null && investedVal > 0 && avgAge > 0) ? (Math.pow(currentVal / investedVal, 1 / avgAge) - 1) * 100 : null;
+
+          personMerged.push({ person: p, totalQty, avgBuy, investedVal, currentVal, absGain, absGainPct, cagr });
+        });
+        personMerged.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0));
+      }
+
       return (
         <div className="modal-overlay" onClick={onClose}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '95%' }}>
-            <div className="modal-title">
-              <div>
-                <div style={{ fontSize: 18 }}>{stock}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{person ? `Active Holdings for ${person}` : 'Consolidated Active Holdings'}</div>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '95%' }}>
+            <div className="modal-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                <div>
+                  <div style={{ fontSize: 18 }}>{stock}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{person ? `Active Holdings for ${person}` : 'Consolidated Active Holdings'}</div>
+                </div>
+                <div className="premium-dock" style={{ padding: '3px', transform: 'scale(0.85)', transformOrigin: 'left center' }}>
+                  <div 
+                    className="dock-glass" 
+                    style={{ 
+                      left: modalMode === 'txn' ? '3px' : 'calc(50% - 1.5px)',
+                      width: 'calc(50% - 1.5px)'
+                    }} 
+                  />
+                  <button className={`dock-btn ${modalMode === 'txn' ? 'active' : ''}`} onClick={() => setModalMode('txn')} style={{ padding: '6px 16px', fontSize: 11 }}>TXN</button>
+                  <button className={`dock-btn ${modalMode === 'merged' ? 'active' : ''}`} onClick={() => setModalMode('merged')} style={{ padding: '6px 16px', fontSize: 11 }}>MERGED</button>
+                </div>
               </div>
               <button className="modal-close" onClick={onClose}>×</button>
             </div>
             
             <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Person</th>
-                    <th>Buy Date</th>
-                    <th>Qty</th>
-                    <th>Buy ₹</th>
-                    <th>Invested</th>
-                    <th>Curr ₹</th>
-                    <th>Curr Val</th>
-                    <th>Gain</th>
-                    <th>Gain%</th>
-                    <th>CAGR</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lots.sort((a,b) => toJSDate(b.date) - toJSDate(a.date)).map((l, i) => {
-                    const invested = l.qty * l.price;
-                    const cval = cp ? l.qty * cp : null;
-                    const gain = cval != null ? cval - invested : null;
-                    const gainPct = gain != null ? (gain / invested) * 100 : null;
-                    const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
-                    const cagr = (cval != null && invested > 0) ? (Math.pow(cval / invested, 1 / age) - 1) * 100 : null;
+              {modalMode === 'txn' ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Person</th>
+                      <th>Buy Date</th>
+                      <th>Qty</th>
+                      <th>Buy ₹</th>
+                      <th>Invested</th>
+                      <th>Curr ₹</th>
+                      <th>Curr Val</th>
+                      <th>Gain</th>
+                      <th>Gain%</th>
+                      <th>CAGR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lots.sort((a,b) => toJSDate(b.date) - toJSDate(a.date)).map((l, i) => {
+                      const invested = l.qty * l.price;
+                      const cval = cp ? l.qty * cp : null;
+                      const gain = cval != null ? cval - invested : null;
+                      const gainPct = gain != null ? (gain / invested) * 100 : null;
+                      const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
+                      const cagr = (cval != null && invested > 0) ? (Math.pow(cval / invested, 1 / age) - 1) * 100 : null;
 
-                    return (
+                      return (
+                        <tr key={i}>
+                          <td><span className="tag" style={{ background: personColor(l.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{l.person}</span></td>
+                          <td>{fmtDate(l.date)}</td>
+                          <td>{l.qty}</td>
+                          <td>{fmt(l.price)}</td>
+                          <td>{fmt(invested)}</td>
+                          <td>{cp ? fmt(cp) : '—'}</td>
+                          <td>{cval ? fmt(cval) : '—'}</td>
+                          <td className={gain >= 0 ? 'pos' : 'neg'}>{gain != null ? fmt(gain) : '—'}</td>
+                          <td className={gainPct >= 0 ? 'pos' : 'neg'}>{gainPct != null ? fmtPct(gainPct) : '—'}</td>
+                          <td className={cagr >= 0 ? 'pos' : 'neg'}>{cagr != null ? fmtPct(cagr) : '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Person</th>
+                      <th>Qty</th>
+                      <th>Avg Buy</th>
+                      <th>Invested</th>
+                      <th>Curr Price</th>
+                      <th>Curr Value</th>
+                      <th>Gain ₹</th>
+                      <th>Gain %</th>
+                      <th>CAGR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {personMerged.map((r, i) => (
                       <tr key={i}>
-                        <td><span className="tag" style={{ background: personColor(l.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{l.person}</span></td>
-                        <td>{fmtDate(l.date)}</td>
-                        <td>{l.qty}</td>
-                        <td>{fmt(l.price)}</td>
-                        <td>{fmt(invested)}</td>
+                        <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
+                        <td>{r.totalQty}</td>
+                        <td>{fmt(r.avgBuy)}</td>
+                        <td>{fmt(r.investedVal)}</td>
                         <td>{cp ? fmt(cp) : '—'}</td>
-                        <td>{cval ? fmt(cval) : '—'}</td>
-                        <td className={gain >= 0 ? 'pos' : 'neg'}>{gain != null ? fmt(gain) : '—'}</td>
-                        <td className={gainPct >= 0 ? 'pos' : 'neg'}>{gainPct != null ? fmtPct(gainPct) : '—'}</td>
-                        <td className={cagr >= 0 ? 'pos' : 'neg'}>{cagr != null ? fmtPct(cagr) : '—'}</td>
+                        <td>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
+                        <td className={(r.absGain || 0) >= 0 ? 'pos' : 'neg'}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
+                        <td className={(r.absGainPct || 0) >= 0 ? 'pos' : 'neg'}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
+                        <td className={(r.cagr || 0) >= 0 ? 'pos' : 'neg'}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
