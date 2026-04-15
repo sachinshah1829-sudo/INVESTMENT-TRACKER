@@ -731,11 +731,10 @@
 
     /* DASHBOARD FILTER BLOCKS */
     .dashboard-filter-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: 12px;
       margin-bottom: 1.5rem;
-      width: 100%;
     }
 
     .dashboard-filter-block {
@@ -749,6 +748,7 @@
       position: relative;
       overflow: hidden;
       background: var(--surface);
+      width: 180px;
     }
 
     .dashboard-filter-block:hover {
