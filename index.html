@@ -2052,14 +2052,48 @@
       const [deleting, setDeleting] = useState(false);
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+      // Speed up entry: remember last-used Person + Asset Type
+      useEffect(() => {
+        try {
+          const lastPerson = localStorage.getItem('inv_lastPerson') || '';
+          const lastType = localStorage.getItem('inv_lastAssetType') || 'STOCK';
+          if (lastPerson || lastType) setForm(f => ({ ...f, person: f.person || lastPerson, assetType: f.assetType || lastType }));
+        } catch { /* ignore */ }
+      }, []);
+
+      useEffect(() => {
+        try {
+          if (form.person) localStorage.setItem('inv_lastPerson', form.person);
+          if (form.assetType) localStorage.setItem('inv_lastAssetType', form.assetType);
+        } catch { /* ignore */ }
+      }, [form.person, form.assetType]);
+
+      // Quick focus helpers
+      const stockRef = useRef(null);
+      const qtyRef = useRef(null);
+      const priceRef = useRef(null);
+      const focusStock = () => setTimeout(() => stockRef.current?.focus(), 0);
+      const focusQty = () => setTimeout(() => qtyRef.current?.focus(), 0);
+      const focusPrice = () => setTimeout(() => priceRef.current?.focus(), 0);
+
       const handleAdd = async () => {
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
         setSaving(true);
         await onEnsurePerson(form.person.toUpperCase());
         const qty = Number(form.qty);
         await onAdd({ date: form.date, person: form.person.toUpperCase(), stock: form.stock.toUpperCase(), qty, price: Number(form.price), assetType: form.assetType });
-        setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '' });
+        // Keep Person + Asset Type for faster repeated entry
+        setForm(f => ({ date: todayISO(), person: f.person, assetType: f.assetType, stock: '', qty: '', price: '' }));
         setSaving(false);
+        focusStock();
+      };
+
+      const handleQuickKey = (e, next) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (next) next();
+          else handleAdd();
+        }
       };
 
       const parseCSV = () => {
@@ -2119,23 +2153,24 @@
             <div className="card">
               <div className="card-title">Add Transaction</div>
               <div className="form-row">
-                <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} /></div>
+                <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} /></div>
                 <div><label className="form-label">Person</label>
-                  <select className="select-input" value={form.person} onChange={e => set('person', e.target.value)}>
+                  <select className="select-input" value={form.person} onChange={e => set('person', e.target.value)} onKeyDown={e => handleQuickKey(e, focusStock)}>
                     <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
                   </select>
                 </div>
-                <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" /></div>
-                <div><label className="form-label">Qty (- for Sell)</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" /></div>
-                <div><label className="form-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" /></div>
+                <div><label className="form-label">Stock Name</label><input ref={stockRef} className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} /></div>
+                <div><label className="form-label">Qty (- for Sell)</label><input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} /></div>
+                <div><label className="form-label">Price ₹</label><input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" onKeyDown={e => handleQuickKey(e, null)} /></div>
                 <div><label className="form-label">Asset Type</label>
-                  <select className="select-input" value={form.assetType} onChange={e => set('assetType', e.target.value)}>
+                  <select className="select-input" value={form.assetType} onChange={e => set('assetType', e.target.value)} onKeyDown={e => handleQuickKey(e, focusStock)}>
                     {assetTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
                   </select>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
                 <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
+                <button className="btn-sm" style={{ height: 38 }} onClick={() => { setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' }); focusStock(); }} title="Clear form">CLEAR</button>
                 <button className="btn-secondary" onClick={() => setCsvMode(true)}>IMPORT CSV</button>
               </div>
             </div>
