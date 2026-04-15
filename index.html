@@ -1627,7 +1627,7 @@
               </div>
             </div>
             <div className="form-row">
-              <div><label className="form-label">Stock Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
+              <div><label className="form-label">Asset Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
               <div><label className="form-label">Qty (- for Sell)</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
             </div>
             <div className="form-row">
@@ -1924,7 +1924,12 @@
                   </div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedPersons.map(([p, v]) => (
-                      <div key={p} className={isNetWorthView ? "" : "clickable"} onClick={() => !isNetWorthView && onPersonClick(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                      <div
+                        key={p}
+                        className="clickable"
+                        onClick={() => setDrilldownPerson(p)}
+                        style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}
+                      >
                         <span style={{ fontWeight: 700 }}>{p}</span>
                         <span style={{ textAlign: 'right' }}>
                           <div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div>
@@ -2100,13 +2105,13 @@
         const lines = csvText.trim().split('\n').filter(Boolean); const rows = [];
         lines.forEach((line, i) => {
           const parts = line.split(',').map(s => s.trim());
-          if (parts.length < 5) { rows.push({ err: `Row ${i + 1}: need 5 cols`, raw: line }); return; }
-          const [date, person, stock, qtyRaw, priceRaw, assetTypeRaw] = parts;
+          if (parts.length < 5) { rows.push({ err: `Row ${i + 1}: need at least 5 cols`, raw: line }); return; }
+          const [date, person, asset, qtyRaw, priceRaw, assetTypeRaw] = parts;
           const qty = Number(qtyRaw); const price = Number(priceRaw);
-          if (!date || !person || !stock) { rows.push({ err: `Row ${i + 1}: missing field`, raw: line }); return; }
+          if (!date || !person || !asset) { rows.push({ err: `Row ${i + 1}: missing field`, raw: line }); return; }
           if (isNaN(qty) || qty === 0) { rows.push({ err: `Row ${i + 1}: invalid qty`, raw: line }); return; }
           if (isNaN(price) || price <= 0) { rows.push({ err: `Row ${i + 1}: invalid price`, raw: line }); return; }
-          rows.push({ date, person: person.toUpperCase(), stock: stock.toUpperCase(), qty, price, assetType: (assetTypeRaw || 'STOCK').toUpperCase(), ok: true });
+          rows.push({ date, person: person.toUpperCase(), stock: asset.toUpperCase(), qty, price, assetType: (assetTypeRaw || 'STOCK').toUpperCase(), ok: true });
         });
         setPreview(rows);
       };
@@ -2159,7 +2164,7 @@
                     <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
                   </select>
                 </div>
-                <div><label className="form-label">Stock Name</label><input ref={stockRef} className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} /></div>
+                <div><label className="form-label">Asset Name</label><input ref={stockRef} className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} /></div>
                 <div><label className="form-label">Qty (- for Sell)</label><input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} /></div>
                 <div><label className="form-label">Price ₹</label><input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" onKeyDown={e => handleQuickKey(e, null)} /></div>
                 <div><label className="form-label">Asset Type</label>
@@ -2178,9 +2183,9 @@
             <div className="card">
               <div className="card-title">Import Transactions via CSV</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '.75rem', lineHeight: 1.7 }}>
-                Format: <strong>DATE, PERSON, STOCK NAME, QTY, PRICE</strong><br />
+                Format: <strong>DATE, PERSON, ASSET NAME, QTY, PRICE, ASSET TYPE</strong><br />
                 Negative QTY = SELL &nbsp;|&nbsp; Date: DD/MM/YYYY or YYYY-MM-DD<br />
-                Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100</code>
+                Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100, STOCK</code>
               </div>
               <textarea className="textarea-input" value={csvText} onChange={e => setCsvText(e.target.value)} placeholder="Paste CSV rows here..." />
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem' }}>
@@ -2200,7 +2205,7 @@
                 <div className="card-title">Preview — {preview.filter(r => r.ok).length} valid, {preview.filter(r => !r.ok).length} errors</div>
                 <div className="table-wrap">
                   <table className="preview-table">
-                    <thead><tr><th>Date</th><th>Person</th><th>Stock</th><th>Type</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Person</th><th>Asset</th><th>Asset Type</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead>
                     <tbody>{preview.map((r, i) => <tr key={i} className={r.ok ? 'preview-ok' : 'preview-err'}><td>{r.date || '—'}</td><td>{r.person || '—'}</td><td>{r.stock || r.raw}</td><td>{r.assetType || '—'}</td><td>{r.qty}</td><td>{r.price}</td><td>{r.ok ? '✓' : r.err}</td></tr>)}</tbody>
                   </table>
                 </div>
@@ -2214,7 +2219,7 @@
               <span className="card-title" style={{ margin: 0 }}>All Transactions ({filtered.length})</span>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <MultiSelect label="Person" options={[...new Set(valid.map(t => t.person))].sort()} selected={filterPersons} onChange={setFilterPersons} />
-                <MultiSelect label="Stock" options={[...new Set(valid.map(t => t.stock))].sort()} selected={filterStocks} onChange={setFilterStocks} />
+                <MultiSelect label="Asset" options={[...new Set(valid.map(t => t.stock))].sort()} selected={filterStocks} onChange={setFilterStocks} />
                 <MultiSelect label="Asset Type" options={[...new Set(valid.map(t => t.assetType || 'STOCK'))].sort()} selected={filterAssetType} onChange={setFilterAssetType} />
                 <div className="filter-group">
                   <div className="filter-label">Search</div>
@@ -2238,7 +2243,7 @@
                 <thead>
                   <tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={selectAll} /></th>}
-                    <th>Date</th><th>Person</th><th>Stock</th><th>Type</th><th>Qty</th><th>Price</th><th>Value</th>
+                    <th>Date</th><th>Person</th><th>Asset</th><th>Asset Type</th><th>Qty</th><th>Price</th><th>Value</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2661,7 +2666,7 @@
           <div className="modal" style={{ maxWidth: 380 }}>
             <div className="modal-title">Edit Stock Entry <button className="modal-close" onClick={onClose}>✕</button></div>
             <div className="form-group">
-              <label className="form-label">Stock Name</label>
+              <label className="form-label">Asset Name</label>
               <input className="form-input" type="text" value={newStock} onChange={e => setNewStock(e.target.value)} autoFocus />
             </div>
             <div className="form-group">
@@ -3551,7 +3556,15 @@
         await db.collection(`users/${uid}/inv_meta`).doc('inv_assetTypeColors').set({ colors: updated });
       };
 
-      const addAssetType = async t => { await db.collection(`users/${uid}/inv_assetTypes`).add(t); };
+      const addAssetType = async t => {
+        const ref = await db.collection(`users/${uid}/inv_assetTypes`).add(t);
+        // Optimistic UI update so it appears instantly
+        setAssetTypes(prev => {
+          const exists = prev.some(x => x.id === ref.id);
+          if (exists) return prev;
+          return [...prev, { id: ref.id, ...t }];
+        });
+      };
       const updateAssetType = async (id, data, oldName) => {
         const newName = data.name.toUpperCase().trim();
         await db.collection(`users/${uid}/inv_assetTypes`).doc(id).update(data);
