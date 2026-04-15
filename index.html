@@ -1426,6 +1426,73 @@
         -webkit-text-fill-color: transparent;
       }
       @keyframes shimmer { to { background-position: 200% center; } }
+
+      .chat-bubble {
+        padding: .75rem 1rem;
+        border-radius: 1rem;
+        max-width: 85%;
+        margin-bottom: 1rem;
+        font-size: 13px;
+        line-height: 1.5;
+        position: relative;
+      }
+      .chat-bubble.user {
+        background: #f1f5f9;
+        color: #1a1a1a;
+        align-self: flex-start;
+        border-bottom-left-radius: 2px;
+      }
+      .chat-bubble.ai {
+        background: #f5f3ff;
+        color: #6d28d2;
+        align-self: flex-end;
+        border-bottom-right-radius: 2px;
+        border: 1px solid #ddd6fe;
+      }
+      .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .preview-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: .75rem;
+        background: white;
+        padding: .75rem;
+        border-radius: .75rem;
+        border: 1px solid #e2e8f0;
+        margin-top: .5rem;
+      }
+      .preview-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .preview-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        color: #94a3b8;
+        font-weight: 700;
+      }
+      .preview-val {
+        font-weight: 700;
+        font-size: 13px;
+        color: #1e293b;
+      }
+      .chat-controls {
+        display: flex;
+        gap: .5rem;
+        margin-top: .75rem;
+      }
     }
   </style>
 </head>
@@ -2531,6 +2598,8 @@
       const [magicInput, setMagicInput] = useState('');
       const [parsingMagic, setParsingMagic] = useState(false);
       const [magicError, setMagicError] = useState('');
+      const [aiPreview, setAiPreview] = useState(null); 
+      const [lastUserMessage, setLastUserMessage] = useState('');
 
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -2632,14 +2701,18 @@
 
       const handleMagicParse = async () => {
         if (!magicInput.trim()) return;
+        const input = magicInput;
+        setLastUserMessage(input);
+        setMagicInput('');
         setParsingMagic(true);
         setMagicError('');
+        setAiPreview(null);
         
         const pList = persons.map(p => p.name).join(', ');
         const tList = assetTypes.map(t => t.name).join(', ');
         const today = new Date().toISOString().split('T')[0];
 
-        const prompt = `[INST] You are a financial assistant. Parse this transaction entry into JSON: "${magicInput}"
+        const prompt = `[INST] You are a financial assistant. Parse this transaction entry into JSON: "${input}"
 
 Context:
 - Today's Date: ${today}
@@ -2660,7 +2733,7 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
           const res = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2', {
             method: 'POST',
             headers: { 
-              'Authorization': 'Bearer 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',
+              'Authorization': 'Bearer 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',
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
@@ -2687,15 +2760,14 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0].trim());
-            setForm({
+            setAiPreview({
               date: parsed.date || today,
               person: (parsed.person || '').toUpperCase(),
               stock: (parsed.stock || '').toUpperCase(),
-              qty: String(parsed.qty || ''),
-              price: String(parsed.price || ''),
+              qty: parsed.qty || 0,
+              price: parsed.price || 0,
               assetType: (parsed.assetType || 'STOCK').toUpperCase()
             });
-            setMagicInput('');
           } else {
             throw new Error('Could not parse');
           }
@@ -2705,6 +2777,21 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
         } finally {
           setParsingMagic(false);
         }
+      };
+
+      const applyAiPreview = () => {
+        if (!aiPreview) return;
+        setForm({
+          date: aiPreview.date,
+          person: aiPreview.person,
+          stock: aiPreview.stock,
+          qty: String(aiPreview.qty),
+          price: String(aiPreview.price),
+          assetType: aiPreview.assetType
+        });
+        setAiPreview(null);
+        setLastUserMessage('');
+        focusStock();
       };
 
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person);
@@ -2731,27 +2818,70 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
             <div className="page-title">Transactions</div>
           </div>
 
-          <div className="magic-box">
-            <textarea 
-              className="magic-textarea" 
-              placeholder="Magic Entry: Type something like 'Bought 50 shares of Reliance at 2500 for Nilesh today'..."
-              value={magicInput}
-              onChange={e => setMagicInput(e.target.value)}
-              disabled={parsingMagic}
-            />
-            <div className="magic-footer">
-              <div className="magic-hint">✨ Tip: You can say "Bought 10 Mutual Fund units today"</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                {magicError && <div style={{ color: 'var(--red)', fontSize: '.85rem' }}>{magicError}</div>}
-                {parsingMagic && <div className="magic-status ai-shimmer">Analyzing entry...</div>}
-                <button 
-                  className="magic-btn" 
-                  onClick={handleMagicParse} 
-                  disabled={parsingMagic || !magicInput.trim()}
-                >
-                  {parsingMagic ? '✨ THINKING...' : '✨ MAGIC AUTO-FILL'}
-                </button>
+          <div className="magic-box" style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Chat History Area */}
+            {(lastUserMessage || parsingMagic || aiPreview || magicError) && (
+              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1rem' }}>
+                {lastUserMessage && <div className="chat-bubble user">{lastUserMessage}</div>}
+                
+                {parsingMagic && (
+                  <div className="chat-bubble ai">
+                    <div className="ai-badge">Assistant</div>
+                    <div className="ai-shimmer">I'm analyzing your request...</div>
+                  </div>
+                )}
+
+                {magicError && (
+                  <div className="chat-bubble ai" style={{ color: 'var(--red)', borderColor: 'var(--red-bg)' }}>
+                    <div className="ai-badge" style={{ background: 'var(--red)' }}>Error</div>
+                    {magicError}
+                  </div>
+                )}
+
+                {aiPreview && (
+                  <div className="chat-bubble ai">
+                    <div className="ai-badge">Assistant</div>
+                    <div>I found these details. Does this look correct?</div>
+                    
+                    <div className="preview-info-grid">
+                      <div className="preview-item"><span className="preview-label">Date</span><span className="preview-val">{aiPreview.date}</span></div>
+                      <div className="preview-item"><span className="preview-label">Person</span><span className="preview-val">{aiPreview.person}</span></div>
+                      <div className="preview-item"><span className="preview-label">Stock</span><span className="preview-val">{aiPreview.stock}</span></div>
+                      <div className="preview-item"><span className="preview-label">Qty</span><span className="preview-val" style={{ color: aiPreview.qty >= 0 ? 'var(--green)' : 'var(--red)' }}>{aiPreview.qty}</span></div>
+                      <div className="preview-item"><span className="preview-label">Price</span><span className="preview-val">₹{aiPreview.price}</span></div>
+                      <div className="preview-item"><span className="preview-label">Type</span><span className="preview-val">{aiPreview.assetType}</span></div>
+                    </div>
+
+                    <div className="chat-controls">
+                      <button className="btn-primary" style={{ padding: '.4rem 1rem', fontSize: 12 }} onClick={applyAiPreview}>✅ CONFIRM & FILL</button>
+                      <button className="btn-secondary" style={{ padding: '.4rem 1rem', fontSize: 12, background: 'transparent' }} onClick={() => { setAiPreview(null); setLastUserMessage(''); }}>❌ DISCARD</button>
+                    </div>
+                  </div>
+                )}
               </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '.75rem', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <textarea 
+                  className="magic-textarea" 
+                  placeholder="Ask me to add something... (e.g. 'Bought 10 Reliance yesterday')"
+                  value={magicInput}
+                  onChange={e => setMagicInput(e.target.value)}
+                  disabled={parsingMagic}
+                  style={{ marginBottom: 0, minHeight: 44, padding: '12px 16px', background: '#f8fafc', borderRadius: '1.5rem', border: '1px solid #e2e8f0' }}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleMagicParse())}
+                />
+              </div>
+              <button 
+                className="magic-btn" 
+                onClick={handleMagicParse} 
+                disabled={parsingMagic || !magicInput.trim()}
+                style={{ height: 44, width: 44, padding: 0, borderRadius: '50%', justifyContent: 'center' }}
+                title="Send Message"
+              >
+                {parsingMagic ? '...' : '↗'}
+              </button>
             </div>
           </div>
 
