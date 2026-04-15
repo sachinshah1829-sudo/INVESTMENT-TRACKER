@@ -1345,6 +1345,87 @@
         padding: 0.75rem 1rem;
         font-size: 14px;
       }
+      /* Magic AI Styles */
+      .magic-box {
+        background: var(--surface);
+        border: 2px solid transparent;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        background-clip: padding-box;
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+      }
+      .magic-box::before {
+        content: '';
+        position: absolute;
+        top: -2px; bottom: -2px; left: -2px; right: -2px;
+        z-index: -1;
+        border-radius: calc(1rem + 2px);
+        background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+        opacity: 0.3;
+      }
+      .magic-textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 1.1rem;
+        resize: none;
+        outline: none;
+        margin-bottom: 1rem;
+        min-height: 60px;
+      }
+      .magic-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .magic-btn {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white;
+        border: none;
+        padding: .75rem 1.5rem;
+        border-radius: 2rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        transition: all .2s;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+      }
+      .magic-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+      }
+      .magic-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .magic-status {
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+      }
+      .magic-hint {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-style: italic;
+      }
+      .ai-shimmer {
+        animation: shimmer 2s infinite linear;
+        background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #6366f1 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      @keyframes shimmer { to { background-position: 200% center; } }
     }
   </style>
 </head>
@@ -2445,6 +2526,12 @@
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
       const [deleting, setDeleting] = useState(false);
+      
+      // Magic AI States
+      const [magicInput, setMagicInput] = useState('');
+      const [parsingMagic, setParsingMagic] = useState(false);
+      const [magicError, setMagicError] = useState('');
+
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
       // Speed up entry: remember last-used Person + Asset Type
@@ -2543,6 +2630,71 @@
         setImportProgress(null); setPreview(null); setCsvText(''); setCsvMode(false); setSaving(false);
       };
 
+      const handleMagicParse = async () => {
+        if (!magicInput.trim()) return;
+        setParsingMagic(true);
+        setMagicError('');
+        
+        const pList = persons.map(p => p.name).join(', ');
+        const tList = assetTypes.map(t => t.name).join(', ');
+        const today = new Date().toISOString().split('T')[0];
+
+        const prompt = `[INST] You are a financial assistant. Parse this transaction entry into JSON: "${magicInput}"
+
+Context:
+- Today's Date: ${today}
+- Valid Persons: ${pList}
+- Valid Asset Types: ${tList}
+
+Instructions:
+1. Extract date, person, stock, quantity, price, and assetType.
+2. For person, find the BEST MATCH from Valid Persons. If none match at all, use the person name from text.
+3. Quantities are positive for "bought/purchased/bonus/split" and negative for "sold/merger".
+4. price is unit price (e.g. "at 500").
+5. For assetType, find the BEST MATCH from Valid Asset Types. If none match, default to STOCK.
+6. Return ONLY a raw JSON object. No markdown, no explanations. 
+Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10, "price":100, "assetType":"TYPE"}
+[/INST]`;
+
+        try {
+          const res = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2', {
+            method: 'POST',
+            headers: { 
+              'Authorization': 'Bearer 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',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ inputs: prompt, parameters: { return_full_text: false, max_new_tokens: 300 } })
+          });
+          
+          if (!res.ok) throw new Error('API Error');
+          const data = await res.json();
+          let text = Array.isArray(data) ? data[0]?.generated_text : data.generated_text;
+          if (!text) throw new Error('No response');
+
+          // Find JSON block
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0].trim());
+            setForm({
+              date: parsed.date || today,
+              person: (parsed.person || '').toUpperCase(),
+              stock: (parsed.stock || '').toUpperCase(),
+              qty: String(parsed.qty || ''),
+              price: String(parsed.price || ''),
+              assetType: (parsed.assetType || 'STOCK').toUpperCase()
+            });
+            setMagicInput('');
+          } else {
+            throw new Error('Could not parse');
+          }
+        } catch (err) {
+          console.error(err);
+          setMagicError('AI is busy or error occurred. Please try again.');
+        } finally {
+          setParsingMagic(false);
+        }
+      };
+
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person);
       const filtered = valid.filter(t => {
         const matchesSearch = !search || t.person?.toLowerCase().includes(search.toLowerCase()) || t.stock?.toLowerCase().includes(search.toLowerCase()) || t.assetType?.toLowerCase().includes(search.toLowerCase());
@@ -2563,7 +2715,33 @@
 
       return (
         <div className="page">
-          <div className="page-header"><div className="page-title">Transactions</div></div>
+          <div className="page-header">
+            <div className="page-title">Transactions</div>
+          </div>
+
+          <div className="magic-box">
+            <textarea 
+              className="magic-textarea" 
+              placeholder="Magic Entry: Type something like 'Bought 50 shares of Reliance at 2500 for Nilesh today'..."
+              value={magicInput}
+              onChange={e => setMagicInput(e.target.value)}
+              disabled={parsingMagic}
+            />
+            <div className="magic-footer">
+              <div className="magic-hint">✨ Tip: You can say "Bought 10 Mutual Fund units today"</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {magicError && <div style={{ color: 'var(--red)', fontSize: '.85rem' }}>{magicError}</div>}
+                {parsingMagic && <div className="magic-status ai-shimmer">Analyzing entry...</div>}
+                <button 
+                  className="magic-btn" 
+                  onClick={handleMagicParse} 
+                  disabled={parsingMagic || !magicInput.trim()}
+                >
+                  {parsingMagic ? '✨ THINKING...' : '✨ MAGIC AUTO-FILL'}
+                </button>
+              </div>
+            </div>
+          </div>
 
           {!csvMode ? (
             <div className="card">
