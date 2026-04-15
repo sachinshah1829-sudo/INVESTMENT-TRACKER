@@ -3848,6 +3848,83 @@
               </div>
             </div>
           )}
+
+          {showDashboardSettings && (
+            <div className="modal-overlay" onClick={() => setShowDashboardSettings(false)}>
+              <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+                <div className="modal-title">
+                  <span>Dashboard Defaults</span>
+                  <button className="modal-close" onClick={() => setShowDashboardSettings(false)}>×</button>
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                  Choose which filters should be active by default every time you open the dashboard.
+                </div>
+                
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                   <label className="form-label">Default Persons</label>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                      <div 
+                        className={`filter-chip all ${dashboardDefaults.persons.includes('All') ? 'active' : 'inactive'}`}
+                        onClick={() => {
+                          updateDashboardDefaults({ ...dashboardDefaults, persons: ['All'] });
+                        }}
+                      >All</div>
+                      {persons.sort((a,b)=>a.name.localeCompare(b.name)).map(p => {
+                        const isActive = dashboardDefaults.persons.includes(p.name);
+                        return (
+                          <div 
+                            key={p.name} 
+                            className={`filter-chip ${isActive ? 'active' : ''}`}
+                            style={isActive ? { background: personColor(p.name, personColors) } : {}}
+                            onClick={() => {
+                              let next = dashboardDefaults.persons.filter(x => x !== 'All');
+                              if (next.includes(p.name)) next = next.filter(x => x !== p.name);
+                              else next.push(p.name);
+                              if (next.length === 0) next = ['All'];
+                              updateDashboardDefaults({ ...dashboardDefaults, persons: next });
+                            }}
+                          >{p.name}</div>
+                        );
+                      })}
+                   </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                   <label className="form-label">Default Asset Types</label>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                      <div 
+                        className={`filter-chip all ${dashboardDefaults.assetTypes.includes('All') ? 'active' : 'inactive'}`}
+                        onClick={() => {
+                          updateDashboardDefaults({ ...dashboardDefaults, assetTypes: ['All'] });
+                        }}
+                      >All</div>
+                      {assetTypes.sort((a,b)=>a.name.localeCompare(b.name)).map(t => {
+                        const isActive = dashboardDefaults.assetTypes.includes(t.name);
+                        return (
+                          <div 
+                            key={t.name} 
+                            className={`filter-chip ${isActive ? 'active' : ''}`}
+                            style={isActive ? { background: assetTypeColor(t.name, assetTypeColors) } : {}}
+                            onClick={() => {
+                              let next = dashboardDefaults.assetTypes.filter(x => x !== 'All');
+                              if (next.includes(t.name)) next = next.filter(x => x !== t.name);
+                              else next.push(t.name);
+                              if (next.length === 0) next = ['All'];
+                              updateDashboardDefaults({ ...dashboardDefaults, assetTypes: next });
+                            }}
+                          >{t.name}</div>
+                        );
+                      })}
+                   </div>
+                </div>
+
+                <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowDashboardSettings(false)}>SAVE PREFERENCES</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button className="menu-toggle" onClick={() => setSidebarOpen(o => !o)}>☰</button>
           <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
