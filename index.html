@@ -1890,7 +1890,7 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange, onSettingsOpen, dashboardDefaults, onPersonClick }) {
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange, onSettingsOpen, onPersonClick }) {
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const [drilldownAssetType, setDrilldownAssetType] = useState(null);
       const [drilldown, setDrilldown] = useState(null);
@@ -1994,7 +1994,7 @@
               <div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div>
             </div>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <button className="btn-sm" onClick={() => onFilterChange(dashboardDefaults || { persons: ['All'], assetTypes: ['All'] })} title="Reset to Saved Preferences">↺ RESET</button>
+              <button className="btn-sm" onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺ RESET</button>
               <button className="gear-btn" onClick={onSettingsOpen} title="Dashboard Settings">⚙</button>
             </div>
           </div>
@@ -2129,9 +2129,9 @@
           {/* Condition 3: Person All, Selective Asset */}
           {allPersons && !allTypes && (
             <><div className="charts-row">
-                <div className="chart-card"><div className="card-title">{filterAssetTypes.length > 1 ? 'Selected Assets' : filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
                 <div className="chart-card">
-                  <div className="card-title">Portfolio by Asset ({filterAssetTypes.length > 1 ? 'Multiple Selection' : filterAssetTypes[0]})</div>
+                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                     <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
                     <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
@@ -2143,15 +2143,15 @@
                     </div>
                   </div>
                 </div>
-              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} /></>
+              </div></>
           )}
 
           {/* Condition 4: Both Selective */}
           {!allPersons && !allTypes && (
             <><div className="charts-row">
-                <div className="chart-card"><div className="card-title">{filterAssetTypes.length > 1 ? 'Selected Assets' : filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
                 <div className="chart-card">
-                  <div className="card-title">Portfolio by Asset ({filterAssetTypes.length > 1 ? 'Multiple' : filterAssetTypes[0]})</div>
+                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                     <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
                     <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
@@ -3920,7 +3920,6 @@
                   filter={portfolioFilter}
                   onFilterChange={setPortfolioFilter}
                   onSettingsOpen={() => setShowDashboardSettings(true)}
-                  dashboardDefaults={dashboardDefaults}
                   onPersonClick={handlePersonDrilldown} 
                 />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
