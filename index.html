@@ -1349,12 +1349,11 @@
       return `hsl(${Math.abs(h) % 360},50%,80%)`;
     };
 
-    const assetTypeColor = (name, customColors = {}) => {
-      const u = (name || '').toUpperCase().trim();
+    const assetTypeColor = (type, customColors = {}) => {
+      const u = (type || '').toUpperCase().trim();
       if (customColors && customColors[u]) return customColors[u];
       if (DEFAULT_ASSET_TYPE_COLORS[u]) return DEFAULT_ASSET_TYPE_COLORS[u];
-      let h = 0; for (let i = 0; i < u.length; i++) h = u.charCodeAt(i) + ((h << 5) - h);
-      return `hsl(${Math.abs(h) % 360},70%,85%)`;
+      return '#e2e8f0';
     };
 
     // ── FIFO ENGINE ───────────────────────────────────────────
@@ -1891,12 +1890,13 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick }) {
-      const [filterPersons, setFilterPersons] = useState(['All']);
-      const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange, onSettingsOpen, onPersonClick }) {
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const [drilldownAssetType, setDrilldownAssetType] = useState(null);
       const [drilldown, setDrilldown] = useState(null);
+
+      const filterPersons = filter.persons || ['All'];
+      const filterAssetTypes = filter.assetTypes || ['All'];
 
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
