@@ -1989,7 +1989,7 @@
       );
     }
 
-    function PersonPortfolioModal({ person, rows, stockPrices, personColors, transactions, onClose }) {
+    function PersonPortfolioModal({ person, rows, stockPrices, personColors, transactions, onClose, assetTypeColors }) {
       const [drilldown, setDrilldown] = useState(null);
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2000,23 +2000,27 @@
             </div>
             <div className="table-wrap" style={{ maxHeight: '70vh' }}>
               <table>
-                <thead><tr><th>Stock</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
+                <thead><tr><th>Stock</th><th>Asset Type</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
                 <tbody>
                   {rows.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this person</div></td></tr>}
-                  {rows.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => (
-                    <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
-                      <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
-                      <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
-                      <td style={{ textAlign: 'right' }} className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
-                      <td style={{ textAlign: 'right' }} className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
-                      <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                      <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
-                    </tr>
-                  ))}
+                  {rows.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => {
+                    const at = r.assetType || (transactions.find(t => t.stock === r.stock && t.person === (person||r.person))?.assetType || 'STOCK');
+                    return (
+                      <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
+                        <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
+                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                        <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2130,7 +2134,7 @@
 
       return (
         <div className="page" style={{ paddingBottom: '4rem' }}>
-      {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} />}
+      {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} />}
       {drilldownAssetType && (
         <AssetTypeDrilldownModal 
           type={drilldownAssetType} 
@@ -2340,7 +2344,7 @@
                   </div>
                 </div>
                 <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} /></>
+              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
           )}
 
           {/* Condition 3: Person All, Selective Asset */}
@@ -2380,7 +2384,7 @@
                     </div>
                   </div>
                 </div>
-              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} /></>
+              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
           )}
 
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
@@ -2388,30 +2392,34 @@
       );
     }
 
-    function HoldingsTable({ portfolio, personColors, onSetDrilldown }) {
+    function HoldingsTable({ portfolio, personColors, onSetDrilldown, assetTypeMap, assetTypeColors }) {
       return (
         <div className="card" style={{ padding: 0 }}>
           <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Holdings Breakdown</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '0 1.25rem .75rem' }}>Click any row to view active holding lots & history</div>
           <div className="table-wrap" style={{ maxHeight: 500, overflowY: 'auto' }}>
             <table style={{ minWidth: 1400 }}>
-              <thead><tr><th>Person</th><th>Asset</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
+              <thead><tr><th>Person</th><th>Asset</th><th>Asset Type</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
               <tbody>
-                {portfolio.slice().sort((a,b)=>(b.currentVal||0)-(a.currentVal||0)).map((r, i) => (
-                  <tr key={i} className="clickable" onClick={() => onSetDrilldown(r)}>
-                    <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
-                    <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                    <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                    <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>
-                    <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>
-                    <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                    <td style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div></td>
-                    <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
-                    <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
-                    <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : (r.cagr < 0 ? 'neg' : '')}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                    <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.breakup}</td>
-                  </tr>
-                ))}
+                {portfolio.slice().sort((a,b)=>(b.currentVal||0)-(a.currentVal||0)).map((r, i) => {
+                  const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+                  return (
+                    <tr key={i} className="clickable" onClick={() => onSetDrilldown(r)}>
+                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
+                      <td style={{ fontWeight: 700 }}>{r.stock}</td>
+                      <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                      <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>
+                      <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                      <td style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div></td>
+                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                      <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
+                      <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : (r.cagr < 0 ? 'neg' : '')}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
+                      <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.breakup}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -2802,6 +2810,7 @@
                     {viewMode === 'persons' && <th>Person</th>}
                     {viewMode === 'types' && <th>Asset Type</th>}
                     {viewMode !== 'types' && <th>Asset</th>}
+                    {viewMode !== 'types' && <th>Asset Type</th>}
                     {viewMode === 'types' && <th style={{ textAlign: 'right' }}>Assets</th>}
                     {viewMode !== 'types' && <th style={{ textAlign: 'right' }}>Qty</th>}
                     {viewMode !== 'types' && <th style={{ textAlign: 'right' }}>Avg Buy</th>}
@@ -2815,7 +2824,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 11 : viewMode === 'types' ? 7 : 10}><div className="empty">No data</div></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 12 : viewMode === 'types' ? 7 : 11}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
                     const at = r.type || r.assetType || (r.stock ? (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') : 'STOCK');
                     return (
@@ -2831,6 +2840,7 @@
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
                         {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors), color: '#1a1a1a' }}>{r.type}</span></td>}
                         {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
+                        {viewMode !== 'types' && <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>}
                         {viewMode === 'types' && <td style={{ textAlign: 'right' }}>{r.stockCount}</td>}
                         {viewMode !== 'types' && <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>}
                         {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>}
@@ -2838,7 +2848,6 @@
                         {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>}
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
-                          {viewMode !== 'types' && <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{at}</div>}
                         </td>
                         <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
                         <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
