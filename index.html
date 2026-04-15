@@ -2600,6 +2600,8 @@
       const [magicError, setMagicError] = useState('');
       const [aiPreview, setAiPreview] = useState(null); 
       const [lastUserMessage, setLastUserMessage] = useState('');
+      const [hfToken, setHfToken] = useState(() => localStorage.getItem('inv_hf_token') || '');
+      const [showTokenInput, setShowTokenInput] = useState(false);
 
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -2733,7 +2735,7 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
           const res = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2', {
             method: 'POST',
             headers: { 
-              'Authorization': 'Bearer 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',
+              'Authorization': `Bearer ${hfToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
@@ -2818,71 +2820,107 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
             <div className="page-title">Transactions</div>
           </div>
 
-          <div className="magic-box" style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Chat History Area */}
-            {(lastUserMessage || parsingMagic || aiPreview || magicError) && (
-              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1rem' }}>
-                {lastUserMessage && <div className="chat-bubble user">{lastUserMessage}</div>}
-                
-                {parsingMagic && (
-                  <div className="chat-bubble ai">
-                    <div className="ai-badge">Assistant</div>
-                    <div className="ai-shimmer">I'm analyzing your request...</div>
-                  </div>
-                )}
+          <div className="magic-box" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <button 
+              className="gear-btn" 
+              style={{ position: 'absolute', top: '.75rem', right: '.75rem', zIndex: 10 }} 
+              onClick={() => setShowTokenInput(!showTokenInput)}
+              title="AI Settings"
+            >⚙️</button>
 
-                {magicError && (
-                  <div className="chat-bubble ai" style={{ color: 'var(--red)', borderColor: 'var(--red-bg)' }}>
-                    <div className="ai-badge" style={{ background: 'var(--red)' }}>Error</div>
-                    {magicError}
-                  </div>
-                )}
-
-                {aiPreview && (
-                  <div className="chat-bubble ai">
-                    <div className="ai-badge">Assistant</div>
-                    <div>I found these details. Does this look correct?</div>
+            {!hfToken || showTokenInput ? (
+              <div style={{ padding: '1rem .5rem' }}>
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: '.5rem', display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                  <span style={{ fontSize: 20 }}>🤖</span> AI Assistant Setup
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  Paste your Hugging Face "Read" Token here. It will be saved locally in your browser and will NOT be uploaded to GitHub.
+                </div>
+                <div style={{ display: 'flex', gap: '.5rem' }}>
+                  <input 
+                    type="password"
+                    className="form-input" 
+                    style={{ flex: 1, height: 40 }}
+                    placeholder="hf_..."
+                    value={hfToken}
+                    onChange={e => {
+                      const val = e.target.value.trim();
+                      setHfToken(val);
+                      localStorage.setItem('inv_hf_token', val);
+                    }}
+                  />
+                  <button className="btn-primary" style={{ width: 'auto', height: 40 }} onClick={() => setShowTokenInput(false)}>SAVE</button>
+                </div>
+                {hfToken && hfToken.length < 20 && <div style={{ color: 'var(--red)', fontSize: 10, marginTop: 4 }}>Token looks too short.</div>}
+              </div>
+            ) : (
+              <>
+                {/* Chat History Area */}
+                {(lastUserMessage || parsingMagic || aiPreview || magicError) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '1rem' }}>
+                    {lastUserMessage && <div className="chat-bubble user">{lastUserMessage}</div>}
                     
-                    <div className="preview-info-grid">
-                      <div className="preview-item"><span className="preview-label">Date</span><span className="preview-val">{aiPreview.date}</span></div>
-                      <div className="preview-item"><span className="preview-label">Person</span><span className="preview-val">{aiPreview.person}</span></div>
-                      <div className="preview-item"><span className="preview-label">Stock</span><span className="preview-val">{aiPreview.stock}</span></div>
-                      <div className="preview-item"><span className="preview-label">Qty</span><span className="preview-val" style={{ color: aiPreview.qty >= 0 ? 'var(--green)' : 'var(--red)' }}>{aiPreview.qty}</span></div>
-                      <div className="preview-item"><span className="preview-label">Price</span><span className="preview-val">₹{aiPreview.price}</span></div>
-                      <div className="preview-item"><span className="preview-label">Type</span><span className="preview-val">{aiPreview.assetType}</span></div>
-                    </div>
+                    {parsingMagic && (
+                      <div className="chat-bubble ai">
+                        <div className="ai-badge">Assistant</div>
+                        <div className="ai-shimmer">I'm analyzing your request...</div>
+                      </div>
+                    )}
 
-                    <div className="chat-controls">
-                      <button className="btn-primary" style={{ padding: '.4rem 1rem', fontSize: 12 }} onClick={applyAiPreview}>✅ CONFIRM & FILL</button>
-                      <button className="btn-secondary" style={{ padding: '.4rem 1rem', fontSize: 12, background: 'transparent' }} onClick={() => { setAiPreview(null); setLastUserMessage(''); }}>❌ DISCARD</button>
-                    </div>
+                    {magicError && (
+                      <div className="chat-bubble ai" style={{ color: 'var(--red)', borderColor: 'var(--red-bg)' }}>
+                        <div className="ai-badge" style={{ background: 'var(--red)' }}>Error</div>
+                        {magicError}
+                      </div>
+                    )}
+
+                    {aiPreview && (
+                      <div className="chat-bubble ai">
+                        <div className="ai-badge">Assistant</div>
+                        <div>I found these details. Does this look correct?</div>
+                        
+                        <div className="preview-info-grid">
+                          <div className="preview-item"><span className="preview-label">Date</span><span className="preview-val">{aiPreview.date}</span></div>
+                          <div className="preview-item"><span className="preview-label">Person</span><span className="preview-val">{aiPreview.person}</span></div>
+                          <div className="preview-item"><span className="preview-label">Stock</span><span className="preview-val">{aiPreview.stock}</span></div>
+                          <div className="preview-item"><span className="preview-label">Qty</span><span className="preview-val" style={{ color: aiPreview.qty >= 0 ? 'var(--green)' : 'var(--red)' }}>{aiPreview.qty}</span></div>
+                          <div className="preview-item"><span className="preview-label">Price</span><span className="preview-val">₹{aiPreview.price}</span></div>
+                          <div className="preview-item"><span className="preview-label">Type</span><span className="preview-val">{aiPreview.assetType}</span></div>
+                        </div>
+
+                        <div className="chat-controls">
+                          <button className="btn-primary" style={{ padding: '.4rem 1rem', fontSize: 12 }} onClick={applyAiPreview}>✅ CONFIRM & FILL</button>
+                          <button className="btn-secondary" style={{ padding: '.4rem 1rem', fontSize: 12, background: 'transparent' }} onClick={() => { setAiPreview(null); setLastUserMessage(''); }}>❌ DISCARD</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            <div style={{ display: 'flex', gap: '.75rem', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
-                <textarea 
-                  className="magic-textarea" 
-                  placeholder="Ask me to add something... (e.g. 'Bought 10 Reliance yesterday')"
-                  value={magicInput}
-                  onChange={e => setMagicInput(e.target.value)}
-                  disabled={parsingMagic}
-                  style={{ marginBottom: 0, minHeight: 44, padding: '12px 16px', background: '#f8fafc', borderRadius: '1.5rem', border: '1px solid #e2e8f0' }}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleMagicParse())}
-                />
-              </div>
-              <button 
-                className="magic-btn" 
-                onClick={handleMagicParse} 
-                disabled={parsingMagic || !magicInput.trim()}
-                style={{ height: 44, width: 44, padding: 0, borderRadius: '50%', justifyContent: 'center' }}
-                title="Send Message"
-              >
-                {parsingMagic ? '...' : '↗'}
-              </button>
-            </div>
+                <div style={{ display: 'flex', gap: '.75rem', alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1 }}>
+                    <textarea 
+                      className="magic-textarea" 
+                      placeholder="Ask me to add something... (e.g. 'Bought 10 Reliance yesterday')"
+                      value={magicInput}
+                      onChange={e => setMagicInput(e.target.value)}
+                      disabled={parsingMagic}
+                      style={{ marginBottom: 0, minHeight: 44, padding: '12px 16px', background: '#f8fafc', borderRadius: '1.5rem', border: '1px solid #e2e8f0' }}
+                      onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleMagicParse())}
+                    />
+                  </div>
+                  <button 
+                    className="magic-btn" 
+                    onClick={handleMagicParse} 
+                    disabled={parsingMagic || !magicInput.trim()}
+                    style={{ height: 44, width: 44, padding: 0, borderRadius: '50%', justifyContent: 'center' }}
+                    title="Send Message"
+                  >
+                    {parsingMagic ? '...' : '↗'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {!csvMode ? (
