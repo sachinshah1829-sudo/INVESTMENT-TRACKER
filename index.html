@@ -1807,11 +1807,11 @@
 
       const top5List = stockEntries.slice(0, 5).map(([s, v]) => ({ name: s, pct: totalCurrent > 0 ? (v / totalCurrent * 100).toFixed(1) : 0 }));
 
-      const isNetWorthView = filterPersons.includes('All') && filterAssetTypes.includes('All');
+      const isNetWorthView = filterAssetTypes.includes('All');
 
-      // Net Worth Breakdown
+      // Net Worth Breakdown (respect selected persons)
       const byType = {};
-      allPortfolio.forEach(r => {
+      portfolio.forEach(r => {
         const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
         if (!byType[at]) byType[at] = 0;
         byType[at] += (r.currentVal || r.investedVal);
@@ -1833,7 +1833,12 @@
           <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div>
-              <div className="page-sub">{isNetWorthView ? 'Combined wealth across all assets' : new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</div>
+              <div className="page-sub">
+                {isNetWorthView
+                  ? (filterPersons.includes('All') ? 'Combined wealth across all assets' : `Net worth for: ${filterPersons.join(', ')}`)
+                  : new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+                }
+              </div>
             </div>
             <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
               <MultiSelect label="Filter Persons" options={persons} selected={filterPersons} onChange={setFilterPersons} />
@@ -1912,33 +1917,75 @@
                 </div>
               </div>
               <div className="chart-card">
-                <div className="card-title">Wealth by Person</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
-                    <PieChart
-                      labels={sortedPersons.map(([p]) => p)}
-                      data={sortedPersons.map(([, v]) => v.current)}
-                      colors={sortedPersons.map(([p]) => personColor(p, personColors))}
-                      hideLegend
-                    />
-                  </div>
-                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                    {sortedPersons.map(([p, v]) => (
-                      <div
-                        key={p}
-                        className="clickable"
-                        onClick={() => setDrilldownPerson(p)}
-                        style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}
-                      >
-                        <span style={{ fontWeight: 700 }}>{p}</span>
-                        <span style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div>
-                          <div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div>
-                        </span>
+                {filterPersons.includes('All') ? (
+                  <>
+                    <div className="card-title">Wealth by Person</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                      <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
+                        <PieChart
+                          labels={sortedPersons.map(([p]) => p)}
+                          data={sortedPersons.map(([, v]) => v.current)}
+                          colors={sortedPersons.map(([p]) => personColor(p, personColors))}
+                          hideLegend
+                        />
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                        {sortedPersons.map(([p, v]) => (
+                          <div
+                            key={p}
+                            className="clickable"
+                            onClick={() => setDrilldownPerson(p)}
+                            style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}
+                          >
+                            <span style={{ fontWeight: 700 }}>{p}</span>
+                            <span style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div>
+                              <div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="card-title">Holdings</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Click any row to view active holding lots</div>
+                    <div className="table-wrap" style={{ maxHeight: 320 }}>
+                      <table>
+                        <thead>
+                          <tr>
+                            {filterPersons.length > 1 && <th>Person</th>}
+                            <th>Asset</th>
+                            <th>Asset Type</th>
+                            <th style={{ textAlign: 'right' }}>Invested</th>
+                            <th style={{ textAlign: 'right' }}>Curr Value</th>
+                            <th style={{ textAlign: 'right' }}>Gain %</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {portfolio.length === 0 && <tr><td colSpan={filterPersons.length > 1 ? 6 : 5}><div className="empty">No data</div></td></tr>}
+                          {portfolio
+                            .slice()
+                            .sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0))
+                            .map((r, idx) => {
+                              const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
+                              return (
+                                <tr key={idx} className="clickable" onClick={() => setDrilldown(r)}>
+                                  {filterPersons.length > 1 && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{r.person}</span></td>}
+                                  <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
+                                  <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                                  <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                                  <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.currentVal)}</td>
+                                  <td style={{ textAlign: 'right' }} className={(r.absGainPct || 0) >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ) : (
