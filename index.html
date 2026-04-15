@@ -405,6 +405,7 @@
       box-shadow: var(--shadow);
       position: relative;
       background: var(--surface);
+      padding-bottom: 6px; /* keep horizontal scrollbar visible */
     }
 
     /* Horizontal Scroll Indicator Fade */
@@ -1960,7 +1961,7 @@
                     <div className="card-title">Holdings</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Click any row to view active holding lots</div>
                     <div className="table-wrap" style={{ maxHeight: 320, overflowX: 'auto' }}>
-                      <table style={{ minWidth: 980 }}>
+                      <table style={{ minWidth: 1400 }}>
                         <thead><tr><th>Person</th><th>Asset</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
                         <tbody>
                           {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data</div></td></tr>}
