@@ -1781,6 +1781,15 @@
               </table>
             </div>
             {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
+          {drilldownType && (
+            <AssetTypeDrilldownModal
+              type={drilldownType}
+              rows={allPersonRows.filter(r => (transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK') === drilldownType)}
+              stockPrices={stockPrices}
+              personColors={personColors}
+              onClose={() => setDrilldownType(null)}
+            />
+          )}
           </div>
         </div>
       );
@@ -2365,6 +2374,7 @@
     function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange }) {
       const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
       const [drilldown, setDrilldown] = useState(null);
+      const [drilldownType, setDrilldownType] = useState(null);
       const { holdings, sells } = computeFIFO(transactions);
 
       // Pre-process for different views
@@ -2506,11 +2516,13 @@
                     const at = r.type || r.assetType || (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK');
                     return (
                       <tr key={i} className="clickable" onClick={() => {
-                        let lotsToShow = [];
-                        if (viewMode === 'persons') lotsToShow = r.lots;
-                        else if (viewMode === 'assets') Object.values(r.persons).forEach(p => lotsToShow.push(...p.lots));
-                        else return; // No drilldown for 'types' yet or handle differently
-                        setDrilldown({ person: viewMode === 'persons' ? r.person : null, stock: r.stock, lots: lotsToShow });
+                        if (viewMode === 'persons') setDrilldown({ person: r.person, stock: r.stock, lots: r.lots });
+                        else if (viewMode === 'assets') {
+                          let lotsToShow = [];
+                          Object.values(r.persons).forEach(p => lotsToShow.push(...p.lots));
+                          setDrilldown({ person: null, stock: r.stock, lots: lotsToShow });
+                        }
+                        else if (viewMode === 'types') setDrilldownType(r.type);
                       }}>
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
                         {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors), color: '#1a1a1a' }}>{r.type}</span></td>}
