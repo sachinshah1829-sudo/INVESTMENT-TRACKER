@@ -1824,7 +1824,7 @@
           {drilldownPerson && (
             <PersonPortfolioModal
               person={drilldownPerson}
-              rows={allPortfolio.filter(r => r.person === drilldownPerson)}
+              rows={portfolio.filter(r => r.person === drilldownPerson)}
               stockPrices={stockPrices}
               personColors={personColors}
               onClose={() => setDrilldownPerson(null)}
@@ -2234,7 +2234,7 @@
     function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange }) {
       const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
       const [drilldown, setDrilldown] = useState(null);
-      const { holdings } = computeFIFO(transactions);
+      const { holdings, sells } = computeFIFO(transactions);
 
       // Pre-process for different views
       const allAssetRows = buildStockSheet(holdings, stockPrices); // By Asset
@@ -2260,12 +2260,49 @@
           types[at].stocks.add(r.stock);
         });
 
-        return Object.values(types).map(t => ({
-          ...t,
-          absGain: t.currentVal - t.investedVal,
-          absGainPct: t.investedVal > 0 ? ((t.currentVal - t.investedVal) / t.investedVal) * 100 : 0,
-          stockCount: t.stocks.size
-        }));
+        // Combined Net CAGR per type (active + realized)
+        const now = new Date();
+        const rowsByType = {};
+        rows.forEach(r => {
+          const at = (transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK');
+          if (!rowsByType[at]) rowsByType[at] = [];
+          rowsByType[at].push(r);
+        });
+        const sellsByType = {};
+        sells.forEach(s => {
+          const at = (transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK');
+          if (!sellsByType[at]) sellsByType[at] = [];
+          sellsByType[at].push(s);
+        });
+
+        return Object.values(types).map(t => {
+          const activeRows = rowsByType[t.type] || [];
+          const typeSells = sellsByType[t.type] || [];
+
+          const activeInvested = activeRows.reduce((sum, r) => sum + (r.investedVal || 0), 0);
+          const activeCurrent = activeRows.reduce((sum, r) => sum + (r.currentVal || r.investedVal || 0), 0);
+          const activeWeightedAgeSum = activeRows.reduce((sum, r) => sum + (r.weightedAge || 0), 0);
+
+          const realizedCostSum = typeSells.reduce((sum, r) => sum + (r.qty * r.buyPrice), 0);
+          const realizedValueSum = typeSells.reduce((sum, r) => sum + (r.qty * r.sellPrice), 0);
+          const realizedWeightedAgeSum = typeSells.reduce((sum, r) => sum + (r.qty * r.buyPrice * (r.yrs || 0)), 0);
+
+          const totalCostCombined = activeInvested + realizedCostSum;
+          const totalValueCombined = activeCurrent + realizedValueSum;
+          const totalWeightedAgeCombined = activeWeightedAgeSum + realizedWeightedAgeSum;
+          const avgAgeCombined = totalCostCombined > 0 ? totalWeightedAgeCombined / totalCostCombined : 0;
+          const combinedNetCAGR = (totalCostCombined > 0 && avgAgeCombined > 0)
+            ? (Math.pow(totalValueCombined / totalCostCombined, 1 / avgAgeCombined) - 1) * 100
+            : null;
+
+          return {
+            ...t,
+            absGain: t.currentVal - t.investedVal,
+            absGainPct: t.investedVal > 0 ? ((t.currentVal - t.investedVal) / t.investedVal) * 100 : 0,
+            stockCount: t.stocks.size,
+            cagr: combinedNetCAGR
+          };
+        });
       };
 
       const allTypeRows = buildTypeSheet(holdings, stockPrices);
@@ -2275,10 +2312,17 @@
       const typesList = assetTypes.map(t => t.name).sort();
 
       const filtered = (viewMode === 'assets' ? allAssetRows : viewMode === 'persons' ? allPersonRows : allTypeRows).filter(r => {
-        const at = (viewMode === 'types' ? r.type : (viewMode === 'persons' ? (transactions.find(t => t.person === r.person && t.stock === r.stock)?.assetType || 'STOCK') : (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK')));
-        return (filter.persons.includes('All') || (viewMode === 'persons' ? filter.persons.includes(r.person) : true)) &&
-          (filter.stocks.includes('All') || (viewMode === 'assets' ? filter.stocks.includes(r.stock) : true)) &&
-          (filter.assetTypes?.includes('All') || filter.assetTypes?.includes(at));
+        const at =
+          viewMode === 'types'
+            ? r.type
+            : viewMode === 'persons'
+              ? (transactions.find(t => t.person === r.person && t.stock === r.stock)?.assetType || 'STOCK')
+              : (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK');
+
+        const matchesPerson = (filter.persons.includes('All') || (viewMode === 'persons' ? filter.persons.includes(r.person) : true));
+        const matchesAsset = (filter.stocks.includes('All') || (viewMode !== 'types' ? filter.stocks.includes(r.stock) : true));
+        const matchesType = (filter.assetTypes?.includes('All') || filter.assetTypes?.includes(at));
+        return matchesPerson && matchesAsset && matchesType;
       });
       return (
         <div className="page">
@@ -2314,19 +2358,19 @@
                     {viewMode === 'types' && <th>Asset Type</th>}
                     {viewMode !== 'types' && <th>Asset</th>}
                     {viewMode === 'types' && <th style={{ textAlign: 'right' }}>Assets</th>}
-                    <th style={{ textAlign: 'right' }}>Qty</th>
-                    <th style={{ textAlign: 'right' }}>Avg Buy</th>
+                    {viewMode !== 'types' && <th style={{ textAlign: 'right' }}>Qty</th>}
+                    {viewMode !== 'types' && <th style={{ textAlign: 'right' }}>Avg Buy</th>}
                     <th style={{ textAlign: 'right' }}>Invested</th>
-                    <th style={{ textAlign: 'right' }}>Curr Price</th>
+                    {viewMode !== 'types' && <th style={{ textAlign: 'right' }}>Curr Price</th>}
                     <th style={{ textAlign: 'right' }}>Curr Value</th>
                     <th style={{ textAlign: 'right' }}>Gain ₹</th>
                     <th style={{ textAlign: 'right' }}>Gain %</th>
-                    <th style={{ textAlign: 'right' }}>CAGR</th>
+                    <th style={{ textAlign: 'right' }}>{viewMode === 'types' ? 'Combined Net CAGR' : 'CAGR'}</th>
                     {viewMode !== 'types' && <th>Holdings</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 11 : 10}><div className="empty">No data</div></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 11 : viewMode === 'types' ? 7 : 10}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
                     const at = r.type || r.assetType || (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK');
                     return (
@@ -2341,17 +2385,17 @@
                         {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors), color: '#1a1a1a' }}>{r.type}</span></td>}
                         {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
                         {viewMode === 'types' && <td style={{ textAlign: 'right' }}>{r.stockCount}</td>}
-                        <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
+                        {viewMode !== 'types' && <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>}
+                        {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>}
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                        {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>}
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
                           {viewMode !== 'types' && <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>{at}</div>}
                         </td>
                         <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
                         <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
-                        <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : 'neg'}>{fmtPct(r.cagr)}</td>
+                        <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                         {viewMode !== 'types' && <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup || (viewMode === 'assets' ? 'Click for info' : '')}</td>}
                       </tr>
                     );
@@ -2609,7 +2653,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -2628,7 +2672,7 @@
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
         </div>
       );
     }
@@ -2738,7 +2782,7 @@
       );
     }
  
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -2746,6 +2790,8 @@
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
       const [deleting, setDeleting] = useState(false);
+      const [filterAssets, setFilterAssets] = useState(['All']);
+      const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
 
       const parse = () => {
         const lines = csvText.trim().split('\n').filter(Boolean); const rows = [];
@@ -2787,7 +2833,11 @@
       const handleDelete = async (stock) => { await onDeletePrice(stock); };
 
       const toggleSelect = (s) => { setSelected(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; }); };
-      const selectAll = () => { if (selected.size === entries.length) setSelected(new Set()); else setSelected(new Set(entries.map(([s]) => s))); };
+      const selectAll = () => {
+        const all = filteredEntries.map(e => e.stock);
+        if (selected.size === all.length) setSelected(new Set());
+        else setSelected(new Set(all));
+      };
       const deleteSelected = async () => {
         if (!confirm(`Delete ${selected.size} price(s)?`)) return;
         setDeleting(true);
@@ -2795,7 +2845,18 @@
         setSelected(new Set()); setSelectMode(false); setDeleting(false);
       };
 
-      const entries = Object.entries(stockPrices).sort((a, b) => a[0].localeCompare(b[0]));
+      const typesList = (assetTypes || []).map(t => t.name).sort();
+      const assetList = Object.keys(stockPrices || {}).sort();
+      const getTypeForAsset = (stock) => {
+        const tx = (transactions || []).slice().reverse().find(t => t.stock === stock && t.assetType);
+        return (tx?.assetType || (transactions || []).find(t => t.stock === stock)?.assetType || '—');
+      };
+
+      const allEntries = Object.entries(stockPrices).map(([s, p]) => ({ stock: s, price: p, assetType: getTypeForAsset(s) }));
+      const filteredEntries = allEntries
+        .filter(e => (filterAssets.includes('All') || filterAssets.includes(e.stock)))
+        .filter(e => (filterAssetTypes.includes('All') || filterAssetTypes.includes(e.assetType)))
+        .sort((a, b) => a.stock.localeCompare(b.stock));
 
       return (
         <div className="page">
@@ -2838,9 +2899,15 @@
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div className="card-title" style={{ margin: 0 }}>STORED PRICES ({entries.length})</div>
+                <div className="card-title" style={{ margin: 0 }}>STORED PRICES ({filteredEntries.length})</div>
               </div>
               <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
+            </div>
+
+            <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '.75rem' }}>
+              <MultiSelect label="Asset" options={assetList} selected={filterAssets} onChange={setFilterAssets} />
+              <MultiSelect label="Asset Type" options={typesList} selected={filterAssetTypes} onChange={setFilterAssetTypes} />
+              <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterAssets(['All']); setFilterAssetTypes(['All']); }} title="Reset Filters">↺</button>
             </div>
 
             {selectMode && selected.size > 0 && (
@@ -2852,27 +2919,28 @@
             )}
             {selectMode && (
               <div style={{ marginBottom: '.5rem' }}>
-                <button className="btn-sm" onClick={selectAll}>{selected.size === entries.length ? 'DESELECT ALL' : 'SELECT ALL'}</button>
+                <button className="btn-sm" onClick={selectAll}>{selected.size === filteredEntries.length ? 'DESELECT ALL' : 'SELECT ALL'}</button>
               </div>
             )}
 
-            {entries.length === 0 ? <div className="empty">No prices loaded yet</div> : (
+            {filteredEntries.length === 0 ? <div className="empty">No prices loaded yet</div> : (
               <div className="table-wrap">
                 <table>
                   <thead><tr>
-                    {selectMode && <th><input type="checkbox" checked={selected.size === entries.length && entries.length > 0} onChange={selectAll} /></th>}
-                    <th>Stock</th><th>Price</th><th style={{ textAlign: 'right' }}>Actions</th>
+                    {selectMode && <th><input type="checkbox" checked={selected.size === filteredEntries.length && filteredEntries.length > 0} onChange={selectAll} /></th>}
+                    <th>Asset</th><th>Asset Type</th><th>Price</th><th style={{ textAlign: 'right' }}>Actions</th>
                   </tr></thead>
                   <tbody>
-                    {entries.map(([s, p]) => (
-                      <tr key={s} className="clickable" style={selected.has(s) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(s) : setEditEntry({ stock: s, price: p })}>
-                        {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(s)} onChange={() => toggleSelect(s)} /></td>}
-                        <td style={{ fontWeight: 700 }}>{s}</td>
-                        <td style={{ whiteSpace: 'normal' }}>{fmt(p)}</td>
+                    {filteredEntries.map((e) => (
+                      <tr key={e.stock} className="clickable" style={selected.has(e.stock) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(e.stock) : setEditEntry({ stock: e.stock, price: e.price })}>
+                        {selectMode && <td onClick={ev => ev.stopPropagation()}><input type="checkbox" checked={selected.has(e.stock)} onChange={() => toggleSelect(e.stock)} /></td>}
+                        <td style={{ fontWeight: 700 }}>{e.stock}</td>
+                        <td><span className="tag" style={{ background: e.assetType !== '—' ? assetTypeColor(e.assetType, assetTypeColors) : '#e5e7eb', color: '#1a1a1a', fontSize: 10 }}>{e.assetType}</span></td>
+                        <td style={{ whiteSpace: 'normal' }}>{fmt(e.price)}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
-                          <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditEntry({ stock: s, price: p }); }}>EDIT</button>
+                          <button className="btn-sm" onClick={ev => { ev.stopPropagation(); setEditEntry({ stock: e.stock, price: e.price }); }}>EDIT</button>
                           {' '}
-                          <button className="btn-sm-danger" onClick={e => { e.stopPropagation(); if (confirm(`Delete "${s}"?`)) handleDelete(s); }}>DEL</button>
+                          <button className="btn-sm-danger" onClick={ev => { ev.stopPropagation(); if (confirm(`Delete "${e.stock}"?`)) handleDelete(e.stock); }}>DEL</button>
                         </td>
                       </tr>
                     ))}
@@ -3548,6 +3616,7 @@
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
+                    transactions={transactions}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
