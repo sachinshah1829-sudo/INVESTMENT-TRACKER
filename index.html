@@ -1167,6 +1167,64 @@
       border-color: #fecaca;
     }
 
+    /* DASHBOARD FILTER BLOCKS */
+    .filter-blocks-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .dashboard-filter-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .dashboard-filter-block:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--text-muted);
+    }
+
+    .dashboard-filter-block .block-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .dashboard-filter-block .block-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .dashboard-filter-block .block-icon {
+      position: absolute;
+      right: 1.25rem;
+      bottom: 1.25rem;
+      font-size: 20px;
+      opacity: 0.15;
+    }
+
+    .dashboard-filter-block .color-accent {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+    }
+
     @media(max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
@@ -1893,6 +1951,17 @@
       );
     }
 
+    function DashboardFilterBlock({ label, value, color, onClick }) {
+      return (
+        <div className="dashboard-filter-block" onClick={onClick}>
+          <div className="block-label">{label}</div>
+          <div className="block-value">{value}</div>
+          <div className="block-icon">▼</div>
+          {color && <div className="color-accent" style={{ background: color }} />}
+        </div>
+      );
+    }
+
     // ── DASHBOARD ─────────────────────────────────────────────
     function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick, dashboardDefaults, onShowSettings }) {
       const [filterPersons, setFilterPersons] = useState(dashboardDefaults.persons);
@@ -1999,37 +2068,27 @@
           {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} />}
           {drilldownAssetType && <AssetTypeDrilldownModal type={drilldownAssetType} rows={allPortfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldownAssetType(null)} />}
 
-          <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
             <div><div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div><div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div></div>
-            <div className="filter-bar">
-              <div 
-                className={`filter-chip ${!allPersons ? 'active' : ''}`}
-                style={!allPersons && filterPersons.length === 1 ? { background: personColor(filterPersons[0], personColors) } : {}}
-                onClick={() => setShowPersonModal(true)}
-              >
-                {allPersons ? 'All Persons' : (filterPersons.length === 1 ? filterPersons[0] : `${filterPersons.length} Persons`)}
-              </div>
-              <div 
-                className={`filter-chip ${!allTypes ? 'active' : ''}`}
-                style={!allTypes ? { background: assetTypeColor(filterAssetTypes[0], assetTypeColors) } : {}}
-                onClick={() => setShowAssetTypeModal(true)}
-              >
-                {allTypes ? 'All Asset Types' : filterAssetTypes[0]}
-              </div>
-              <button 
-                className="gear-btn" 
-                onClick={onShowSettings} 
-                title="Change Default Filters"
-              >⚙</button>
-              <button 
-                className="btn-sm" 
-                style={{ height: 32 }} 
-                onClick={() => { 
-                  setFilterPersons(dashboardDefaults.persons); 
-                  setFilterAssetTypes(dashboardDefaults.assetTypes); 
-                }}
-              >↺</button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="gear-btn" onClick={onShowSettings} title="Change Default Filters">⚙</button>
+              <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(dashboardDefaults.persons); setFilterAssetTypes(dashboardDefaults.assetTypes); }}>↺</button>
             </div>
+          </div>
+
+          <div className="filter-blocks-row">
+            <DashboardFilterBlock
+              label="Filtering Persons"
+              value={allPersons ? 'All Persons' : (filterPersons.length === 1 ? filterPersons[0] : `${filterPersons.length} Persons`)}
+              onClick={() => setShowPersonModal(true)}
+              color={!allPersons && filterPersons.length === 1 ? personColor(filterPersons[0], personColors) : null}
+            />
+            <DashboardFilterBlock
+              label="Asset Type"
+              value={allTypes ? 'All Asset Types' : filterAssetTypes[0]}
+              onClick={() => setShowAssetTypeModal(true)}
+              color={!allTypes ? assetTypeColor(filterAssetTypes[0], assetTypeColors) : null}
+            />
           </div>
 
           {showPersonModal && (
