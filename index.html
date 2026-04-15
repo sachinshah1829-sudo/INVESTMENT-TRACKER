@@ -2663,11 +2663,23 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
               'Authorization': 'Bearer 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',
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ inputs: prompt, parameters: { return_full_text: false, max_new_tokens: 300 } })
+            body: JSON.stringify({ 
+              inputs: prompt, 
+              parameters: { return_full_text: false, max_new_tokens: 300 },
+              options: { wait_for_model: true }
+            })
           });
           
-          if (!res.ok) throw new Error('API Error');
           const data = await res.json();
+          if (!res.ok) {
+            if (data.error && data.error.includes('currently loading')) {
+              setMagicError('AI is warming up... please try again in 20 seconds.');
+            } else {
+              setMagicError(data.error || 'AI is busy. Please try again.');
+            }
+            return;
+          }
+
           let text = Array.isArray(data) ? data[0]?.generated_text : data.generated_text;
           if (!text) throw new Error('No response');
 
@@ -2689,7 +2701,7 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
           }
         } catch (err) {
           console.error(err);
-          setMagicError('AI is busy or error occurred. Please try again.');
+          setMagicError('Connection error. Please check your internet or try again.');
         } finally {
           setParsingMagic(false);
         }
