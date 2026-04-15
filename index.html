@@ -1781,15 +1781,6 @@
               </table>
             </div>
             {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
-          {drilldownType && (
-            <AssetTypeDrilldownModal
-              type={drilldownType}
-              rows={allPersonRows.filter(r => (transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK') === drilldownType)}
-              stockPrices={stockPrices}
-              personColors={personColors}
-              onClose={() => setDrilldownType(null)}
-            />
-          )}
           </div>
         </div>
       );
