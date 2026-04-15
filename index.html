@@ -732,20 +732,20 @@
     /* DASHBOARD FILTER BLOCKS */
     .dashboard-filter-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      margin: 1rem 0 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.5rem;
       width: 100%;
     }
 
     .dashboard-filter-block {
       border: 1px solid var(--border);
-      padding: 1.75rem 1.5rem;
+      padding: 1.25rem 1rem;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
       position: relative;
       overflow: hidden;
       background: var(--surface);
@@ -753,50 +753,32 @@
     }
 
     .dashboard-filter-block:hover {
-      transform: translateY(-3px);
+      transform: translateY(-2px);
       box-shadow: var(--shadow-md);
-      border-color: var(--text-muted);
     }
 
     .dashboard-filter-block.active {
-      border: 1px solid var(--text);
-      box-shadow: inset 0 0 0 1px var(--text), var(--shadow-md);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(0,0,0,0.1);
     }
 
-    .dashboard-filter-block .label {
-      font-weight: 700;
-      font-size: 18px;
-      letter-spacing: -0.01em;
-      text-transform: uppercase;
-      color: var(--text);
-      line-height: 1.1;
-    }
-
-    .dashboard-filter-block .sub {
-      font-size: 11px;
-      font-weight: 700;
-      opacity: 0.6;
-      letter-spacing: 0.1em;
+    .dashboard-filter-block .filter-label-top {
+      font-size: 10px;
+      letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--text-muted);
+      font-weight: 700;
     }
 
-    .dashboard-filter-block .status-icon {
-      position: absolute;
-      top: 1.75rem;
-      right: 1.5rem;
-      font-size: 16px;
-      color: var(--text-muted);
-      opacity: 0.3;
+    .dashboard-filter-block .filter-value {
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.02em;
     }
 
-    .dashboard-filter-utils {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-top: 4px;
+    .dashboard-filter-block.all {
+      background: #f8fafc;
     }
-
 
     .gear-btn {
       background: none;
@@ -1335,19 +1317,6 @@
       .btn-secondary {
         padding: 0.75rem 1rem;
         font-size: 14px;
-      }
-
-      .dashboard-filter-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
-
-      .dashboard-filter-block {
-        padding: 1.25rem 1rem;
-      }
-
-      .dashboard-filter-block .label {
-        font-size: 16px;
       }
     }
   </style>
@@ -2081,56 +2050,47 @@
           {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} />}
           {drilldownAssetType && <AssetTypeDrilldownModal type={drilldownAssetType} rows={allPortfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldownAssetType(null)} />}
 
-          <div className="page-header">
-            <div>
-              <div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div>
-              <div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div>
+          <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+            <div><div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div><div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div></div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                className="gear-btn" 
+                onClick={onShowSettings} 
+                title="Change Default Filters"
+              >⚙</button>
+              <button 
+                className="btn-sm" 
+                style={{ height: 32 }} 
+                onClick={() => { 
+                  setFilterPersons(dashboardDefaults.persons); 
+                  setFilterAssetTypes(dashboardDefaults.assetTypes); 
+                }}
+              >↺</button>
             </div>
           </div>
 
           <div className="dashboard-filter-grid">
             <div 
-              className={`dashboard-filter-block ${!allPersons ? 'active' : ''}`}
-              style={!allPersons && filterPersons.length === 1 ? { borderLeft: `6px solid ${personColor(filterPersons[0], personColors)}` } : {}}
+              className={`dashboard-filter-block ${!allPersons ? 'active' : 'all'}`}
+              style={!allPersons && filterPersons.length === 1 ? { background: personColor(filterPersons[0], personColors) } : {}}
               onClick={() => setShowPersonModal(true)}
             >
-              <div className="sub">Investor Profile</div>
-              <div className="label">
+              <div className="filter-label-top">Person Filter</div>
+              <div className="filter-value">
                 {allPersons ? 'All Persons' : (filterPersons.length === 1 ? filterPersons[0] : `${filterPersons.length} Selected`)}
               </div>
-              <div className="status-icon">👤</div>
             </div>
-
             <div 
-              className={`dashboard-filter-block ${!allTypes ? 'active' : ''}`}
-              style={!allTypes ? { borderLeft: `6px solid ${assetTypeColor(filterAssetTypes[0], assetTypeColors)}` } : {}}
+              className={`dashboard-filter-block ${!allTypes ? 'active' : 'all'}`}
+              style={!allTypes ? { background: assetTypeColor(filterAssetTypes[0], assetTypeColors) } : {}}
               onClick={() => setShowAssetTypeModal(true)}
             >
-              <div className="sub">Asset Category</div>
-              <div className="label">
-                {allTypes ? 'All Assets' : filterAssetTypes[0]}
+              <div className="filter-label-top">Asset Type</div>
+              <div className="filter-value">
+                {allTypes ? 'All Types' : filterAssetTypes[0]}
               </div>
-              <div className="status-icon">📦</div>
-            </div>
-
-            <div className="dashboard-filter-utils">
-              <button 
-                className="gear-btn" 
-                style={{ fontSize: 24, width: 50, height: 50, background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onClick={onShowSettings} 
-                title="Change Default Filters"
-              >⚙</button>
-              <button 
-                className="btn-secondary" 
-                style={{ height: 50, padding: '0 20px', fontSize: 12, fontWeight: 700, letterSpacing: '0.05em' }}
-                onClick={() => { 
-                  setFilterPersons(dashboardDefaults.persons); 
-                  setFilterAssetTypes(dashboardDefaults.assetTypes); 
-                }}
-              >RESET</button>
             </div>
           </div>
-
 
           {showPersonModal && (
             <div className="modal-overlay" onClick={() => setShowPersonModal(false)}>
