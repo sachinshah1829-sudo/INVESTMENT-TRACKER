@@ -1346,6 +1346,139 @@
         font-size: 14px;
       }
     }
+
+    /* AI ASSISTANT */
+    .ai-magic-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      color: white;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .ai-magic-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
+    }
+    .ai-drawer {
+      position: fixed;
+      bottom: 6rem;
+      right: 2rem;
+      width: 400px;
+      max-width: calc(100vw - 4rem);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      box-shadow: var(--shadow-xl);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: aiSlideUp 0.3s ease-out;
+    }
+    @keyframes aiSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .ai-header {
+      padding: 1rem 1.25rem;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .ai-header-title {
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ai-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .ai-input {
+      width: 100%;
+      padding: .75rem;
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      font-family: inherit;
+      resize: none;
+      min-height: 80px;
+      font-size: 14px;
+      background: white;
+    }
+    .ai-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    }
+    .ai-response {
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 1rem;
+      background: #f8fafc;
+      border-radius: .5rem;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .ai-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ai-preview-card {
+      background: white;
+      border: 1px solid var(--border);
+      padding: .75rem;
+      border-radius: .5rem;
+      position: relative;
+    }
+    .ai-preview-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .ai-empty {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--text-muted);
+    }
+    .ai-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .ai-dot {
+      width: 6px;
+      height: 6px;
+      background: #6366f1;
+      border-radius: 50%;
+      animation: aiPulse 1.4s infinite ease-in-out both;
+    }
+    .ai-dot:nth-child(2) { animation-delay: 0.2s; }
+    .ai-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes aiPulse { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
   </style>
 </head>
 
@@ -1367,6 +1500,9 @@
       appId: "1:191924832332:web:da128b3982e524fcdf4ce9",
       measurementId: "G-0N8JYP9E23"
     };
+
+    const GEMINI_API_KEY = "AIzaSyAtdSAsW1DoCXnz8445xJJKm7uNADrGqrY";
+
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -3769,6 +3905,158 @@
       );
     }
 
+    async function callGeminiAPI(text, persons, assetTypes, stocks) {
+      if (!GEMINI_API_KEY) throw new Error("API Key Missing");
+      const today = new Date().toISOString().split('T')[0];
+      const model = "gemini-1.5-flash";
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      
+      const systemPrompt = `Extract investment transactions from the text provided by the user.
+Today's Date: ${today}
+Valid Persons: ${persons.join(', ')}
+Valid Asset Types: ${assetTypes.join(', ')}
+Valid Stocks in Portfolio: ${stocks.join(', ')} (Try to match these if they seem close, e.g. "Adani Power" for "ADANI POWER LTD")
+
+Rules:
+1. Output ONLY a valid JSON array of objects. No markdown formatting, no preamble.
+2. Structure: { "date": "YYYY-MM-DD", "person": "...", "stock": "...", "qty": number, "price": number, "assetType": "..." }
+3. For "Buy" or "Purchased", qty is positive. For "Sell" or "Sold", qty is negative.
+4. "price" should be the unit price.
+5. "assetType" should be one of the Valid Asset Types if possible, else use "STOCK".
+6. If a piece of information is missing and cannot be inferred, use empty string for strings or 0 for numbers.
+7. Attempt to normalize person names to the Valid Persons list.
+
+User Input: "${text}"`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: { response_mime_type: "application/json" }
+          })
+        });
+        const data = await response.json();
+        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!content) throw new Error("Empty response from AI");
+        return JSON.parse(content);
+      } catch (e) {
+        console.error("AI Error:", e);
+        throw e;
+      }
+    }
+
+    function GeminiAssistant({ persons, assetTypes, stocks, onAddTransactions, assetTypeColors }) {
+      const [isOpen, setIsOpen] = useState(false);
+      const [input, setInput] = useState("");
+      const [loading, setLoading] = useState(false);
+      const [parsed, setParsed] = useState(null);
+      const [error, setError] = useState(null);
+
+      const handleParse = async () => {
+        if (!input.trim()) return;
+        setLoading(true);
+        setError(null);
+        try {
+          const result = await callGeminiAPI(input, persons.map(p => p.name), assetTypes.map(t => t.name), stocks);
+          setParsed(Array.isArray(result) ? result : [result]);
+        } catch (e) {
+          setError(e.message);
+        }
+        setLoading(false);
+      };
+
+      const handleCommit = () => {
+        if (!parsed) return;
+        onAddTransactions(parsed);
+        setParsed(null);
+        setInput("");
+        setIsOpen(false);
+      };
+
+      const removeParsed = (idx) => {
+        setParsed(prev => prev.filter((_, i) => i !== idx));
+      };
+
+      return (
+        <>
+          <button className="ai-magic-btn" onClick={() => setIsOpen(!isOpen)} title="AI Smart Add">
+            <span style={{ fontSize: 24 }}>✨</span>
+          </button>
+
+          {isOpen && (
+            <div className="ai-drawer">
+              <div className="ai-header">
+                <div className="ai-header-title">✨ Gemini Smart Assistant</div>
+                <button className="gear-btn" onClick={() => setIsOpen(false)} style={{ color: 'white' }}>✕</button>
+              </div>
+              <div className="ai-body">
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Describe your transactions naturally:</div>
+                <textarea 
+                  className="ai-input" 
+                  value={input} 
+                  onChange={e => setInput(e.target.value)}
+                  placeholder='e.g. "Bought 100 Reliance at 2500 for Nilesh yesterday"'
+                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="btn-primary" style={{ flex: 1 }} onClick={handleParse} disabled={loading || !input.trim()}>
+                    {loading ? "PARSING..." : "PARSE TEXT"}
+                  </button>
+                  {parsed && parsed.length > 0 && (
+                    <button className="btn-secondary" style={{ flex: 1, background: '#10b981', color: 'white', borderColor: '#059669' }} onClick={handleCommit}>
+                      COMMIT {parsed.length} TXN
+                    </button>
+                  )}
+                </div>
+
+                {loading && (
+                  <div className="ai-loading">
+                    <div className="ai-dot" />
+                    <div className="ai-dot" />
+                    <div className="ai-dot" />
+                    <span>Gemini is thinking...</span>
+                  </div>
+                )}
+
+                {error && <div className="ai-response" style={{ color: 'var(--neg)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{error}</div>}
+
+                {parsed && parsed.length > 0 && (
+                  <div className="ai-preview-list">
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Extracted Preview</div>
+                    {parsed.map((tx, i) => (
+                      <div key={i} className="ai-preview-card">
+                        <button className="ai-preview-remove" onClick={() => removeParsed(i)}>✕</button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: 700, fontSize: 13 }}>{tx.stock || 'Unknown Asset'}</span>
+                          <span className={tx.qty >= 0 ? 'pos' : 'neg'} style={{ fontWeight: 700 }}>{tx.qty >= 0 ? 'BUY' : 'SELL'}</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: 11 }}>
+                          <div>Person: <strong>{tx.person || '—'}</strong></div>
+                          <div>Date: <strong>{tx.date || '—'}</strong></div>
+                          <div>Qty: <strong>{Math.abs(tx.qty)}</strong></div>
+                          <div>Price: <strong>{tx.price}</strong></div>
+                          <div>Type: <span className="tag" style={{ background: assetTypeColor(tx.assetType || 'STOCK', assetTypeColors), color: '#1a1a1a', fontSize: 9 }}>{tx.assetType}</span></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!parsed && !loading && !error && (
+                  <div className="ai-empty">
+                    <div style={{ fontSize: 24, marginBottom: '8px' }}>🤖</div>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>How can I help you today?</div>
+                    <div style={{ fontSize: 11 }}>Paste or type multiple transactions and I'll extract them instantly.</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
     // ── MAIN APP ──────────────────────────────────────────────
     function App() {
       const [user, setUser] = useState(undefined);
@@ -4155,6 +4443,14 @@
               </>
             )}
           </main>
+
+          <GeminiAssistant 
+            persons={persons} 
+            assetTypes={assetTypes} 
+            stocks={[...new Set(transactions.map(t => t.stock))]} 
+            onAddTransactions={bulkAddTx}
+            assetTypeColors={assetTypeColors}
+          />
         </div>
       );
     }
