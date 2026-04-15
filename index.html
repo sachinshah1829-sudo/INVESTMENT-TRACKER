@@ -3918,7 +3918,7 @@ Valid Asset Types: ${assetTypes.join(', ')}
 Valid Stocks in Portfolio: ${stocks.join(', ')} (Try to match these if they seem close, e.g. "Adani Power" for "ADANI POWER LTD")
 
 Rules:
-1. Output ONLY a valid JSON array of objects. No markdown formatting, no preamble.
+1. Output ONLY a valid JSON array of objects.
 2. Structure: { "date": "YYYY-MM-DD", "person": "...", "stock": "...", "qty": number, "price": number, "assetType": "..." }
 3. For "Buy" or "Purchased", qty is positive. For "Sell" or "Sold", qty is negative.
 4. "price" should be the unit price.
@@ -3937,10 +3937,33 @@ User Input: "${text}"`;
             generationConfig: { response_mime_type: "application/json" }
           })
         });
+        
         const data = await response.json();
-        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!content) throw new Error("Empty response from AI");
-        return JSON.parse(content);
+        
+        if (!response.ok) {
+          const errMsg = data.error?.message || response.statusText;
+          throw new Error(`Gemini API Error: ${errMsg}`);
+        }
+
+        let content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!content) {
+          if (data.promptFeedback?.blockReason) throw new Error(`AI Blocked Content: ${data.promptFeedback.blockReason}`);
+          if (data.candidates?.[0]?.finishReason) throw new Error(`AI Finish Error: ${data.candidates[0].finishReason}`);
+          throw new Error("Gemini returned an empty response. Try rephrasing.");
+        }
+
+        // Fallback: If AI included markdown code blocks, strip them
+        if (content.includes('```')) {
+          content = content.replace(/```json|```/g, '').trim();
+        }
+
+        try {
+          return JSON.parse(content);
+        } catch (parseError) {
+          console.error("JSON Parse Error. Content:", content);
+          throw new Error("Failed to parse AI response into valid transaction data.");
+        }
       } catch (e) {
         console.error("AI Error:", e);
         throw e;
