@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
-  <title>Investment Tracker</title>
+  <title>Trackrr.in</title>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -629,20 +629,45 @@
     }
 
     .btn-sm {
-      padding: .3rem .6rem;
-      background: none;
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      font-family: inherit;
+      padding: .4rem .75rem;
+      background: var(--surface);
+      color: #000;
+      border: 3px solid var(--border);
+      font-family: var(--font-main);
       font-size: 11px;
+      font-weight: 700;
       cursor: pointer;
-      transition: all .15s;
+      transition: all 0.1s;
+      box-shadow: var(--elevation-1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .btn-sm:hover {
-      background: var(--bg);
-      color: var(--text);
-    }    .btn-sm-danger {
+      transform: translate(-2px, -2px);
+      box-shadow: var(--elevation-2);
+      background: var(--sidebar-active-bg);
+    }
+
+    .btn-sm:active {
+      transform: translate(1px, 1px);
+      box-shadow: none;
+    }
+
+    /* SQUARE ICON BUTTONS */
+    .btn-reset {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .btn-sm-danger {
       padding: .4rem .8rem;
       background: var(--red-bg);
       color: var(--red);
@@ -1282,7 +1307,7 @@
     .action-block.active {
       border: 3px solid var(--border);
       box-shadow: var(--elevation-3);
-      background: var(--sidebar-active-bg) !important;
+      background: #00E599 !important;
       color: #000 !important;
     }
 
@@ -1312,8 +1337,8 @@
       font-weight: 700;
     }
 
-    .action-block.bonus { background: #00E599; color: #000; }
-    .action-block.split { background: #EDFF66; color: #000; }
+    .action-block.bonus { background: #BBF7D0; color: #000; }
+    .action-block.split { background: #FF9671; color: #000; }
     .action-block.merger { background: #845EC2; color: #fff; }
     .action-block.demerger { background: #FF3366; color: #fff; }
     .action-block.buyback { background: #FFB800; color: #000; }
@@ -1831,8 +1856,8 @@
       return (
         <div className="auth-wrapper">
           <div className="auth-card">
-            <div className="auth-brand">Investment</div>
-            <div className="auth-title">Tracker</div>
+            <div className="auth-brand" style={{ letterSpacing: '0.2em' }}>TRACKRR</div>
+            <div className="auth-title">.IN</div>
             <div className="auth-tabs">
               <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Login</button>
               <button className={`auth-tab${tab === 'signup' ? ' active' : ''}`} onClick={() => setTab('signup')}>Sign Up</button>
@@ -2727,7 +2752,7 @@
                   <div className="filter-label">Search</div>
                   <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
-                <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSearch(''); setFilterPersons(['All']); setFilterStocks(['All']); setFilterAssetType(['All']); }} title="Reset Filters">↺</button>
+                <button className="btn-sm btn-reset" onClick={() => { setSearch(''); setFilterPersons(['All']); setFilterStocks(['All']); setFilterAssetType(['All']); }} title="Reset Filters">↺</button>
                 <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
               </div>
             </div>
@@ -2889,7 +2914,7 @@
             {viewMode === 'types' && <>
               <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
             </>}
-            <button className="btn-sm" style={{ height: 32 }} onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺</button>
+            <button className="btn-sm btn-reset" onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span></div>
           </div>
           <div className="card" style={{ padding: 0 }}>
@@ -3009,7 +3034,7 @@
               <div className="filter-label">Stock Search</div>
               <input className="form-input" style={{ width: 140, fontSize: 12 }} placeholder="Search..." value={stockFilter} onChange={e => setStockFilter(e.target.value)} />
             </div>
-            <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); setStockFilter(''); }} title="Reset Filters">↺</button>
+            <button className="btn-sm btn-reset" onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); setStockFilter(''); }} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{sells.length} records</span></div>
           </div>
 
@@ -3416,7 +3441,7 @@
             <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '.75rem' }}>
               <MultiSelect label="Asset" options={assetList} selected={filterAssets} onChange={setFilterAssets} />
               <MultiSelect label="Asset Type" options={typesList} selected={filterAssetTypes} onChange={setFilterAssetTypes} />
-              <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterAssets(['All']); setFilterAssetTypes(['All']); }} title="Reset Filters">↺</button>
+              <button className="btn-sm btn-reset" onClick={() => { setFilterAssets(['All']); setFilterAssetTypes(['All']); }} title="Reset Filters">↺</button>
             </div>
 
             {selectMode && selected.size > 0 && (
@@ -4213,7 +4238,7 @@
           <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="sidebar-brand">
               <div className="sidebar-brand-sub">Premium</div>
-              <div className="sidebar-brand-name">InvstTracker</div>
+              <div className="sidebar-brand-name">Trackrr.in</div>
             </div>
 
             <nav className="sidebar-nav">
