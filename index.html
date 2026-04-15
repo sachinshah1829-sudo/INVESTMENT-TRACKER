@@ -732,9 +732,10 @@
     /* DASHBOARD FILTER BLOCKS */
     .dashboard-filter-grid {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 12px;
       margin-bottom: 1.5rem;
+      width: 100%;
     }
 
     .dashboard-filter-block {
@@ -748,7 +749,9 @@
       position: relative;
       overflow: hidden;
       background: var(--surface);
-      width: 180px;
+      flex: 1;
+      max-width: 220px;
+      min-width: 0;
     }
 
     .dashboard-filter-block:hover {
@@ -1315,6 +1318,22 @@
 
       .stat-val {
         font-size: 20px;
+      }
+
+      .dashboard-filter-grid {
+        gap: 8px;
+      }
+
+      .dashboard-filter-block {
+        padding: 1rem .75rem;
+      }
+
+      .dashboard-filter-block .label {
+        font-size: 11px;
+      }
+
+      .dashboard-filter-block .sub {
+        font-size: 10px;
       }
 
       .page-title {
