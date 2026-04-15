@@ -1272,24 +1272,24 @@
     /* WIZARD BLOCKS */
     .action-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1.25rem;
-      margin-top: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.75rem;
     }
 
     .action-block {
       border: 3px solid var(--border);
-      padding: 1.5rem 1.25rem;
+      padding: 1rem 0.75rem;
       cursor: pointer;
       transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
       position: relative;
       overflow: hidden;
       background: var(--surface);
       box-shadow: var(--elevation-2);
-      min-height: 110px;
+      min-height: 85px;
       justify-content: center;
     }
 
@@ -3762,8 +3762,8 @@
             ))}
           </div>
 
-          <div className="card" style={{ maxWidth: 800, padding: '2.5rem' }}>
-            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="card" style={{ maxWidth: 850, padding: '1.5rem' }}>
+            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ background: '#000', color: '#fff', padding: '2px 8px', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-main)' }}>STEP {step}</span>
               <span style={{ fontStyle: 'italic', fontSize: 13, color: 'var(--text-muted)' }}>
                 {step === 1 ? 'Identify the source asset' : step === 2 ? 'Choose the adjustment type' : 'Confirm ledger entries'}
@@ -3811,8 +3811,8 @@
                   ))}
                 </div>
 
-                <div style={{ background: '#F8F9FA', padding: '1.5rem', border: '3px solid var(--border)', boxShadow: 'var(--elevation-2)', marginTop: '0.5rem' }}>
-                  <div className="card-title" style={{ color: '#000', marginBottom: '1.25rem' }}>Parameters for {action?.toUpperCase()}</div>
+                <div style={{ background: '#F8F9FA', padding: '1rem', border: '3px solid var(--border)', boxShadow: 'var(--elevation-2)', marginTop: '0.75rem' }}>
+                  <div className="card-title" style={{ color: '#000', marginBottom: '0.75rem', fontSize: 13 }}>Parameters for {action?.toUpperCase()}</div>
                   {['buyback', 'rights'].includes(action) && (
                     <div className="form-group" style={{ marginBottom: '1rem' }}>
                       <label className="form-label">Participating Person</label>
