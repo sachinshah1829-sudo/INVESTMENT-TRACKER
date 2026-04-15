@@ -1387,6 +1387,7 @@
     function ColorPicker({ name, color, onChange }) {
       const [open, setOpen] = useState(false);
       const ref = useRef(null);
+      const [pos, setPos] = useState({ top: 0, left: 0 });
 
       useEffect(() => {
         if (!open) return;
@@ -1394,6 +1395,21 @@
         document.addEventListener('mousedown', handle);
         document.addEventListener('touchstart', handle);
         return () => { document.removeEventListener('mousedown', handle); document.removeEventListener('touchstart', handle); };
+      }, [open]);
+
+      useEffect(() => {
+        if (!open) return;
+        const el = ref.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        // Try to open below; if too low, open above
+        const popupH = 210;
+        const popupW = 220;
+        const margin = 8;
+        const openBelow = (r.bottom + margin + popupH) <= window.innerHeight;
+        const top = openBelow ? (r.bottom + margin) : Math.max(margin, r.top - margin - popupH);
+        const left = Math.min(Math.max(margin, r.left), Math.max(margin, window.innerWidth - popupW - margin));
+        setPos({ top, left });
       }, [open]);
 
       return (
@@ -1405,7 +1421,7 @@
             title="Change color"
           />
           {open && (
-            <div className="color-popup" onClick={e => e.stopPropagation()}>
+            <div className="color-popup" style={{ position: 'fixed', top: pos.top, left: pos.left }} onClick={e => e.stopPropagation()}>
               <div style={{ fontSize: 9, letterSpacing: '.1em', color: 'var(--text-muted)', marginBottom: 5, textTransform: 'uppercase' }}>Presets</div>
               <div className="color-preset-grid">
                 {PRESET_COLORS.map(c => (
@@ -1871,18 +1887,10 @@
               <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div>
               <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
             </div>
-            {isNetWorthView ? (
-              <div className="stat-card">
-                <div className="stat-label">Most Capital Allocated</div>
-                <div className="stat-val" style={{ fontSize: 18 }}>{sortedTypes[0]?.[0] || '—'}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{((sortedTypes[0]?.[1] || 0) / totalCurrent * 100).toFixed(1)}% of wealth</div>
-              </div>
-            ) : (
-              <div className="stat-card">
-                <div className="stat-label">Unrealized Net CAGR</div>
-                <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
-              </div>
-            )}
+            <div className="stat-card">
+              <div className="stat-label">Unrealized Net CAGR</div>
+              <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
+            </div>
             <div className="stat-card">
               <div className="stat-label">Combined Net CAGR</div>
               <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
@@ -1951,8 +1959,8 @@
                   <>
                     <div className="card-title">Holdings</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>Click any row to view active holding lots</div>
-                    <div className="table-wrap" style={{ maxHeight: 320 }}>
-                      <table>
+                    <div className="table-wrap" style={{ maxHeight: 320, overflowX: 'auto' }}>
+                      <table style={{ minWidth: 980 }}>
                         <thead><tr><th>Person</th><th>Asset</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
                         <tbody>
                           {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data</div></td></tr>}
@@ -2526,6 +2534,21 @@
                (!stockFilter || s.stock.toLowerCase().includes(stockFilter.toLowerCase()));
       });
 
+      const sellsView = sells.map(s => ({
+        ...s,
+        realizedGain: s.realizedGain ?? s.profit ?? 0,
+        days: s.days ?? Math.round((s.yrs || 0) * 365)
+      }));
+
+      const realizedCostSum = sellsView.reduce((sum, r) => sum + (r.qty * r.buyPrice), 0);
+      const realizedValueSum = sellsView.reduce((sum, r) => sum + (r.qty * r.sellPrice), 0);
+      const realizedWeightedAgeSum = sellsView.reduce((sum, r) => sum + (r.qty * r.buyPrice * (r.yrs || 0)), 0);
+      const netRealizedGain = sellsView.reduce((sum, r) => sum + (r.realizedGain || 0), 0);
+      const realizedAvgAge = realizedCostSum > 0 ? realizedWeightedAgeSum / realizedCostSum : 0;
+      const netRealizedCAGR = (realizedCostSum > 0 && realizedAvgAge > 0)
+        ? (Math.pow(realizedValueSum / realizedCostSum, 1 / realizedAvgAge) - 1) * 100
+        : null;
+
       const persons = [...new Set(allSells.map(s => s.person))].sort();
       const typesList = assetTypes.map(t => t.name).sort();
 
@@ -2546,6 +2569,17 @@
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{sells.length} records</span></div>
           </div>
 
+          <div className="stats-grid" style={{ marginTop: '1rem' }}>
+            <div className="stat-card">
+              <div className="stat-label">Net Realized Gain</div>
+              <div className={`stat-val ${(netRealizedGain || 0) >= 0 ? 'pos' : 'neg'}`}>{fmt(netRealizedGain)}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Net Realized CAGR</div>
+              <div className={`stat-val ${(netRealizedCAGR || 0) >= 0 ? 'pos' : 'neg'}`}>{netRealizedCAGR != null ? fmtPct(netRealizedCAGR) : '—'}</div>
+            </div>
+          </div>
+
           <div className="card" style={{ padding: 0 }}>
             <div className="table-wrap">
               <table>
@@ -2555,7 +2589,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {sells.map((s, i) => {
+                  {sellsView.map((s, i) => {
                     const at = transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK';
                     return (
                       <tr key={i}>
