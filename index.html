@@ -3911,7 +3911,17 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} />}
+                {tab === 'dashboard' && <DashboardTab 
+                  transactions={transactions} 
+                  stockPrices={stockPrices} 
+                  personColors={personColors} 
+                  assetTypes={assetTypes} 
+                  assetTypeColors={assetTypeColors} 
+                  filter={portfolioFilter}
+                  onFilterChange={setPortfolioFilter}
+                  onSettingsOpen={() => setShowDashboardSettings(true)}
+                  onPersonClick={handlePersonDrilldown} 
+                />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
