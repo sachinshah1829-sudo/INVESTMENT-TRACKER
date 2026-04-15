@@ -6,7 +6,7 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>Trackrr.in</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -32,16 +32,16 @@
       --amber-bg: #fff9e6;
       --input-bg: #ffffff;
       
-      /* NeoPOP Elevations (Cleaned up) */
+      /* NeoPOP Elevations (Hard Shadows) */
       --elevation-1: 1px 1px 0px 0px #000000;
       --elevation-2: 2px 2px 0px 0px #000000;
-      --elevation-3: 3px 3px 0px 0px #000000;
-      --elevation-4: 4px 4px 0px 0px #000000;
+      --elevation-3: 4px 4px 0px 0px #000000;
+      --elevation-4: 6px 6px 0px 0px #000000;
       
       --radius: 0px;
       
       /* Fonts */
-      --font-main: 'Inter', sans-serif;
+      --font-main: 'Courier Prime', monospace;
       --font-big: 'Outfit', sans-serif;
     }
 
@@ -418,13 +418,14 @@
     .stat-card {
       background: var(--surface);
       padding: 1.5rem;
-      border: 3px solid var(--border);
-      box-shadow: var(--elevation-1);
+      border: 2px solid var(--border);
+      box-shadow: var(--elevation-3);
       transition: all 0.2s;
     }
 
     .stat-card:hover {
-      background: #fafafa;
+      transform: translate(-2px, -2px);
+      box-shadow: var(--elevation-4);
     }
 
     .stat-label {
@@ -579,6 +580,7 @@
       outline: none;
       appearance: none;
       cursor: pointer;
+      box-shadow: var(--elevation-1);
     }
 
     .select-input:focus {
@@ -612,27 +614,31 @@
       font-weight: 700;
       cursor: pointer;
       transition: all 0.1s;
+      box-shadow: var(--elevation-2);
       text-transform: uppercase;
     }
 
     .btn-secondary:hover {
-      background: #f1f1f1;
+      transform: translate(-1px, -1px);
+      box-shadow: var(--elevation-3);
     }
 
     .btn-secondary:active {
       transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px 0px var(--border);
     }
 
     .btn-sm {
       padding: .4rem .75rem;
       background: var(--surface);
       color: #000;
-      border: 2px solid var(--border);
+      border: 3px solid var(--border);
       font-family: var(--font-main);
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.1s;
+      box-shadow: var(--elevation-1);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -641,9 +647,9 @@
     }
 
     .btn-sm:hover {
-      background: #f1f1f1;
-      transform: translate(-1px, -1px);
-      box-shadow: var(--elevation-1);
+      transform: translate(-2px, -2px);
+      box-shadow: var(--elevation-2);
+      background: #f8fafc;
     }
 
     .btn-sm:active {
@@ -725,12 +731,12 @@
     .modal {
       background: var(--surface);
       border: 3px solid var(--border);
-      padding: 2rem;
+      padding: 2.5rem;
       width: 100%;
       max-width: 620px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      box-shadow: 12px 12px 0px 0px rgba(0,0,0,1);
       position: relative;
     }
 
@@ -829,9 +835,9 @@
     }
     .filter-chip.active {
       opacity: 1;
-      border-color: var(--border);
+      border-color: rgba(0,0,0,0.1);
       color: #1a1a1a;
-      box-shadow: var(--elevation-1);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
     .filter-chip.all {
       opacity: 1;
@@ -1069,8 +1075,8 @@
     .premium-dock {
       display: inline-flex;
       background: var(--surface);
-      border: 2px solid var(--border);
-      box-shadow: var(--elevation-2);
+      border: 3px solid var(--border);
+      box-shadow: var(--elevation-3);
       position: relative;
       margin-bottom: 2rem;
       padding: 4px;
@@ -1185,10 +1191,12 @@
       justify-content: space-between;
       align-items: center;
       transition: all .1s;
+      box-shadow: var(--elevation-1);
     }
 
     .multi-select-trigger:hover {
-      background: #f8fafc;
+      box-shadow: var(--elevation-2);
+      transform: translate(-1px, -1px);
     }
 
     .multi-select-dropdown {
@@ -1298,7 +1306,7 @@
 
     .action-block.active {
       border: 3px solid var(--border);
-      box-shadow: var(--elevation-2);
+      box-shadow: var(--elevation-3);
       background: #EDFF66 !important;
       color: #000 !important;
     }
