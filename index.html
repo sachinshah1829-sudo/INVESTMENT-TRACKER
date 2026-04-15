@@ -454,9 +454,7 @@
       padding: 1rem .75rem;
       border-bottom: 1px solid var(--border);
       transition: background 0.1s;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      white-space: normal;
+      overflow-wrap: break-word;
     }
 
     /* Sticky First Column on Mobile - REMOVED AS PER USER REQUEST */
@@ -480,9 +478,7 @@
       font-size: 11px;
       border-radius: 2px;
       font-weight: 700;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      white-space: normal;
+      overflow-wrap: break-word;
       line-height: 1.4;
     }
 
@@ -661,86 +657,23 @@
       font-weight: 700;
     }
 
-    /* FILTER BLOCKS */
-    .filter-section {
-      width: 100%;
-    }
-    .filter-blocks-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 0.5rem;
-      font-weight: 700;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .filter-blocks {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .filter-chip {
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: all 0.15s;
-      user-select: none;
-      opacity: 0.4;
-      background: #f1f5f9;
-      color: #64748b;
-    }
-    .filter-chip:hover {
-      opacity: 0.7;
-    }
-    .filter-chip.active {
-      opacity: 1;
-      border-color: rgba(0,0,0,0.1);
-      color: #1a1a1a;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    .filter-chip.all {
-      opacity: 1;
-      background: var(--sidebar-bg);
-      color: white;
-      border: none;
-    }
-    .filter-chip.all.inactive {
-      background: #f1f5f9;
-      color: #64748b;
-      opacity: 0.4;
-      border: 1px solid var(--border);
-    }
-
-    .gear-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-muted);
-      font-size: 16px;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.15s, transform 0.15s;
-    }
-    .gear-btn:hover {
-      color: var(--text);
-      transform: rotate(45deg);
-    }
-
-    /* FILTER BAR override */
+    /* FILTER BAR */
     .filter-bar {
       display: flex;
-      gap: 1.5rem;
-      flex-direction: column;
-      margin-bottom: 1.5rem;
-      align-items: flex-start;
-      background: #f8fafc;
-      padding: 1.25rem;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      align-items: center;
+    }
+
+    .filter-bar select {
+      padding: .35rem .6rem;
       border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: inherit;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
     }
 
     /* BULK ACTIONS */
@@ -1349,11 +1282,12 @@
       return `hsl(${Math.abs(h) % 360},50%,80%)`;
     };
 
-    const assetTypeColor = (type, customColors = {}) => {
-      const u = (type || '').toUpperCase().trim();
+    const assetTypeColor = (name, customColors = {}) => {
+      const u = (name || '').toUpperCase().trim();
       if (customColors && customColors[u]) return customColors[u];
       if (DEFAULT_ASSET_TYPE_COLORS[u]) return DEFAULT_ASSET_TYPE_COLORS[u];
-      return '#e2e8f0';
+      let h = 0; for (let i = 0; i < u.length; i++) h = u.charCodeAt(i) + ((h << 5) - h);
+      return `hsl(${Math.abs(h) % 360},70%,85%)`;
     };
 
     // ── FIFO ENGINE ───────────────────────────────────────────
@@ -1890,13 +1824,12 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange, onSettingsOpen, onPersonClick }) {
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick }) {
+      const [filterPersons, setFilterPersons] = useState(['All']);
+      const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const [drilldownAssetType, setDrilldownAssetType] = useState(null);
       const [drilldown, setDrilldown] = useState(null);
-
-      const filterPersons = filter.persons || ['All'];
-      const filterAssetTypes = filter.assetTypes || ['All'];
 
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
@@ -1988,72 +1921,17 @@
           {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} />}
           {drilldownAssetType && <AssetTypeDrilldownModal type={drilldownAssetType} rows={allPortfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldownAssetType(null)} />}
 
-          <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div>
-              <div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <button className="btn-sm" onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺ RESET</button>
-              <button className="gear-btn" onClick={onSettingsOpen} title="Dashboard Settings">⚙</button>
-            </div>
-          </div>
-
-          <div className="filter-bar">
-            {/* Persons Filter Blocks */}
-            <div className="filter-section">
-              <div className="filter-blocks-title">Filter Persons</div>
-              <div className="filter-blocks">
-                <div 
-                  className={`filter-chip all ${allPersons ? 'active' : 'inactive'}`}
-                  onClick={() => onFilterChange({ ...filter, persons: ['All'] })}
-                >ALL</div>
-                {persons.map(p => {
-                  const isActive = filter.persons.includes(p);
-                  return (
-                    <div 
-                      key={p} 
-                      className={`filter-chip ${isActive ? 'active' : ''}`}
-                      style={isActive ? { background: personColor(p, personColors) } : {}}
-                      onClick={() => {
-                        let next = filter.persons.filter(x => x !== 'All');
-                        if (next.includes(p)) next = next.filter(x => x !== p);
-                        else next.push(p);
-                        if (next.length === 0) next = ['All'];
-                        onFilterChange({ ...filter, persons: next });
-                      }}
-                    >{p}</div>
-                  );
-                })}
+          <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+            <div><div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div><div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div></div>
+            <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
+              <MultiSelect label="Filter Persons" options={persons} selected={filterPersons} onChange={setFilterPersons} />
+              <div className="filter-group">
+                <div className="filter-label">Filter Asset Type</div>
+                <select className="select-input" style={{ width: 140, height: 32, fontSize: 12 }} value={filterAssetTypes[0]} onChange={e => setFilterAssetTypes([e.target.value])}>
+                  <option value="All">All</option>{types.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
-            </div>
-
-            {/* Asset Type Filter Blocks */}
-            <div className="filter-section">
-              <div className="filter-blocks-title">Filter Asset Type</div>
-              <div className="filter-blocks">
-                <div 
-                  className={`filter-chip all ${allTypes ? 'active' : 'inactive'}`}
-                  onClick={() => onFilterChange({ ...filter, assetTypes: ['All'] })}
-                >ALL</div>
-                {types.map(t => {
-                  const isActive = filter.assetTypes?.includes(t);
-                  return (
-                    <div 
-                      key={t} 
-                      className={`filter-chip ${isActive ? 'active' : ''}`}
-                      style={isActive ? { background: assetTypeColor(t, assetTypeColors) } : {}}
-                      onClick={() => {
-                        let next = (filter.assetTypes || ['All']).filter(x => x !== 'All');
-                        if (next.includes(t)) next = next.filter(x => x !== t);
-                        else next.push(t);
-                        if (next.length === 0) next = ['All'];
-                        onFilterChange({ ...filter, assetTypes: next });
-                      }}
-                    >{t}</div>
-                  );
-                })}
-              </div>
+              <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); }}>↺</button>
             </div>
           </div>
 
@@ -3296,14 +3174,7 @@
       const [preview, setPreview] = useState([]);
       const [applying, setApplying] = useState(false);
 
-      // Strict Filter: Only show assets tagged as "STOCK" (to exclude Mutual Funds, Gold, etc.)
-      const assetTypeMap = useMemo(() => {
-        const map = {};
-        transactions.forEach(t => { if (t.stock) map[t.stock] = t.assetType || 'STOCK'; });
-        return map;
-      }, [transactions]);
-
-      const allStocks = [...new Set(transactions.map(t => t.stock))].filter(s => assetTypeMap[s] === 'STOCK').sort();
+      const allStocks = [...new Set(transactions.map(t => t.stock))].sort();
       const allPersons = [...new Set(transactions.map(t => t.person))].sort();
 
       const getHoldings = (p, s, d) => {
@@ -3559,8 +3430,6 @@
       const [showNavSettings, setShowNavSettings] = useState(false);
       const [loading, setLoading] = useState(true);
       const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] });
-      const [dashboardDefaults, setDashboardDefaults] = useState({ persons: ['All'], assetTypes: ['All'] });
-      const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
 
       const touchStartX = useRef(null);
@@ -3629,18 +3498,7 @@
         const t4_1 = db.collection(`users/${uid}/inv_meta`).doc('inv_assetTypeColors').onSnapshot(snap => { if (snap.exists) setAssetTypeColors(snap.data().colors || {}); }, () => { });
         const t5 = db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').onSnapshot(snap => {
           if (snap.exists) {
-            const data = snap.data();
-            setVisibleTabs(data.visibleTabs || {});
-            if (data.dashboardDefaults) {
-              setDashboardDefaults(data.dashboardDefaults);
-              // Only auto-apply defaults on first load if current filter is still 'All'
-              setPortfolioFilter(prev => {
-                if (prev.persons.length === 1 && prev.persons[0] === 'All' && prev.assetTypes.length === 1 && prev.assetTypes[0] === 'All') {
-                   return { ...prev, ...data.dashboardDefaults };
-                }
-                return prev;
-              });
-            }
+            setVisibleTabs(snap.data().visibleTabs || {});
           }
         }, () => { });
         return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t5(); };
@@ -3757,13 +3615,6 @@
         }
       };
 
-      const updateDashboardDefaults = async (defaults) => {
-        setDashboardDefaults(defaults);
-        if (uid) {
-          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ dashboardDefaults: defaults }, { merge: true });
-        }
-      };
-
       if (user === undefined) return <div className="spinner">Loading...</div>;
       if (!user) return <AuthPage />;
 
@@ -3799,83 +3650,6 @@
               </div>
             </div>
           )}
-
-          {showDashboardSettings && (
-            <div className="modal-overlay" onClick={() => setShowDashboardSettings(false)}>
-              <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-                <div className="modal-title">
-                  <span>Dashboard Defaults</span>
-                  <button className="modal-close" onClick={() => setShowDashboardSettings(false)}>×</button>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                  Choose which filters should be active by default every time you open the dashboard.
-                </div>
-                
-                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                   <label className="form-label">Default Persons</label>
-                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-                      <div 
-                        className={`filter-chip all ${dashboardDefaults.persons.includes('All') ? 'active' : 'inactive'}`}
-                        onClick={() => {
-                          updateDashboardDefaults({ ...dashboardDefaults, persons: ['All'] });
-                        }}
-                      >All</div>
-                      {personList.sort((a,b)=>a.name.localeCompare(b.name)).map(p => {
-                        const isActive = dashboardDefaults.persons.includes(p.name);
-                        return (
-                          <div 
-                            key={p.name} 
-                            className={`filter-chip ${isActive ? 'active' : ''}`}
-                            style={isActive ? { background: personColor(p.name, personColors) } : {}}
-                            onClick={() => {
-                              let next = dashboardDefaults.persons.filter(x => x !== 'All');
-                              if (next.includes(p.name)) next = next.filter(x => x !== p.name);
-                              else next.push(p.name);
-                              if (next.length === 0) next = ['All'];
-                              updateDashboardDefaults({ ...dashboardDefaults, persons: next });
-                            }}
-                          >{p.name}</div>
-                        );
-                      })}
-                   </div>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                   <label className="form-label">Default Asset Types</label>
-                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-                      <div 
-                        className={`filter-chip all ${dashboardDefaults.assetTypes.includes('All') ? 'active' : 'inactive'}`}
-                        onClick={() => {
-                          updateDashboardDefaults({ ...dashboardDefaults, assetTypes: ['All'] });
-                        }}
-                      >All</div>
-                      {assetTypes.sort((a,b)=>a.name.localeCompare(b.name)).map(t => {
-                        const isActive = dashboardDefaults.assetTypes.includes(t.name);
-                        return (
-                          <div 
-                            key={t.name} 
-                            className={`filter-chip ${isActive ? 'active' : ''}`}
-                            style={isActive ? { background: assetTypeColor(t.name, assetTypeColors) } : {}}
-                            onClick={() => {
-                              let next = dashboardDefaults.assetTypes.filter(x => x !== 'All');
-                              if (next.includes(t.name)) next = next.filter(x => x !== t.name);
-                              else next.push(t.name);
-                              if (next.length === 0) next = ['All'];
-                              updateDashboardDefaults({ ...dashboardDefaults, assetTypes: next });
-                            }}
-                          >{t.name}</div>
-                        );
-                      })}
-                   </div>
-                </div>
-
-                <div className="modal-actions" style={{ marginTop: '2rem' }}>
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowDashboardSettings(false)}>SAVE PREFERENCES</button>
-                </div>
-              </div>
-            </div>
-          )}
-
           <button className="menu-toggle" onClick={() => setSidebarOpen(o => !o)}>☰</button>
           <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
@@ -3911,17 +3685,7 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab 
-                  transactions={transactions} 
-                  stockPrices={stockPrices} 
-                  personColors={personColors} 
-                  assetTypes={assetTypes} 
-                  assetTypeColors={assetTypeColors} 
-                  filter={portfolioFilter}
-                  onFilterChange={setPortfolioFilter}
-                  onSettingsOpen={() => setShowDashboardSettings(true)}
-                  onPersonClick={handlePersonDrilldown} 
-                />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
