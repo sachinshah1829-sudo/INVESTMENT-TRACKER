@@ -3908,8 +3908,8 @@
     async function callGeminiAPI(text, persons, assetTypes, stocks) {
       if (!GEMINI_API_KEY) throw new Error("API Key Missing");
       const today = new Date().toISOString().split('T')[0];
-      const model = "gemini-1.5-flash-latest";
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const model = "gemini-pro";
+      const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
       
       const systemPrompt = `Extract investment transactions from the text provided by the user.
 Today's Date: ${today}
