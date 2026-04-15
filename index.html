@@ -2372,6 +2372,7 @@
     // ── PORTFOLIO ─────────────────────────────────────────────
     function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange }) {
       const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
+      const [drilldown, setDrilldown] = useState(null);
       const [drilldownType, setDrilldownType] = useState(null);
       const { holdings, sells } = computeFIFO(transactions);
 
