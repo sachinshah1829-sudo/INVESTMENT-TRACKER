@@ -649,7 +649,7 @@
     .btn-sm:hover {
       transform: translate(-2px, -2px);
       box-shadow: var(--elevation-2);
-      background: var(--sidebar-active-bg);
+      background: #f8fafc;
     }
 
     .btn-sm:active {
@@ -1307,7 +1307,7 @@
     .action-block.active {
       border: 3px solid var(--border);
       box-shadow: var(--elevation-3);
-      background: #00E599 !important;
+      background: #EDFF66 !important;
       color: #000 !important;
     }
 
@@ -3746,7 +3746,7 @@
       return (
         <div className="page">
           <div className="page-header">
-            <div className="page-title">Corporate Wizard</div>
+            <div className="page-title">Corporate Actions</div>
             <div className="page-sub">Automated actions for Stocks & Assets</div>
           </div>
 
@@ -4236,8 +4236,7 @@
           <button className="menu-toggle" onClick={() => setSidebarOpen(o => !o)}>☰</button>
           <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-            <div className="sidebar-brand">
-              <div className="sidebar-brand-sub">Premium</div>
+            <div className="sidebar-brand" style={{ padding: '2rem 1.5rem' }}>
               <div className="sidebar-brand-name">Trackrr.in</div>
             </div>
 
