@@ -1830,21 +1830,29 @@
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const [drilldownAssetType, setDrilldownAssetType] = useState(null);
       const [drilldown, setDrilldown] = useState(null);
+
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
+      
+      const allPersons = filterPersons.includes('All');
+      const allTypes = filterAssetTypes.includes('All');
 
       const persons = [...new Set([...allPortfolio.map(r => r.person), ...sells.map(r => r.person)])].sort();
       const types = assetTypes.map(t => t.name).sort();
 
+      const assetTypeMap = useMemo(() => {
+        const map = {};
+        transactions.forEach(t => { if (t.stock && t.person) map[`${t.person}|${t.stock}`] = t.assetType || 'STOCK'; });
+        return map;
+      }, [transactions]);
+
       const portfolio = allPortfolio.filter(r => {
-        const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
-        return (filterPersons.includes('All') || filterPersons.includes(r.person)) &&
-          (filterAssetTypes.includes('All') || filterAssetTypes.includes(at));
+        const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+        return (allPersons || filterPersons.includes(r.person)) && (allTypes || filterAssetTypes.includes(at));
       });
       const filteredSells = sells.filter(r => {
-        const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
-        return (filterPersons.includes('All') || filterPersons.includes(r.person)) &&
-          (filterAssetTypes.includes('All') || filterAssetTypes.includes(at));
+        const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+        return (allPersons || filterPersons.includes(r.person)) && (allTypes || filterAssetTypes.includes(at));
       });
 
       const totalInvested = portfolio.reduce((s, r) => s + r.investedVal, 0);
@@ -1863,13 +1871,12 @@
 
       const portfolioAvgAge = totalInvested > 0 ? totalWeightedAgeSum / totalInvested : 0;
       const unrealizedCAGR = (totalInvested > 0 && portfolioAvgAge > 0) ? (Math.pow(totalCurrent / totalInvested, 1 / portfolioAvgAge) - 1) * 100 : 0;
-
       const portfolioAvgAgeCombined = totalCostCombined > 0 ? totalWeightedAgeCombined / totalCostCombined : 0;
       const combinedCAGR = (totalCostCombined > 0 && portfolioAvgAgeCombined > 0) ? (Math.pow(totalValueCombined / totalCostCombined, 1 / portfolioAvgAgeCombined) - 1) * 100 : 0;
 
       const [showAllocation, setShowAllocation] = useState(false);
+      const isNetWorthView = allTypes;
 
-      // We still build the stock sheet data based on filtered portfolio for charts
       const stockGroups = {};
       portfolio.forEach(r => {
         if (!stockGroups[r.stock]) stockGroups[r.stock] = { stock: r.stock, totalQty: 0, investedVal: 0, absGain: 0, currentVal: 0 };
@@ -1882,77 +1889,232 @@
       const topGainer = [...stockRows].sort((a, b) => b.absGain - a.absGain)[0];
       const topLoser = [...stockRows].sort((a, b) => a.absGain - b.absGain)[0];
 
-      const byPerson = {};
-      portfolio.forEach(r => {
-        if (!byPerson[r.person]) byPerson[r.person] = { invested: 0, current: 0 };
-        byPerson[r.person].invested += r.investedVal;
-        byPerson[r.person].current += (r.currentVal || r.investedVal);
-      });
-      const sortedPersons = Object.entries(byPerson).sort((a, b) => b[1].current - a[1].current);
+      const sortedTypesPie = Object.entries(portfolio.reduce((acc, r) => {
+          const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+          acc[at] = (acc[at] || 0) + (r.currentVal || r.investedVal);
+          return acc;
+        }, {})).sort((a, b) => b[1] - a[1]);
 
-      const pLabels = sortedPersons.map(([p]) => p);
+      const personWealth = portfolio.reduce((acc, r) => {
+        if (!acc[r.person]) acc[r.person] = { invested: 0, current: 0 };
+        acc[r.person].invested += r.investedVal;
+        acc[r.person].current += (r.currentVal || r.investedVal);
+        return acc;
+      }, {});
+      const sortedFullPersons = Object.entries(personWealth).sort((a, b) => b[1].current - a[1].current);
+
+      const pLabels = sortedFullPersons.map(([p]) => p);
       const barDatasets = [
-        { label: 'Current Value', data: pLabels.map(p => byPerson[p].current), backgroundColor: '#87BFDB', borderWidth: 0 },
-        { label: 'Invested Value', data: pLabels.map(p => byPerson[p].invested), backgroundColor: '#2B5F7A', borderWidth: 0 }
+        { label: 'Value', data: pLabels.map(p => personWealth[p].current), backgroundColor: '#87BFDB' },
+        { label: 'Invested', data: pLabels.map(p => personWealth[p].invested), backgroundColor: '#2B5F7A' }
       ];
 
-      const byStock = {};
-      portfolio.forEach(r => { if (!byStock[r.stock]) byStock[r.stock] = 0; byStock[r.stock] += (r.currentVal || r.investedVal); });
-      const stockEntries = Object.entries(byStock).sort((a, b) => b[1] - a[1]);
+      const sortedAssetBreakdown = Object.entries(portfolio.reduce((acc, r) => {
+          acc[r.stock] = (acc[r.stock] || 0) + (r.currentVal || r.investedVal);
+          return acc;
+        }, {})).sort((a, b) => b[1] - a[1]);
 
-      const top10 = stockEntries.slice(0, 10);
-      const others = stockEntries.slice(10);
-      const otherVal = others.reduce((s, [, v]) => s + v, 0);
-
-      const pieEntries = [...top10];
-      if (otherVal > 0) pieEntries.push(['Others', otherVal]);
-
-      const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac', '#54a0e8', '#f87171', '#34d399', '#a78bfa', '#fb923c'];
-      const pieLabels = pieEntries.map(([s]) => s);
-      const pieData = pieEntries.map(([, v]) => v);
-      const pieColors = pieEntries.map(([s], i) => s === 'Others' ? '#ced4da' : PIE_COLORS[i % PIE_COLORS.length]);
-
-      const top5List = stockEntries.slice(0, 5).map(([s, v]) => ({ name: s, pct: totalCurrent > 0 ? (v / totalCurrent * 100).toFixed(1) : 0 }));
-
-      const isNetWorthView = filterAssetTypes.includes('All');
-
-      // Net Worth Breakdown (respect selected persons)
-      const byType = {};
-      portfolio.forEach(r => {
-        const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
-        if (!byType[at]) byType[at] = 0;
-        byType[at] += (r.currentVal || r.investedVal);
-      });
-      const sortedTypes = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+      const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
 
       return (
         <div className="page" style={{ paddingBottom: '4rem' }}>
-          {showAllocation && <StockAllocationModal stockEntries={stockEntries} totalValue={totalCurrent} onClose={() => setShowAllocation(false)} />}
-          {drilldownPerson && (
-            <PersonPortfolioModal
-              person={drilldownPerson}
-              rows={portfolio.filter(r => r.person === drilldownPerson)}
-              stockPrices={stockPrices}
-              personColors={personColors}
-              transactions={transactions}
-              onClose={() => setDrilldownPerson(null)}
-            />
+          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} />}
+          {drilldownAssetType && <AssetTypeDrilldownModal type={drilldownAssetType} rows={allPortfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldownAssetType(null)} />}
+
+          <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+            <div><div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div><div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div></div>
+            <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
+              <MultiSelect label="Filter Persons" options={persons} selected={filterPersons} onChange={setFilterPersons} />
+              <div className="filter-group">
+                <div className="filter-label">Filter Asset Type</div>
+                <select className="select-input" style={{ width: 140, height: 32, fontSize: 12 }} value={filterAssetTypes[0]} onChange={e => setFilterAssetTypes([e.target.value])}>
+                  <option value="All">All</option>{types.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); }}>↺</button>
+            </div>
+          </div>
+
+          <div className="stats-grid">
+            <div className="stat-card"><div className="stat-label">Total Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
+            <div className="stat-card"><div className="stat-label">Invested</div><div className="stat-val">{fmt(totalInvested)}</div></div>
+            <div className="stat-card">
+              <div className="stat-label">Total {totalGain >= 0 ? 'Profit' : 'Loss'}</div>
+              <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div>
+              <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
+            </div>
+            <div className="stat-card"><div className="stat-label">Unrealized CAGR</div><div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div></div>
+            <div className="stat-card"><div className="stat-label">Combined CAGR</div><div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div></div>
+          </div>
+
+          <div className="cards-row">
+            {topGainer && <div className="top-gainer-card"><div className="card-title">Top Gainer</div><div style={{ fontWeight: 700 }}>{topGainer.stock}</div><div className="pos" style={{ fontSize: 20 }}>{fmt(topGainer.absGain)}</div></div>}
+            {topLoser && topLoser.stock !== (topGainer?.stock) && <div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{ fontWeight: 700 }}>{topLoser.stock}</div><div className="neg" style={{ fontSize: 20 }}>{fmt(topLoser.absGain)}</div></div>}
+          </div>
+
+          {/* Condition 1: Both All */}
+          {allPersons && allTypes && (
+            <div className="charts-row">
+              <div className="chart-card">
+                <div className="card-title">Wealth by Asset Type</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedTypesPie.map(([t, v]) => (
+                      <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="chart-card">
+                <div className="card-title">Wealth by Person</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedFullPersons.map(([p]) => p)} data={sortedFullPersons.map(([, v]) => v.current)} colors={sortedFullPersons.map(([p]) => personColor(p, personColors))} hideLegend /></div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedFullPersons.map(([p, v]) => (
+                      <div key={p} className="clickable" onClick={() => setDrilldownPerson(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{p}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div></span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
-          {drilldownAssetType && (
-            <AssetTypeDrilldownModal
-              type={drilldownAssetType}
-              rows={portfolio.filter(r => (transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK') === drilldownAssetType)}
-              stockPrices={stockPrices}
-              personColors={personColors}
-              onClose={() => setDrilldownAssetType(null)}
-            />
+
+          {/* Condition 2: Selective Person, Asset All */}
+          {!allPersons && allTypes && (
+            <><div className="charts-row">
+                <div className="chart-card">
+                  <div className="card-title">Wealth by Asset Type</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedTypesPie.map(([t, v]) => (
+                        <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} /></>
           )}
+
+          {/* Condition 3: Person All, Selective Asset */}
+          {allPersons && !allTypes && (
+            <><div className="charts-row">
+                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+                <div className="chart-card">
+                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedAssetBreakdown.map(([s, v]) => (
+                        <div key={s} className="clickable" onClick={() => setDrilldown(portfolio.find(item => item.stock === s))} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div></>
+          )}
+
+          {/* Condition 4: Both Selective */}
+          {!allPersons && !allTypes && (
+            <><div className="charts-row">
+                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+                <div className="chart-card">
+                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedAssetBreakdown.map(([s, v]) => (
+                        <div key={s} className="clickable" onClick={() => setDrilldown(portfolio.find(item => item.stock === s))} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} /></>
+          )}
+
+          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
+        </div>
+      );
+    }
+
+    function HoldingsTable({ portfolio, personColors, onSetDrilldown }) {
+      return (
+        <div className="card" style={{ padding: 0 }}>
+          <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Holdings Breakdown</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '0 1.25rem .75rem' }}>Click any row to view active holding lots & history</div>
+          <div className="table-wrap" style={{ maxHeight: 500, overflowY: 'auto' }}>
+            <table style={{ minWidth: 1400 }}>
+              <thead><tr><th>Person</th><th>Asset</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
+              <tbody>
+                {portfolio.slice().sort((a,b)=>(b.currentVal||0)-(a.currentVal||0)).map((r, i) => (
+                  <tr key={i} className="clickable" onClick={() => onSetDrilldown(r)}>
+                    <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
+                    <td style={{ fontWeight: 700 }}>{r.stock}</td>
+                    <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+                    <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>
+                    <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>
+                    <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                    <td style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div></td>
+                    <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                    <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
+                    <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : (r.cagr < 0 ? 'neg' : '')}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
+                    <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.breakup}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+      const allPersons = filterPersons.includes('All');
+      const allTypes = filterAssetTypes.includes('All');
+
+      // Sort data for charts
+      const sortedTypes = Object.entries(
+        portfolio.reduce((acc, r) => {
+          const at = transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK';
+          acc[at] = (acc[at] || 0) + (r.currentVal || r.investedVal);
+          return acc;
+        }, {})
+      ).sort((a, b) => b[1] - a[1]);
+
+      const personWealth = portfolio.reduce((acc, r) => {
+        if (!acc[r.person]) acc[r.person] = { current: 0 };
+        acc[r.person].current += (r.currentVal || r.investedVal);
+        return acc;
+      }, {});
+      const sortedFullPersons = Object.entries(personWealth).sort((a, b) => b[1].current - a[1].current);
+
+      // Breakdown of individual stocks within the selected Asset Type(s)
+      const sortedAssetBreakdown = Object.entries(
+        portfolio.reduce((acc, r) => {
+          acc[r.stock] = (acc[r.stock] || 0) + (r.currentVal || r.investedVal);
+          return acc;
+        }, {})
+      ).sort((a, b) => b[1] - a[1]);
+
+      return (
+        <div className="page" key={isNetWorthView ? 'net' : 'dash'}>
           <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div>
               <div className="page-sub">
                 {isNetWorthView
-                  ? (filterPersons.includes('All') ? 'Combined wealth across all assets' : `Net worth for: ${filterPersons.join(', ')}`)
+                  ? (allPersons ? 'Combined wealth across all assets' : `Net worth for: ${filterPersons.join(', ')}`)
                   : new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
                 }
               </div>
@@ -1974,28 +2136,17 @@
               <button className="btn-sm" style={{ height: 32 }} onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); }} title="Reset Filters">↺</button>
             </div>
           </div>
+
           <div className="stats-grid">
+            <div className="stat-card"><div className="stat-label">Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
+            <div className="stat-card"><div className="stat-label">Invested</div><div className="stat-val">{fmt(totalInvested)}</div></div>
             <div className="stat-card">
-              <div className="stat-label">{isNetWorthView ? 'Net Worth' : 'Current Value'}</div>
-              <div className="stat-val">{fmt(totalCurrent)}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Invested</div>
-              <div className="stat-val">{fmt(totalInvested)}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">{totalGain >= 0 ? 'Total profit' : 'Total Loss'}</div>
+              <div className="stat-label">{totalGain >= 0 ? 'Profit' : 'Loss'}</div>
               <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div>
               <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-label">Unrealized Net CAGR</div>
-              <div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Combined Net CAGR</div>
-              <div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div>
-            </div>
+            <div className="stat-card"><div className="stat-label">Unrealized CAGR</div><div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div></div>
+            <div className="stat-card"><div className="stat-label">Net CAGR</div><div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div></div>
           </div>
 
           <div className="cards-row">
@@ -2003,110 +2154,203 @@
             {topLoser && topLoser.stock !== (topGainer?.stock) && <div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{ fontWeight: 700 }}>{topLoser.stock}</div><div className="neg" style={{ fontSize: 20 }}>{fmt(topLoser.absGain)}</div></div>}
           </div>
 
-          <div className="charts-row">
-            <div className="chart-card">
-              <div className="card-title">Wealth by Asset Type</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
-                  <PieChart 
-                    labels={sortedTypes.map(([t]) => t)} 
-                    data={sortedTypes.map(([, v]) => v)} 
-                    colors={sortedTypes.map(([t]) => assetTypeColor(t, assetTypeColors))} 
-                    hideLegend 
-                  />
+          {/* Condition 1: Both All */}
+          {allPersons && allTypes && (
+            <div className="charts-row">
+              <div className="chart-card">
+                <div className="card-title">Wealth by Asset Type</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
+                    <PieChart labels={sortedTypes.map(([t]) => t)} data={sortedTypes.map(([, v]) => v)} colors={sortedTypes.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend />
+                  </div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedTypes.map(([t, v]) => (
+                      <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{t}</span>
+                        <span style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 700 }}>{fmtWords(v)}</div>
+                          <div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                  {sortedTypes.map(([t, v]) => (
-                    <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                      <span style={{ fontWeight: 700 }}>{t}</span>
-                      <span style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 700 }}>{fmtWords(v)}</div>
-                        <div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div>
-                      </span>
-                    </div>
-                  ))}
+              </div>
+              <div className="chart-card">
+                <div className="card-title">Wealth by Person</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
+                    <PieChart labels={sortedFullPersons.map(([p]) => p)} data={sortedFullPersons.map(([, v]) => v.current)} colors={sortedFullPersons.map(([p]) => personColor(p, personColors))} hideLegend />
+                  </div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedFullPersons.map(([p, v]) => (
+                      <div key={p} className="clickable" onClick={() => setDrilldownPerson(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{p}</span>
+                        <span style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div>
+                          <div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="chart-card">
-              {filterPersons.includes('All') ? (
-                <>
-                  <div className="card-title">Wealth by Person</div>
+          )}
+
+          {/* Condition 2: Person Selected, Asset All */}
+          {!allPersons && allTypes && (
+            <>
+              <div className="charts-row">
+                <div className="chart-card">
+                  <div className="card-title">Wealth by Asset Type</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
                     <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
-                      <PieChart
-                        labels={sortedPersons.map(([p]) => p)}
-                        data={sortedPersons.map(([, v]) => v.current)}
-                        colors={sortedPersons.map(([p]) => personColor(p, personColors))}
-                        hideLegend
-                      />
+                      <PieChart labels={sortedTypes.map(([t]) => t)} data={sortedTypes.map(([, v]) => v)} colors={sortedTypes.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend />
                     </div>
                     <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                      {sortedPersons.map(([p, v]) => (
-                        <div
-                          key={p}
-                          className="clickable"
-                          onClick={() => setDrilldownPerson(p)}
-                          style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}
-                        >
-                          <span style={{ fontWeight: 700 }}>{p}</span>
+                      {sortedTypes.map(([t, v]) => (
+                        <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 700 }}>{t}</span>
                           <span style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div>
-                            <div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div>
+                            <div style={{ fontWeight: 700 }}>{fmtWords(v)}</div>
+                            <div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div>
                           </span>
                         </div>
                       ))}
                     </div>
                   </div>
-                </>
-              ) : (
-                <>
+                </div>
+                <div className="chart-card">
                   <div className="card-title">Current vs Invested Value</div>
                   <div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {!(filterPersons.includes('All') && filterAssetTypes.includes('All')) && (
-            <div className="card" style={{ padding: 0 }}>
-              <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Holdings Breakdown</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '0 1.25rem .75rem' }}>Click any row to view active holding lots & history</div>
-              <div className="table-wrap" style={{ maxHeight: 500, overflowY: 'auto' }}>
-                <table style={{ minWidth: 1400 }}>
-                  <thead><tr><th>Person</th><th>Asset</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
-                  <tbody>
-                    {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data</div></td></tr>}
-                    {portfolio
-                      .slice()
-                      .sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0))
-                      .map((r, idx) => (
-                        <tr key={idx} className="clickable" onClick={() => setDrilldown(r)}>
-                          <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
-                          <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                          <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                          <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
-                          <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                          <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                          <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
-                            <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
-                          </td>
-                          <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
-                          <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
-                          <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                          <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                </div>
               </div>
-            </div>
+              <HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} />
+            </>
+          )}
+
+          {/* Condition 3: Person All, Asset Selected */}
+          {allPersons && !allTypes && (
+            <>
+              <div className="charts-row">
+                <div className="chart-card">
+                  <div className="card-title">Current vs Invested Value</div>
+                  <div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div>
+                </div>
+                <div className="chart-card">
+                  <div className="card-title">Wealth by Assets ({filterAssetTypes[0]})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
+                      <PieChart 
+                        labels={sortedAssetBreakdown.map(([s]) => s)} 
+                        data={sortedAssetBreakdown.map(([, v]) => v)} 
+                        colors={PIE_COLORS} 
+                        hideLegend 
+                      />
+                    </div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedAssetBreakdown.map(([s, v]) => {
+                        const r = portfolio.find(item => item.stock === s);
+                        return (
+                          <div key={s} className="clickable" onClick={() => setDrilldown(r)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                            <span style={{ fontWeight: 700 }}>{s}</span>
+                            <span style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 700 }}>{fmtWords(v)}</div>
+                              <div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Condition 4: Both Selected */}
+          {!allPersons && !allTypes && (
+            <>
+              <div className="charts-row">
+                <div className="chart-card">
+                  <div className="card-title">Current vs Invested Value</div>
+                  <div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div>
+                </div>
+                <div className="chart-card">
+                  <div className="card-title">Wealth by Assets ({filterAssetTypes[0]})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}>
+                      <PieChart 
+                        labels={sortedAssetBreakdown.map(([s]) => s)} 
+                        data={sortedAssetBreakdown.map(([, v]) => v)} 
+                        colors={PIE_COLORS} 
+                        hideLegend 
+                      />
+                    </div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedAssetBreakdown.map(([s, v]) => {
+                        const r = portfolio.find(item => item.stock === s);
+                        return (
+                          <div key={s} className="clickable" onClick={() => setDrilldown(r)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                            <span style={{ fontWeight: 700 }}>{s}</span>
+                            <span style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 700 }}>{fmtWords(v)}</div>
+                              <div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} />
+            </>
           )}
 
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
         </div>
       );
     }
+
+    function HoldingsTable({ portfolio, personColors, onSetDrilldown }) {
+      return (
+        <div className="card" style={{ padding: 0 }}>
+          <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Holdings Breakdown</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '0 1.25rem .75rem' }}>Click any row to view active holding lots & history</div>
+          <div className="table-wrap" style={{ maxHeight: 500, overflowY: 'auto' }}>
+            <table style={{ minWidth: 1400 }}>
+              <thead><tr><th>Person</th><th>Asset</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
+              <tbody>
+                {portfolio.length === 0 && <tr><td colSpan="11"><div className="empty">No data</div></td></tr>}
+                {portfolio
+                  .slice()
+                  .sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0))
+                  .map((r, idx) => (
+                    <tr key={idx} className="clickable" onClick={() => onSetDrilldown(r)}>
+                      <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>
+                      <td style={{ fontWeight: 700 }}>{r.stock}</td>
+                      <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
+                        <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
+                      </td>
+                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                      <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
+                      <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
+                      <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
 
     // ── TRANSACTIONS ──────────────────────────────────────────
     function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors }) {
