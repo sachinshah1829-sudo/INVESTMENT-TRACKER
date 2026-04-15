@@ -3174,7 +3174,14 @@
       const [preview, setPreview] = useState([]);
       const [applying, setApplying] = useState(false);
 
-      const allStocks = [...new Set(transactions.map(t => t.stock))].sort();
+      // Strict Filter: Only show assets tagged as "STOCK" (to exclude Mutual Funds, Gold, etc.)
+      const assetTypeMap = useMemo(() => {
+        const map = {};
+        transactions.forEach(t => { if (t.stock) map[t.stock] = t.assetType || 'STOCK'; });
+        return map;
+      }, [transactions]);
+
+      const allStocks = [...new Set(transactions.map(t => t.stock))].filter(s => assetTypeMap[s] === 'STOCK').sort();
       const allPersons = [...new Set(transactions.map(t => t.person))].sort();
 
       const getHoldings = (p, s, d) => {
@@ -3220,20 +3227,20 @@
           if (action === 'bonus') {
             const ratio = parseFloat(params.ratio) || 1;
             const bonusQty = Math.floor(currentQty * ratio);
-            txs.push({ person: p, stock, date, qty: bonusQty, price: 0, note: `Bonus ${params.ratio}:1` });
+            txs.push({ person: p, stock, date, qty: bonusQty, price: 0, note: `Bonus ${params.ratio}:1`, assetType: 'STOCK' });
           } else if (action === 'split') {
             const newRatio = parseFloat(params.newRatio) || 10;
             const oldRatio = parseFloat(params.oldRatio) || 1;
             const newQty = Math.floor(currentQty * (newRatio / oldRatio));
             const newPrice = (avgCost * oldRatio) / newRatio;
-            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Split Part 1: Wipe Old` });
-            txs.push({ person: p, stock, date, qty: newQty, price: newPrice, note: `Split Part 2: New Qty @ ${newPrice.toFixed(2)}` });
+            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Split Part 1: Wipe Old`, assetType: 'STOCK' });
+            txs.push({ person: p, stock, date, qty: newQty, price: newPrice, note: `Split Part 2: New Qty @ ${newPrice.toFixed(2)}`, assetType: 'STOCK' });
           } else if (action === 'merger') {
             const newRatio = parseFloat(params.ratio) || 1;
             const newStock = (params.newStock || '').toUpperCase().trim();
             const newQty = Math.floor(currentQty * newRatio);
-            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Merger: Exit ${stock}` });
-            txs.push({ person: p, stock: newStock, date, qty: newQty, price: (avgCost / newRatio), note: `Merger: Entry ${newStock}` });
+            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Merger: Exit ${stock}`, assetType: 'STOCK' });
+            txs.push({ person: p, stock: newStock, date, qty: newQty, price: (avgCost / newRatio), note: `Merger: Entry ${newStock}`, assetType: 'STOCK' });
           } else if (action === 'demerger') {
             const newStock = (params.newStock || '').toUpperCase().trim();
             const costAllocPct = parseFloat(params.costAlloc) || 5;
@@ -3244,19 +3251,19 @@
             const newQtyB = Math.floor(currentQty * swapRatio);
             const newPriceA = remainingValue / currentQty;
             const newPriceB = transferValue / newQtyB;
-            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Demerger: Cost Adjustment for ${stock}` });
-            txs.push({ person: p, stock, date, qty: currentQty, price: newPriceA, note: `Demerger: Remaining Cost (${(100 - costAllocPct).toFixed(1)}%)` });
-            txs.push({ person: p, stock: newStock, date, qty: newQtyB, price: newPriceB, note: `Demerger: Spun-off ${newStock} (${costAllocPct}%)` });
+            txs.push({ person: p, stock, date, qty: -currentQty, price: avgCost, note: `Demerger: Cost Adjustment for ${stock}`, assetType: 'STOCK' });
+            txs.push({ person: p, stock, date, qty: currentQty, price: newPriceA, note: `Demerger: Remaining Cost (${(100 - costAllocPct).toFixed(1)}%)`, assetType: 'STOCK' });
+            txs.push({ person: p, stock: newStock, date, qty: newQtyB, price: newPriceB, note: `Demerger: Spun-off ${newStock} (${costAllocPct}%)`, assetType: 'STOCK' });
           } else if (action === 'delist') {
-            txs.push({ person: p, stock, date, qty: -currentQty, price: 0, note: 'Delisting: Written off' });
+            txs.push({ person: p, stock, date, qty: -currentQty, price: 0, note: 'Delisting: Written off', assetType: 'STOCK' });
           } else if (action === 'buyback') {
             const bbQty = parseInt(params.qty) || 0;
             const bbPrice = parseFloat(params.price) || 0;
-            txs.push({ person: p, stock, date, qty: -bbQty, price: bbPrice, note: 'Buyback' });
+            txs.push({ person: p, stock, date, qty: -bbQty, price: bbPrice, note: 'Buyback', assetType: 'STOCK' });
           } else if (action === 'rights') {
             const rQty = parseInt(params.qty) || 0;
             const rPrice = parseFloat(params.price) || 0;
-            txs.push({ person: p, stock, date, qty: rQty, price: rPrice, note: 'Rights Issue' });
+            txs.push({ person: p, stock, date, qty: rQty, price: rPrice, note: 'Rights Issue', assetType: 'STOCK' });
           }
         });
 
