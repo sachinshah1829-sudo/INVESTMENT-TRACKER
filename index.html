@@ -156,23 +156,13 @@
       border: 2px solid var(--border);
       background: var(--input-bg);
       font-family: var(--font-main);
-      font-size: 14px;
+      font-size: 16px;
       color: var(--text);
       outline: none;
       transition: all .1s;
-      box-shadow: var(--elevation-1);
-      border-radius: 0;
     }
 
     .form-input:focus {
-      box-shadow: var(--elevation-2);
-      transform: translate(-1px, -1px);
-    }
-    
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      cursor: pointer;
-      filter: invert(0);
-    }
       box-shadow: inset var(--elevation-1);
       background: #fdfdfd;
     }
@@ -590,13 +580,11 @@
       outline: none;
       appearance: none;
       cursor: pointer;
-      box-shadow: var(--elevation-2);
-      border-radius: 0;
+      box-shadow: var(--elevation-1);
     }
 
     .select-input:focus {
-      box-shadow: var(--elevation-3);
-      transform: translate(-1px, -1px);
+      box-shadow: var(--elevation-2);
     }
 
     .textarea-input {
@@ -641,22 +629,14 @@
     }
 
     .btn-sm {
-      padding: .4rem .8rem;
-      background: #fff;
-      color: #000;
-      border: 2px solid var(--border);
-      font-family: var(--font-main);
+      padding: .3rem .6rem;
+      background: none;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-family: inherit;
       font-size: 11px;
-      font-weight: 700;
       cursor: pointer;
-      transition: all .1s;
-      box-shadow: var(--elevation-1);
-    }
-
-    .btn-sm:hover {
-      background: var(--sidebar-active-bg);
-      transform: translate(-1px, -1px);
-      box-shadow: var(--elevation-2);
+      transition: all .15s;
     }
 
     .btn-sm:hover {
@@ -857,31 +837,29 @@
     }
 
     .dashboard-filter-block {
-      border: 2px solid var(--border);
+      border: 1px solid var(--border);
       padding: 1.25rem 1rem;
       cursor: pointer;
-      transition: all 0.1s;
+      transition: all 0.2s;
       display: flex;
       flex-direction: column;
       gap: 4px;
       position: relative;
+      overflow: hidden;
       background: var(--surface);
       flex: 1;
       max-width: 220px;
       min-width: 0;
-      box-shadow: var(--elevation-3);
     }
 
     .dashboard-filter-block:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: var(--elevation-4);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
 
     .dashboard-filter-block.active {
-      background: var(--sidebar-active-bg) !important;
-      color: #000 !important;
-      border-color: var(--border) !important;
-      box-shadow: var(--elevation-1);
+      border: 2.5px solid var(--text) !important;
+      box-shadow: var(--elevation-2);
       transform: translate(1px, 1px);
     }
 
@@ -901,15 +879,15 @@
 
     /* Matching Corporate Action Colors for 'All' states */
     .dashboard-filter-block.person-all {
-      background: #EDFF66;
-      color: #000;
-      border-color: #000;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
     }
 
     .dashboard-filter-block.type-all {
-      background: #EDFF66;
-      color: #000;
-      border-color: #000;
+      background: #f5f3ff;
+      color: #6d28d2;
+      border-color: #ddd6fe;
     }
 
     .gear-btn {
@@ -995,21 +973,19 @@
     }
 
     .top-gainer-card {
-      background: #e6fff7;
-      border: 2px solid var(--border);
-      padding: 1.25rem;
+      background: var(--green-bg);
+      border: 1px solid #c8e6c9;
+      padding: 1rem;
       flex: 1;
       min-width: 200px;
-      box-shadow: var(--elevation-3);
     }
 
     .top-loser-card {
-      background: #fff0f3;
-      border: 2px solid var(--border);
-      padding: 1.25rem;
+      background: var(--red-bg);
+      border: 1px solid #f7c1c1;
+      padding: 1rem;
       flex: 1;
       min-width: 200px;
-      box-shadow: var(--elevation-3);
     }
 
     .empty {
@@ -1167,11 +1143,10 @@
 
     .filter-label {
       font-size: 10px;
-      letter-spacing: .12em;
+      letter-spacing: .08em;
       text-transform: uppercase;
-      color: #000;
+      color: var(--text-muted);
       font-weight: 700;
-      margin-bottom: 2px;
     }
 
     .multi-select-wrap {
@@ -1191,13 +1166,12 @@
       justify-content: space-between;
       align-items: center;
       transition: all .1s;
-      box-shadow: var(--elevation-2);
-      border-radius: 0;
+      box-shadow: var(--elevation-1);
     }
 
     .multi-select-trigger:hover {
-      box-shadow: var(--elevation-3);
-      transform: translate(-1.5px, -1.5px);
+      box-shadow: var(--elevation-2);
+      transform: translate(-1px, -1px);
     }
 
     .multi-select-dropdown {
@@ -1206,11 +1180,11 @@
       left: 0;
       z-index: 400;
       background: var(--surface);
-      border: 2px solid var(--border);
-      box-shadow: var(--elevation-4);
-      margin-top: 6px;
-      min-width: 220px;
-      max-height: 320px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      margin-top: 4px;
+      min-width: 200px;
+      max-height: 280px;
       overflow-y: auto;
       padding: 4px;
     }
@@ -1273,91 +1247,78 @@
     /* WIZARD BLOCKS */
     .action-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
     }
 
     .action-block {
-      border: 2px solid var(--border);
+      border: 3px solid var(--border);
       padding: 1.5rem 1.25rem;
       cursor: pointer;
-      transition: all 0.1s;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
       position: relative;
+      overflow: hidden;
       background: var(--surface);
-      box-shadow: var(--elevation-3);
+      box-shadow: var(--elevation-2);
+      min-height: 110px;
+      justify-content: center;
     }
 
     .action-block:hover {
-      transform: translate(-2px, -2px);
+      transform: translate(-3px, -3px);
       box-shadow: var(--elevation-4);
       z-index: 2;
     }
 
+    .action-block:active {
+      transform: translate(1px, 1px);
+      box-shadow: var(--elevation-1);
+    }
+
     .action-block.active {
-      border-width: 3px !important;
+      border: 3px solid var(--border);
+      box-shadow: var(--elevation-3);
       background: var(--sidebar-active-bg) !important;
       color: #000 !important;
-      box-shadow: var(--elevation-1);
-      transform: translate(2px, 2px);
+    }
+
+    .action-block.active::after {
+      content: '✓';
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 16px;
+      font-weight: 700;
     }
 
     .action-block .label {
+      font-family: var(--font-big);
       font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 0.02em;
+      font-size: 15px;
+      letter-spacing: -0.01em;
       text-transform: uppercase;
+      line-height: 1.1;
     }
 
     .action-block .sub {
-      font-size: 9px;
-      opacity: 0.7;
-      letter-spacing: 0.05em;
+      font-family: var(--font-main);
+      font-size: 10px;
+      opacity: 0.8;
+      letter-spacing: 0.02em;
+      font-weight: 700;
     }
 
-    .action-block.bonus {
-      background: #EDFF66;
-      color: #000;
-      border-color: #000;
-    }
-
-    .action-block.split {
-      background: #C3E3FF;
-      color: #000;
-      border-color: #000;
-    }
-
-    .action-block.merger {
-      background: #E3C3FF;
-      color: #000;
-      border-color: #000;
-    }
-
-    .action-block.demerger {
-      background: #C3FFF8;
-      color: #000;
-      border-color: #000;
-    }
-
-    .action-block.buyback {
-      background: #FFE3C3;
-      color: #000;
-      border-color: #000;
-    }
-
-    .action-block.rights {
-      background: #FFC3E3;
-      color: #000;
-      border-color: #000;
-    }
-
-    .action-block.delist {
-      background: #FFC3C3;
-      color: #000;
-      border-color: #000;
-    }
+    .action-block.bonus { background: #00E599; color: #000; }
+    .action-block.split { background: #EDFF66; color: #000; }
+    .action-block.merger { background: #845EC2; color: #fff; }
+    .action-block.demerger { background: #FF3366; color: #fff; }
+    .action-block.buyback { background: #FFB800; color: #000; }
+    .action-block.rights { background: #2196F3; color: #fff; }
+    .action-block.delist { background: #000000; color: #fff; }
 
     @media(max-width: 768px) {
       .sidebar {
@@ -3760,13 +3721,29 @@
       return (
         <div className="page">
           <div className="page-header">
-            <div>
-              <div className="page-title">Corporate Actions Wizard</div>
-              <div className="page-sub">Automated handling for Bonus, Splits, and Mergers</div>
-            </div>
+            <div className="page-title">Corporate Wizard</div>
+            <div className="page-sub">Automated actions for Stocks & Assets</div>
           </div>
 
-          <div className="card" style={{ maxWidth: 700 }}>
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2rem' }}>
+            {[1, 2, 3].map(s => (
+              <div key={s} style={{
+                flex: 1,
+                height: '6px',
+                background: step >= s ? 'var(--sidebar-active-bg)' : '#e0e0e0',
+                border: '1px solid var(--border)',
+                boxShadow: step >= s ? '1px 1px 0px 0px #000' : 'none'
+              }} />
+            ))}
+          </div>
+
+          <div className="card" style={{ maxWidth: 800, padding: '2.5rem' }}>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ background: '#000', color: '#fff', padding: '2px 8px', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-main)' }}>STEP {step}</span>
+              <span style={{ fontStyle: 'italic', fontSize: 13, color: 'var(--text-muted)' }}>
+                {step === 1 ? 'Identify the source asset' : step === 2 ? 'Choose the adjustment type' : 'Confirm ledger entries'}
+              </span>
+            </div>
             {step === 1 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="form-row">
@@ -3809,7 +3786,8 @@
                   ))}
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: '1.25rem', border: '1px solid var(--border)' }}>
+                <div style={{ background: '#F8F9FA', padding: '1.5rem', border: '3px solid var(--border)', boxShadow: 'var(--elevation-2)', marginTop: '0.5rem' }}>
+                  <div className="card-title" style={{ color: '#000', marginBottom: '1.25rem' }}>Parameters for {action?.toUpperCase()}</div>
                   {['buyback', 'rights'].includes(action) && (
                     <div className="form-group" style={{ marginBottom: '1rem' }}>
                       <label className="form-label">Participating Person</label>
@@ -3866,9 +3844,9 @@
 
             {step === 3 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="card-title">Transaction Preview</div>
-                <div style={{ fontSize: 11, marginBottom: '0.5rem' }}>The following adjustments will be added to your ledger:</div>
-                <div className="table-wrap">
+                <div className="card-title" style={{ fontSize: 18, color: '#000' }}>Review Ledger Adjustments</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>The following entries will be recorded on {fmtDate(date)}:</div>
+                <div className="table-wrap" style={{ boxShadow: 'var(--elevation-3)' }}>
                   <table>
                     <thead><tr><th>Person</th><th>Stock</th><th>Qty</th><th>Price</th><th>Note</th></tr></thead>
                     <tbody>
