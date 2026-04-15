@@ -2774,8 +2774,8 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
             throw new Error('Could not parse');
           }
         } catch (err) {
-          console.error(err);
-          setMagicError('Connection error. Please check your internet or try again.');
+          console.error('Magic AI Error:', err);
+          setMagicError(`Connection failed: ${err.message}. If you use an ad-blocker, try disabling it for this site.`);
         } finally {
           setParsingMagic(false);
         }
