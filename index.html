@@ -1207,7 +1207,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback } = React;
+    const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
     // ── FIREBASE CONFIG ───────────────────────────────────────
     const firebaseConfig = {
@@ -2372,9 +2372,19 @@
     // ── PORTFOLIO ─────────────────────────────────────────────
     function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange }) {
       const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
-      const [drilldown, setDrilldown] = useState(null);
       const [drilldownType, setDrilldownType] = useState(null);
       const { holdings, sells } = computeFIFO(transactions);
+
+      // Optimization: Index asset types for fast lookup
+      const assetTypeMap = useMemo(() => {
+        const map = {};
+        transactions.forEach(t => {
+          if (t.stock && t.person) {
+            map[`${t.person}|${t.stock}`] = t.assetType || 'STOCK';
+          }
+        });
+        return map;
+      }, [transactions]);
 
       // Pre-process for different views
       const allAssetRows = buildStockSheet(holdings, stockPrices); // By Asset
@@ -2383,17 +2393,8 @@
       // By Asset Type View
       const buildTypeSheet = (h, prices) => {
         const types = {};
-        transactions.forEach(t => {
-          if (t.qty > 0) {
-            const at = t.assetType || 'STOCK';
-            if (!types[at]) types[at] = { type: at, investedVal: 0, currentVal: 0, stocks: new Set() };
-          }
-        });
-
-        const rows = buildPortfolio(h, prices);
-        rows.forEach(r => {
-          const tx = transactions.find(t => t.stock === r.stock && t.person === r.person) || {}; // Simplified
-          const at = tx.assetType || 'STOCK';
+        allPersonRows.forEach(r => {
+          const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
           if (!types[at]) types[at] = { type: at, investedVal: 0, currentVal: 0, stocks: new Set() };
           types[at].investedVal += r.investedVal;
           types[at].currentVal += (r.currentVal || r.investedVal);
@@ -2401,16 +2402,15 @@
         });
 
         // Combined Net CAGR per type (active + realized)
-        const now = new Date();
         const rowsByType = {};
-        rows.forEach(r => {
-          const at = (transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK');
+        allPersonRows.forEach(r => {
+          const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
           if (!rowsByType[at]) rowsByType[at] = [];
           rowsByType[at].push(r);
         });
         const sellsByType = {};
         sells.forEach(s => {
-          const at = (transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK');
+          const at = assetTypeMap[`${s.person}|${s.stock}`] || 'STOCK';
           if (!sellsByType[at]) sellsByType[at] = [];
           sellsByType[at].push(s);
         });
@@ -2456,7 +2456,7 @@
           viewMode === 'types'
             ? r.type
             : viewMode === 'persons'
-              ? (transactions.find(t => t.person === r.person && t.stock === r.stock)?.assetType || 'STOCK')
+              ? (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK')
               : (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK');
 
         const matchesPerson = (filter.persons.includes('All') || (viewMode === 'persons' ? filter.persons.includes(r.person) : true));
@@ -2512,7 +2512,7 @@
                 <tbody>
                   {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 11 : viewMode === 'types' ? 7 : 10}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
-                    const at = r.type || r.assetType || (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK');
+                    const at = r.type || r.assetType || (r.stock ? (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') : 'STOCK');
                     return (
                       <tr key={i} className="clickable" onClick={() => {
                         if (viewMode === 'persons') setDrilldown({ person: r.person, stock: r.stock, lots: r.lots });
@@ -2550,7 +2550,7 @@
           {drilldownType && (
             <AssetTypeDrilldownModal
               type={drilldownType}
-              rows={allPersonRows.filter(r => (transactions.find(t => t.stock === r.stock && t.person === r.person)?.assetType || 'STOCK') === drilldownType)}
+              rows={allPersonRows.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownType)}
               stockPrices={stockPrices}
               personColors={personColors}
               onClose={() => setDrilldownType(null)}
