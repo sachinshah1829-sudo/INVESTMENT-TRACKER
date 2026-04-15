@@ -732,7 +732,7 @@
     /* DASHBOARD FILTER BLOCKS */
     .dashboard-filter-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 12px;
       margin-bottom: 1.5rem;
       width: 100%;
@@ -749,7 +749,6 @@
       position: relative;
       overflow: hidden;
       background: var(--surface);
-      box-shadow: var(--shadow);
     }
 
     .dashboard-filter-block:hover {
@@ -758,26 +757,35 @@
     }
 
     .dashboard-filter-block.active {
+      border: 2px solid var(--text) !important;
       box-shadow: var(--shadow-md);
-      border-color: rgba(0,0,0,0.1);
     }
 
-    .dashboard-filter-block .filter-label-top {
-      font-size: 10px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
+    .dashboard-filter-block .label {
       font-weight: 700;
-    }
-
-    .dashboard-filter-block .filter-value {
-      font-weight: 700;
-      font-size: 15px;
+      font-size: 13px;
       letter-spacing: 0.02em;
+      text-transform: uppercase;
     }
 
-    .dashboard-filter-block.all {
-      background: #f8fafc;
+    .dashboard-filter-block .sub {
+      font-size: 11px;
+      opacity: 0.8;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    /* Matching Corporate Action Colors for 'All' states */
+    .dashboard-filter-block.person-all {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+
+    .dashboard-filter-block.type-all {
+      background: #f5f3ff;
+      color: #6d28d2;
+      border-color: #ddd6fe;
     }
 
     .gear-btn {
@@ -2071,22 +2079,30 @@
 
           <div className="dashboard-filter-grid">
             <div 
-              className={`dashboard-filter-block ${!allPersons ? 'active' : 'all'}`}
-              style={!allPersons && filterPersons.length === 1 ? { background: personColor(filterPersons[0], personColors) } : {}}
+              className={`dashboard-filter-block ${!allPersons ? 'active' : 'person-all'}`}
+              style={!allPersons && filterPersons.length === 1 ? { 
+                background: personColor(filterPersons[0], personColors),
+                borderColor: 'rgba(0,0,0,0.1)',
+                color: '#1a1a1a'
+              } : {}}
               onClick={() => setShowPersonModal(true)}
             >
-              <div className="filter-label-top">Person Filter</div>
-              <div className="filter-value">
+              <div className="label">Person Filter</div>
+              <div className="sub">
                 {allPersons ? 'All Persons' : (filterPersons.length === 1 ? filterPersons[0] : `${filterPersons.length} Selected`)}
               </div>
             </div>
             <div 
-              className={`dashboard-filter-block ${!allTypes ? 'active' : 'all'}`}
-              style={!allTypes ? { background: assetTypeColor(filterAssetTypes[0], assetTypeColors) } : {}}
+              className={`dashboard-filter-block ${!allTypes ? 'active' : 'type-all'}`}
+              style={!allTypes ? { 
+                background: assetTypeColor(filterAssetTypes[0], assetTypeColors),
+                borderColor: 'rgba(0,0,0,0.1)',
+                color: '#1a1a1a'
+              } : {}}
               onClick={() => setShowAssetTypeModal(true)}
             >
-              <div className="filter-label-top">Asset Type</div>
-              <div className="filter-value">
+              <div className="label">Asset Type</div>
+              <div className="sub">
                 {allTypes ? 'All Types' : filterAssetTypes[0]}
               </div>
             </div>
