@@ -2106,8 +2106,29 @@
         lines.forEach((line, i) => {
           const parts = line.split(',').map(s => s.trim());
           if (parts.length < 5) { rows.push({ err: `Row ${i + 1}: need at least 5 cols`, raw: line }); return; }
-          const [date, person, asset, qtyRaw, priceRaw, assetTypeRaw] = parts;
-          const qty = Number(qtyRaw); const price = Number(priceRaw);
+
+          // Supported formats:
+          // - 5 cols: DATE, PERSON, ASSET, QTY, PRICE
+          // - 6 cols (new): DATE, PERSON, ASSET, ASSET TYPE, QTY, PRICE
+          // - 6 cols (older): DATE, PERSON, ASSET, QTY, PRICE, ASSET TYPE
+          let date, person, asset, assetTypeRaw, qtyRaw, priceRaw;
+          if (parts.length >= 6) {
+            const v3 = Number(parts[3]);
+            const v4 = Number(parts[4]);
+            // If col4 is numeric -> it's QTY (older 6-col order)
+            if (!isNaN(v3) && v3 !== 0) {
+              [date, person, asset, qtyRaw, priceRaw, assetTypeRaw] = parts;
+            } else {
+              // Otherwise treat as new order: ... ASSET TYPE, QTY, PRICE
+              [date, person, asset, assetTypeRaw, qtyRaw, priceRaw] = parts;
+            }
+          } else {
+            [date, person, asset, qtyRaw, priceRaw] = parts;
+            assetTypeRaw = 'STOCK';
+          }
+
+          const qty = Number(qtyRaw);
+          const price = Number(priceRaw);
           if (!date || !person || !asset) { rows.push({ err: `Row ${i + 1}: missing field`, raw: line }); return; }
           if (isNaN(qty) || qty === 0) { rows.push({ err: `Row ${i + 1}: invalid qty`, raw: line }); return; }
           if (isNaN(price) || price <= 0) { rows.push({ err: `Row ${i + 1}: invalid price`, raw: line }); return; }
@@ -2183,9 +2204,9 @@
             <div className="card">
               <div className="card-title">Import Transactions via CSV</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '.75rem', lineHeight: 1.7 }}>
-                Format: <strong>DATE, PERSON, ASSET NAME, QTY, PRICE, ASSET TYPE</strong><br />
+                Format: <strong>DATE, PERSON, ASSET NAME, ASSET TYPE, QTY, PRICE</strong><br />
                 Negative QTY = SELL &nbsp;|&nbsp; Date: DD/MM/YYYY or YYYY-MM-DD<br />
-                Example: <code>28/07/2009, NILESH, ADANI POWER, 3680, 100, STOCK</code>
+                Example: <code>28/07/2009, NILESH, ADANI POWER, STOCK, 3680, 100</code>
               </div>
               <textarea className="textarea-input" value={csvText} onChange={e => setCsvText(e.target.value)} placeholder="Paste CSV rows here..." />
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem' }}>
