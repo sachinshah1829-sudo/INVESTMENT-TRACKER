@@ -2732,7 +2732,7 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
 [/INST]`;
 
         try {
-          const res = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2', {
+          const res = await fetch('https://api-inference.huggingface.co/models/microsoft/Phi-3-mini-4k-instruct', {
             method: 'POST',
             headers: { 
               'Authorization': `Bearer ${hfToken}`,
@@ -2742,7 +2742,9 @@ Output Format: {"date":"YYYY-MM-DD", "person":"NAME", "stock":"STOCK", "qty":10,
               inputs: prompt, 
               parameters: { return_full_text: false, max_new_tokens: 300 },
               options: { wait_for_model: true }
-            })
+            }),
+            mode: 'cors',
+            referrerPolicy: 'no-referrer'
           });
           
           const data = await res.json();
