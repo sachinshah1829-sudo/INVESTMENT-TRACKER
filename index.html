@@ -1513,7 +1513,8 @@
       }
 
       .page-title {
-        font-size: 20px;
+        font-size: 28px;
+        letter-spacing: -0.02em;
       }
 
       .btn-primary,
@@ -2881,6 +2882,9 @@
       });
       return (
         <div className="page">
+          <div className="page-header">
+            <div className="page-title">Portfolio</div>
+          </div>
           <div className="premium-dock" style={{ marginBottom: '1.5rem' }}>
             <button className={`dock-btn ${viewMode === 'persons' ? 'active' : ''}`} onClick={() => setViewMode('persons')}>By Person</button>
             <button className={`dock-btn ${viewMode === 'assets' ? 'active' : ''}`} onClick={() => setViewMode('assets')}>By Asset</button>
