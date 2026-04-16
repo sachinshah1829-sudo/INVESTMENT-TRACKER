@@ -1405,6 +1405,7 @@
       .sidebar {
         transform: translateX(-100%);
         box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+        z-index: 150;
       }
 
       .sidebar.open {
@@ -1423,7 +1424,7 @@
       }
 
       .sidebar-brand {
-        padding-left: 4rem;
+        padding-left: 4.75rem;
       }
 
       .main {
@@ -1449,7 +1450,7 @@
       }
 
       .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
         margin-left: 0;
         margin-right: 0;
