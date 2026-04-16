@@ -1814,13 +1814,7 @@
         const stockAvgAge = s.investedVal > 0 ? weightedAgeSum / s.investedVal : 0;
         const cagr = (currentVal != null && s.investedVal > 0 && stockAvgAge > 0) ? (Math.pow(currentVal / s.investedVal, 1 / stockAvgAge) - 1) * 100 : null;
 
-        const personList = Object.keys(s.persons).sort();
-        const breakup = Object.entries(s.persons).map(([pName, pData]) => {
-          const pLots = pData.lots.map(l => `${l.qty}@${l.price}`).join(', ');
-          return `${pName}: ${pLots}`;
-        }).join(' | ');
-
-        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct, cagr, personList, breakup };
+        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct, cagr };
 
 
       });
@@ -2237,9 +2231,9 @@
             investedVal: 0,
             currentVal: 0,
             weightedAge: 0,
-            lots: [],
-            persons: new Set()
+            lots: []
           };
+
 
         }
         const g = stockGroups[r.stock];
@@ -2248,8 +2242,8 @@
         g.currentVal += (r.currentVal || r.investedVal);
         g.weightedAge += (r.weightedAge || 0);
         g.lots.push(...r.lots);
-        g.persons.add(r.person);
       });
+
 
 
       const consolidated = Object.values(stockGroups).map(g => {
@@ -2263,9 +2257,9 @@
         const aggregated = {};
         g.lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
         const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
-        const personList = [...g.persons].sort();
 
-        return { ...g, avgBuy, absGain, absGainPct, cagr, currentPrice: cp, breakup, personList };
+        return { ...g, avgBuy, absGain, absGainPct, cagr, currentPrice: cp, breakup };
+
 
       }).sort((a, b) => b.currentVal - a.currentVal);
 
@@ -2281,8 +2275,8 @@
                 <thead>
                   <tr>
                     <th>Stock</th>
-                    <th>Person</th>
                     <th style={{ textAlign: 'right' }}>Qty</th>
+
 
                     <th style={{ textAlign: 'right' }}>Avg Buy</th>
                     <th style={{ textAlign: 'right' }}>Invested</th>
@@ -2295,18 +2289,12 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {consolidated.length === 0 && <tr><td colSpan="11"><div className="empty">No holdings for this type</div></td></tr>}
+                  {consolidated.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this type</div></td></tr>}
                   {consolidated.map((r, i) => (
                     <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {r.personList.map(p => (
-                            <span key={p} className="tag" style={{ background: personColor(p, personColors), fontSize: '10px', color: '#1a1a1a' }}>{p}</span>
-                          ))}
-                        </div>
-                      </td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+
 
                       <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
                       <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
@@ -3153,7 +3141,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'types' ? 7 : (viewMode === 'persons' ? 12 : 11)}><div className="empty">No data</div></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 12 : viewMode === 'types' ? 7 : 11}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
                     const at = r.type || r.assetType || (r.stock ? (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') : 'STOCK');
                     return (
@@ -3183,7 +3171,8 @@
                         <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
                         <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
                         <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                        {viewMode !== 'types' && <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>}
+                        {viewMode !== 'types' && <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup || (viewMode === 'assets' ? 'Click for info' : '')}</td>}
+
 
                       </tr>
                     );
@@ -3347,9 +3336,34 @@
     // ── PORTFOLIO DRILLDOWN MODAL ──────────────────────────────
     function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose }) {
       if (!data) return null;
+      const [subTab, setSubTab] = useState('holdings');
       const { person, stock, lots } = data;
       const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
       const now = new Date();
+
+      // Aggregate by person for the persons tab
+      const personBreakdown = useMemo(() => {
+        const groups = {};
+        lots.forEach(l => {
+          if (!groups[l.person]) {
+            groups[l.person] = { person: l.person, qty: 0, invested: 0, weightedAge: 0 };
+          }
+          const g = groups[l.person];
+          g.qty += l.qty;
+          g.invested += l.qty * l.price;
+          const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
+          g.weightedAge += (l.qty * l.price) * age;
+        });
+        return Object.values(groups).map(g => {
+          const avgBuy = g.invested / g.qty;
+          const cval = cp ? g.qty * cp : null;
+          const gain = cval != null ? cval - g.invested : null;
+          const gainPct = gain != null ? (gain / g.invested) * 100 : null;
+          const avgAge = g.invested > 0 ? g.weightedAge / g.invested : 0;
+          const cagr = (cval != null && g.invested > 0 && avgAge > 0) ? (Math.pow(cval / g.invested, 1 / avgAge) - 1) * 100 : null;
+          return { ...g, avgBuy, cval, gain, gainPct, cagr };
+        }).sort((a, b) => (b.cval || 0) - (a.cval || 0));
+      }, [lots, cp]);
 
       return (
         <div className="modal-overlay" onClick={onClose}>
@@ -3362,39 +3376,68 @@
               <button className="modal-close" onClick={onClose}>×</button>
             </div>
 
-            <div className="table-wrap" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Person</th><th>Buy Date</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Buy ₹</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr ₹</th><th style={{ textAlign: 'right' }}>Curr Val</th><th style={{ textAlign: 'right' }}>Gain</th><th style={{ textAlign: 'right' }}>Gain%</th><th style={{ textAlign: 'right' }}>CAGR</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lots.sort((a, b) => toJSDate(b.date) - toJSDate(a.date)).map((l, i) => {
-                    const invested = l.qty * l.price;
-                    const cval = cp ? l.qty * cp : null;
-                    const gain = cval != null ? cval - invested : null;
-                    const gainPct = gain != null ? (gain / invested) * 100 : null;
-                    const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
-                    const cagr = (cval != null && invested > 0) ? (Math.pow(cval / invested, 1 / age) - 1) * 100 : null;
+            <div className="premium-dock" style={{ marginBottom: '1.25rem', height: '36px' }}>
+              <button className={`dock-btn ${subTab === 'holdings' ? 'active' : ''}`} onClick={() => setSubTab('holdings')} style={{ fontSize: '12px', padding: '0 1rem' }}>Holdings</button>
+              <button className={`dock-btn ${subTab === 'persons' ? 'active' : ''}`} onClick={() => setSubTab('persons')} style={{ fontSize: '12px', padding: '0 1rem' }}>Persons</button>
+            </div>
 
-                    return (
+            <div className="table-wrap" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {subTab === 'holdings' ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Person</th><th>Buy Date</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Buy ₹</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr ₹</th><th style={{ textAlign: 'right' }}>Curr Val</th><th style={{ textAlign: 'right' }}>Gain</th><th style={{ textAlign: 'right' }}>Gain%</th><th style={{ textAlign: 'right' }}>CAGR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lots.sort((a, b) => toJSDate(b.date) - toJSDate(a.date)).map((l, i) => {
+                      const invested = l.qty * l.price;
+                      const cval = cp ? l.qty * cp : null;
+                      const gain = cval != null ? cval - invested : null;
+                      const gainPct = gain != null ? (gain / invested) * 100 : null;
+                      const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
+                      const cagr = (cval != null && invested > 0) ? (Math.pow(cval / invested, 1 / age) - 1) * 100 : null;
+
+                      return (
+                        <tr key={i}>
+                          <td><span className="tag" style={{ background: personColor(l.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{l.person}</span></td>
+                          <td>{fmtDate(l.date)}</td>
+                          <td style={{ textAlign: 'right' }}>{l.qty}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(l.price)}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(invested)}</td>
+                          <td style={{ textAlign: 'right' }}>{cp ? fmt(cp) : '—'}</td>
+                          <td style={{ textAlign: 'right' }}>{cval ? fmt(cval) : '—'}</td>
+                          <td style={{ textAlign: 'right' }} className={gain >= 0 ? 'pos' : 'neg'}>{gain != null ? fmt(gain) : '—'}</td>
+                          <td style={{ textAlign: 'right' }} className={gainPct >= 0 ? 'pos' : 'neg'}>{gainPct != null ? fmtPct(gainPct) : '—'}</td>
+                          <td style={{ textAlign: 'right' }} className={cagr >= 0 ? 'pos' : 'neg'}>{cagr != null ? fmtPct(cagr) : '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Person</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Val</th><th style={{ textAlign: 'right' }}>Gain</th><th style={{ textAlign: 'right' }}>Gain%</th><th style={{ textAlign: 'right' }}>CAGR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {personBreakdown.map((p, i) => (
                       <tr key={i}>
-                        <td><span className="tag" style={{ background: personColor(l.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{l.person}</span></td>
-                        <td>{fmtDate(l.date)}</td>
-                        <td style={{ textAlign: 'right' }}>{l.qty}</td>
-                        <td style={{ textAlign: 'right' }}>{fmt(l.price)}</td>
-                        <td style={{ textAlign: 'right' }}>{fmt(invested)}</td>
-                        <td style={{ textAlign: 'right' }}>{cp ? fmt(cp) : '—'}</td>
-                        <td style={{ textAlign: 'right' }}>{cval ? fmt(cval) : '—'}</td>
-                        <td style={{ textAlign: 'right' }} className={gain >= 0 ? 'pos' : 'neg'}>{gain != null ? fmt(gain) : '—'}</td>
-                        <td style={{ textAlign: 'right' }} className={gainPct >= 0 ? 'pos' : 'neg'}>{gainPct != null ? fmtPct(gainPct) : '—'}</td>
-                        <td style={{ textAlign: 'right' }} className={cagr >= 0 ? 'pos' : 'neg'}>{cagr != null ? fmtPct(cagr) : '—'}</td>
+                        <td><span className="tag" style={{ background: personColor(p.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{p.person}</span></td>
+                        <td style={{ textAlign: 'right' }}>{p.qty}</td>
+                        <td style={{ textAlign: 'right' }}>{fmt(p.avgBuy)}</td>
+                        <td style={{ textAlign: 'right' }}>{fmt(p.invested)}</td>
+                        <td style={{ textAlign: 'right' }}>{p.cval ? fmt(p.cval) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={p.gain >= 0 ? 'pos' : 'neg'}>{p.gain != null ? fmt(p.gain) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={p.gainPct >= 0 ? 'pos' : 'neg'}>{p.gainPct != null ? fmtPct(p.gainPct) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={p.cagr >= 0 ? 'pos' : 'neg'}>{p.cagr != null ? fmtPct(p.cagr) : '—'}</td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
