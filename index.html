@@ -2644,6 +2644,11 @@
       const [deleting, setDeleting] = useState(false);
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+      const uniqueStocks = useMemo(() => {
+        const s = new Set(transactions.map(t => t.stock).filter(Boolean));
+        return [...s].sort();
+      }, [transactions]);
+
       // Speed up entry: remember last-used Person + Asset Type
       useEffect(() => {
         try {
@@ -2772,7 +2777,13 @@
                     <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
                   </select>
                 </div>
-                <div><label className="form-label">Asset Name</label><input ref={stockRef} className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} /></div>
+                <div>
+                  <label className="form-label">Asset Name</label>
+                  <input ref={stockRef} className="form-input" type="text" list="asset-datalist" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
+                  <datalist id="asset-datalist">
+                    {uniqueStocks.map(s => <option key={s} value={s} />)}
+                  </datalist>
+                </div>
                 <div><label className="form-label">Qty (- for Sell)</label><input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} /></div>
                 <div><label className="form-label">Price ₹</label><input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" onKeyDown={e => handleQuickKey(e, null)} /></div>
                 <div><label className="form-label">Asset Type</label>
