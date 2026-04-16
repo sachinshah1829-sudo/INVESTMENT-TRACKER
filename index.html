@@ -4360,6 +4360,38 @@
         };
         init();
       }, [uid, loading]);
+      
+      const syncLivePrices = useCallback(async () => {
+        if (!uid) return false;
+        const stocks = [...new Set(transactions.map(t => t.stock))].filter(Boolean);
+        const apiSymbols = stocks.map(normalizeSymbolForAPI).filter(Boolean);
+        if (apiSymbols.length === 0) return false;
+
+        const live = await fetchLivePrices(apiSymbols);
+        if (Object.keys(live).length > 0) {
+          const updated = { ...stockPrices };
+          stocks.forEach(s => {
+            const apiSym = normalizeSymbolForAPI(s);
+            if (live[apiSym]) updated[s] = live[apiSym];
+            else if (live[s]) updated[s] = live[s];
+          });
+
+          await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({
+            prices: updated,
+            lastUpdated: Date.now()
+          });
+          return true;
+        }
+        return false;
+      }, [uid, transactions, stockPrices]);
+
+      const hasAutoSynced = useRef(false);
+      useEffect(() => {
+        if (!loading && transactions.length > 0 && !hasAutoSynced.current && uid) {
+          hasAutoSynced.current = true;
+          setTimeout(() => syncLivePrices(), 4000); 
+        }
+      }, [loading, transactions.length, uid, syncLivePrices]);
 
 
 
