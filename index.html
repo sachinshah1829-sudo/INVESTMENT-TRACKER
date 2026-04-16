@@ -2550,17 +2550,14 @@
               />
             </div>
             <div style={{ width: '280px', flexShrink: 0, minWidth: 0 }}>
-              <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Asset Type</label>
-              <select
-                className="select-input"
-                style={{ width: '100%', height: 42, textOverflow: 'ellipsis' }}
-                value={allTypes ? 'All' : filterAssetTypes[0]}
-                onChange={(e) => setFilterAssetTypes([e.target.value])}
-              >
-                <option value="All">All Types</option>
-                {types.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <MultiSelect
+                label="Asset Type"
+                options={types}
+                selected={filterAssetTypes}
+                onChange={setFilterAssetTypes}
+              />
             </div>
+
           </div>
 
           <div className="stats-grid">
