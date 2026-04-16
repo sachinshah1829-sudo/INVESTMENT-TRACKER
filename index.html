@@ -2533,17 +2533,23 @@
 
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors }) {
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
       const [importProgress, setImportProgress] = useState(null);
-      const [search, setSearch] = useState('');
-      const [filterPersons, setFilterPersons] = useState(['All']);
-      const [filterStocks, setFilterStocks] = useState(['All']);
-      const [filterAssetType, setFilterAssetType] = useState(['All']);
+
+      const search = filters.search;
+      const filterPersons = filters.persons;
+      const filterStocks = filters.stocks;
+      const filterAssetType = filters.types;
+
+      const setSearch = (val) => onFilterChange({ ...filters, search: val });
+      const setFilterPersons = (val) => onFilterChange({ ...filters, persons: val });
+      const setFilterStocks = (val) => onFilterChange({ ...filters, stocks: val });
+      const setFilterAssetType = (val) => onFilterChange({ ...filters, types: val });
       const [editTx, setEditTx] = useState(null);
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
@@ -2739,7 +2745,7 @@
                   <div className="filter-label">Search</div>
                   <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
-                <button className="btn-sm btn-reset" onClick={() => { setSearch(''); setFilterPersons(['All']); setFilterStocks(['All']); setFilterAssetType(['All']); }} title="Reset Filters">↺</button>
+                <button className="btn-sm btn-reset" onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], types: ['All'], search: '' })} title="Reset Filters">↺</button>
                 <button className="btn-sm" style={{ height: 32 }} onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
               </div>
             </div>
@@ -2980,11 +2986,16 @@
     }
 
     // ── FIFO RESULTS ─────────────────────────────────────────
-    function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors }) {
+    function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors, filters, onFilterChange }) {
       const { sells: allSells } = computeFIFO(transactions);
-      const [filterPersons, setFilterPersons] = useState(['All']);
-      const [filterAssetTypes, setFilterAssetTypes] = useState(['All']);
-      const [stockFilter, setStockFilter] = useState('');
+      
+      const filterPersons = filters.persons;
+      const filterAssetTypes = filters.types;
+      const stockFilter = filters.search;
+
+      const setFilterPersons = (val) => onFilterChange({ ...filters, persons: val });
+      const setFilterAssetTypes = (val) => onFilterChange({ ...filters, types: val });
+      const setStockFilter = (val) => onFilterChange({ ...filters, search: val });
 
       const sells = allSells.filter(s => {
         const at = transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK';
@@ -3024,7 +3035,7 @@
               <div className="filter-label">Stock Search</div>
               <input className="form-input" style={{ width: 140, fontSize: 12 }} placeholder="Search..." value={stockFilter} onChange={e => setStockFilter(e.target.value)} />
             </div>
-            <button className="btn-sm btn-reset" onClick={() => { setFilterPersons(['All']); setFilterAssetTypes(['All']); setStockFilter(''); }} title="Reset Filters">↺</button>
+            <button className="btn-sm btn-reset" onClick={() => onFilterChange({ persons: ['All'], types: ['All'], search: '' })} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{sells.length} records</span></div>
           </div>
 
@@ -3908,6 +3919,8 @@
       const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] });
       const [dashboardDefaults, setDashboardDefaults] = useState({ persons: ['All'], assetTypes: ['All'] });
       const [dashboardFilters, setDashboardFilters] = useState({ persons: null, assetTypes: null });
+      const [transactionsFilters, setTransactionsFilters] = useState({ persons: ['All'], stocks: ['All'], types: ['All'], search: '' });
+      const [fifoFilters, setFifoFilters] = useState({ persons: ['All'], types: ['All'], search: '' });
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
 
@@ -4263,9 +4276,9 @@
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} />}
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} />}
                 {tab === 'manage' && (
                   <ManageTab
                     persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
