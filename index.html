@@ -3907,22 +3907,13 @@
       const [loading, setLoading] = useState(true);
       const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] });
       const [dashboardDefaults, setDashboardDefaults] = useState({ persons: ['All'], assetTypes: ['All'] });
-      const [dashboardFilters, setDashboardFilters] = useState(() => {
-        try {
-          const saved = sessionStorage.getItem('inv_dashboardFilters');
-          return saved ? JSON.parse(saved) : { persons: null, assetTypes: null };
-        } catch { return { persons: null, assetTypes: null }; }
-      });
+      const [dashboardFilters, setDashboardFilters] = useState({ persons: null, assetTypes: null });
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
       const ignoreSwipe = useRef(false);
-
-      useEffect(() => {
-        sessionStorage.setItem('inv_dashboardFilters', JSON.stringify(dashboardFilters));
-      }, [dashboardFilters]);
 
       const navItems = [
         { key: 'dashboard', label: 'Dashboard', icon: '▦' },
