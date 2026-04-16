@@ -1927,6 +1927,87 @@
       );
     }
 
+    function SingleSelect({ label, options, value, onChange, placeholder = "Select...", onKeyDown }) {
+      const [open, setOpen] = useState(false);
+      const [search, setSearch] = useState('');
+      const ref = useRef(null);
+      useEffect(() => {
+        if (!open) return;
+        const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
+      }, [open]);
+
+      const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
+
+      return (
+        <div className="filter-group" ref={ref}>
+          {label && <div className="filter-label">{label}</div>}
+          <div className="multi-select-wrap">
+            <div className="multi-select-trigger" onClick={() => setOpen(!open)} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(!open); }}>
+              <span style={{ color: value ? 'inherit' : 'var(--text-muted)' }}>{value || placeholder}</span>
+              <span style={{ fontSize: 10 }}>▼</span>
+            </div>
+            {open && (
+              <div className="multi-select-dropdown">
+                <input className="multi-select-search" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {filtered.map(o => (
+                    <div key={o} className="multi-select-opt" onClick={() => { onChange(o); setOpen(false); }}>
+                      <span>{o}</span>
+                    </div>
+                  ))}
+                  {filtered.length === 0 && <div className="empty" style={{ padding: '10px' }}>No matches</div>}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef }) {
+      const [open, setOpen] = useState(false);
+      const ref = useRef(null);
+      useEffect(() => {
+        if (!open) return;
+        const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
+      }, [open]);
+
+      const filtered = options.filter(o => o.toLowerCase().includes((value || '').toLowerCase()));
+
+      return (
+        <div className="filter-group" ref={ref}>
+          {label && <div className="filter-label">{label}</div>}
+          <div className="multi-select-wrap">
+            <input
+              ref={inputRef}
+              className="form-input"
+              type="text"
+              value={value}
+              onChange={e => { onChange(e.target.value); setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              placeholder={placeholder}
+              onKeyDown={onKeyDown}
+              autoComplete="off"
+            />
+            {open && filtered.length > 0 && (
+              <div className="multi-select-dropdown" style={{ minWidth: '100%' }}>
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {filtered.map(o => (
+                    <div key={o} className="multi-select-opt" onClick={() => { onChange(o); setOpen(false); }}>
+                      <span>{o}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+
     // ── CHART COMPONENTS ──────────────────────────────────────
     function BarChart({ labels, datasets }) {
       const ref = useRef(null); const chart = useRef(null);
@@ -2772,25 +2853,12 @@
               <div className="card-title">Add Transaction</div>
               <div className="form-row">
                 <div><label className="form-label">Date</label><input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} /></div>
-                <div><label className="form-label">Person</label>
-                  <select className="select-input" value={form.person} onChange={e => set('person', e.target.value)} onKeyDown={e => handleQuickKey(e, focusStock)}>
-                    <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Asset Name</label>
-                  <input ref={stockRef} className="form-input" type="text" list="asset-datalist" value={form.stock} onChange={e => set('stock', e.target.value)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
-                  <datalist id="asset-datalist">
-                    {uniqueStocks.map(s => <option key={s} value={s} />)}
-                  </datalist>
-                </div>
+                <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
+                <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
                 <div><label className="form-label">Qty (- for Sell)</label><input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} /></div>
                 <div><label className="form-label">Price ₹</label><input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" onKeyDown={e => handleQuickKey(e, null)} /></div>
-                <div><label className="form-label">Asset Type</label>
-                  <select className="select-input" value={form.assetType} onChange={e => set('assetType', e.target.value)} onKeyDown={e => handleQuickKey(e, focusStock)}>
-                    {assetTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                  </select>
-                </div>
+                <SingleSelect label="Asset Type" value={form.assetType} options={assetTypes.map(t => t.name)} onChange={val => set('assetType', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
+
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
                 <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
