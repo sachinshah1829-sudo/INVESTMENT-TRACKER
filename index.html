@@ -288,7 +288,7 @@
     }
 
     .sidebar-brand-name {
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 700;
       color: #000;
       font-family: var(--font-big);
@@ -2229,8 +2229,10 @@
             investedVal: 0,
             currentVal: 0,
             weightedAge: 0,
-            lots: []
+            lots: [],
+            persons: new Set()
           };
+
         }
         const g = stockGroups[r.stock];
         g.totalQty += r.totalQty;
@@ -2238,7 +2240,9 @@
         g.currentVal += (r.currentVal || r.investedVal);
         g.weightedAge += (r.weightedAge || 0);
         g.lots.push(...r.lots);
+        g.persons.add(r.person);
       });
+
 
       const consolidated = Object.values(stockGroups).map(g => {
         const avgBuy = g.investedVal / g.totalQty;
@@ -2251,8 +2255,10 @@
         const aggregated = {};
         g.lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
         const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+        const personList = [...g.persons].sort();
 
-        return { ...g, avgBuy, absGain, absGainPct, cagr, currentPrice: cp, breakup };
+        return { ...g, avgBuy, absGain, absGainPct, cagr, currentPrice: cp, breakup, personList };
+
       }).sort((a, b) => b.currentVal - a.currentVal);
 
       return (
@@ -2267,7 +2273,9 @@
                 <thead>
                   <tr>
                     <th>Stock</th>
+                    <th>Person</th>
                     <th style={{ textAlign: 'right' }}>Qty</th>
+
                     <th style={{ textAlign: 'right' }}>Avg Buy</th>
                     <th style={{ textAlign: 'right' }}>Invested</th>
                     <th style={{ textAlign: 'right' }}>Curr Price</th>
@@ -2279,11 +2287,19 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {consolidated.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this type</div></td></tr>}
+                  {consolidated.length === 0 && <tr><td colSpan="11"><div className="empty">No holdings for this type</div></td></tr>}
                   {consolidated.map((r, i) => (
                     <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {r.personList.map(p => (
+                            <span key={p} className="tag" style={{ background: personColor(p, personColors), fontSize: '10px', color: '#1a1a1a' }}>{p}</span>
+                          ))}
+                        </div>
+                      </td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
+
                       <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
                       <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
                       <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
