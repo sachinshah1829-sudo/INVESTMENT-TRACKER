@@ -1149,6 +1149,70 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
+    .multi-select-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .multi-select-trigger {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1rem;
+      height: 42px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+
+    .multi-select-trigger:hover {
+      border-color: #000;
+    }
+
+    .multi-select-trigger span:first-child {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-right: 8px;
+    }
+
+    .multi-select-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      min-width: 220px;
+      background: #fff;
+      border: 1px solid var(--border);
+      z-index: 1000;
+      box-shadow: var(--elevation-3);
+      padding: 1rem;
+      margin-top: 4px;
+    }
+
+    .multi-select-opt {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.1s;
+    }
+
+    .multi-select-opt:hover {
+      background: #f8f9fa;
+    }
+
+    .multi-select-opt span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     .dock-btn.active {
       background: var(--sidebar-active-bg);
@@ -1242,20 +1306,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
       transition: all .1s;
       box-shadow: var(--elevation-1);
-      width: 100%;
-      height: 42px;
-      overflow: hidden;
-    }
-
-    .multi-select-trigger .trigger-text {
-      flex: 1;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      text-align: left;
     }
 
     .multi-select-trigger:hover {
@@ -1408,27 +1460,6 @@
     .action-block.delist {
       background: #F8F9FA;
       color: var(--text);
-    }
-
-    .select-input {
-      width: 100%;
-      min-width: 140px;
-      height: 42px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 0 1rem;
-      font-family: var(--font-main);
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      outline: none;
-      cursor: pointer;
-      border-radius: 0px;
-      transition: all 0.2s;
-      box-shadow: var(--elevation-1);
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
     }
 
     @media(max-width: 768px) {
@@ -1834,14 +1865,14 @@
       };
 
       const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
-      const display = selected.includes('All') ? 'All' : (selected.length === 1 ? selected[0] : `${selected.length} selected`);
+      const display = selected.includes('All') ? 'All' : (selected.length === 1 ? selected[0] : `${selected.length} Selected`);
 
       return (
         <div className="filter-group" ref={ref}>
-          <span className="filter-label">{label}</span>
+          <div className="filter-label">{label}</div>
           <div className="multi-select-wrap">
             <div className="multi-select-trigger" onClick={() => setOpen(!open)}>
-              <span className="trigger-text">{display}</span>
+              <span>{display}</span>
               <span style={{ fontSize: 10 }}>▼</span>
             </div>
             {open && (
