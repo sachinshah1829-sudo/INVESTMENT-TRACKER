@@ -1164,9 +1164,10 @@
       background: var(--surface);
       cursor: pointer;
       font-size: 14px;
-      width: 200px; /* Rigorous fixed width */
+      width: 100%;
       box-sizing: border-box;
       transition: all 0.2s;
+      min-width: 0; /* Ensures the trigger doesn't expand past its parent in a flex layout */
     }
 
     .multi-select-trigger:hover {
@@ -1178,6 +1179,8 @@
       overflow: hidden;
       text-overflow: ellipsis;
       margin-right: 8px;
+      flex: 1 1 0%; /* Allows the span to shrink and triggers ellipsis */
+      min-width: 0;
     }
 
     .multi-select-dropdown {
@@ -1185,7 +1188,7 @@
       top: 100%;
       left: 0;
       width: 100%;
-      min-width: 260px; /* Slightly wider for better readability */
+      min-width: 220px;
       background: #fff;
       border: 1px solid var(--border);
       z-index: 1000;
