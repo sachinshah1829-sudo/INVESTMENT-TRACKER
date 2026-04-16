@@ -2442,7 +2442,6 @@
       const allPortfolio = buildPortfolio(holdings, stockPrices);
 
       const allPersons = filterPersons.includes('All');
-      const allTypes = filterAssetTypes.includes('All');
 
       const persons = [...new Set([...allPortfolio.map(r => r.person), ...sells.map(r => r.person)])].sort();
       const types = assetTypes.map(t => t.name).sort();
