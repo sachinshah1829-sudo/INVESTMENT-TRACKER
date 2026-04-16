@@ -21,8 +21,8 @@
       --sidebar-text: #000000;
       --sidebar-muted: #666666;
       --sidebar-active: #000000;
-      --sidebar-active-bg: #EDFF66;
-      --accent: #EDFF66;
+      --sidebar-active-bg: #000000;
+      --accent: #000000;
       --border: rgba(0, 0, 0, 0.08);
       --text: #000000;
       --text-muted: #666666;
@@ -327,12 +327,10 @@
     }
 
     .sidebar-item.active {
-      color: var(--sidebar-active);
-      background: var(--sidebar-active-bg);
+      color: #ffffff;
+      background: #000000;
       font-weight: 700;
       font-family: var(--font-main);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
     }
 
     .sidebar-icon {
@@ -395,9 +393,9 @@
     .btn-logout {
       width: 100%;
       padding: .65rem;
-      background: var(--accent);
-      border: 1px solid var(--border);
-      color: #000;
+      background: #E5E7EB;
+      border: none;
+      color: #374151;
       font-family: var(--font-big);
       font-size: 11px;
       font-weight: 700;
@@ -406,15 +404,12 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 0px;
       text-transform: uppercase;
-      box-shadow: var(--elevation-1);
     }
 
     .btn-logout:hover {
       background: #000;
-      color: var(--accent);
-      border-color: #000;
+      color: #fff;
       transform: translateY(-1px);
-      box-shadow: var(--elevation-2);
     }
 
     .main {
@@ -558,10 +553,10 @@
       text-transform: uppercase;
       color: #000;
       text-align: left;
-      padding: 1rem .75rem;
+      padding: 1.25rem .75rem;
       border-bottom: 2px solid var(--border);
       font-weight: 700;
-      background: var(--sidebar-active-bg);
+      background: #F8F9FA;
       position: sticky;
       top: 0;
       z-index: 10;
@@ -1307,8 +1302,8 @@
       left: .75rem;
       z-index: 200;
       background: var(--sidebar-bg);
-      color: #fff;
-      border: none;
+      color: #000;
+      border: 1px solid var(--border);
       width: 36px;
       height: 36px;
       font-size: 18px;
@@ -1316,6 +1311,7 @@
       align-items: center;
       justify-content: center;
       border-radius: 0px;
+      box-shadow: var(--elevation-1);
     }
 
     .sidebar-overlay {
@@ -1358,8 +1354,8 @@
     }
 
     .action-block.active {
-      background: #EDFF66 !important;
-      color: #000 !important;
+      background: #000 !important;
+      color: #fff !important;
       border-color: #000;
       box-shadow: var(--elevation-3);
     }
@@ -1403,6 +1399,9 @@
     }
 
     @media(max-width: 768px) {
+      .menu-toggle {
+        display: flex;
+      }
       .sidebar {
         transform: translateX(-100%);
         box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
@@ -2207,8 +2206,6 @@
     function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick, dashboardDefaults, onShowSettings }) {
       const [filterPersons, setFilterPersons] = useState(dashboardDefaults.persons);
       const [filterAssetTypes, setFilterAssetTypes] = useState(dashboardDefaults.assetTypes);
-      const [showPersonModal, setShowPersonModal] = useState(false);
-      const [showAssetTypeModal, setShowAssetTypeModal] = useState(false);
 
       // Sync local filters with defaults when they change from the settings modal
       useEffect(() => {
@@ -2346,110 +2343,28 @@
             </div>
           </div>
 
-          <div className="dashboard-filter-grid">
-            <div
-              className={`dashboard-filter-block ${!allPersons ? 'active' : 'person-all'}`}
-              style={!allPersons && filterPersons.length === 1 ? {
-                background: personColor(filterPersons[0], personColors),
-                borderColor: 'rgba(0,0,0,0.1)',
-                color: '#1a1a1a'
-              } : {}}
-              onClick={() => setShowPersonModal(true)}
-            >
-              <div className="label">Person Filter</div>
-              <div className="sub">
-                {allPersons ? 'All Persons' : (filterPersons.length === 1 ? filterPersons[0] : `${filterPersons.length} Selected`)}
-              </div>
+          <div className="filter-row" style={{ display: 'flex', gap: '1.25rem', marginBottom: '2.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ flex: '1 1 240px', maxWidth: '300px' }}>
+              <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Person Filter</label>
+              <MultiSelect 
+                options={['All', ...persons.filter(p => p !== 'All')]} 
+                selected={filterPersons} 
+                onChange={setFilterPersons} 
+              />
             </div>
-            <div
-              className={`dashboard-filter-block ${!allTypes ? 'active' : 'type-all'}`}
-              style={!allTypes ? {
-                background: assetTypeColor(filterAssetTypes[0], assetTypeColors),
-                borderColor: 'rgba(0,0,0,0.1)',
-                color: '#1a1a1a'
-              } : {}}
-              onClick={() => setShowAssetTypeModal(true)}
-            >
-              <div className="label">Asset Type</div>
-              <div className="sub">
-                {allTypes ? 'All Types' : filterAssetTypes[0]}
-              </div>
+            <div style={{ flex: '1 1 240px', maxWidth: '300px' }}>
+              <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Asset Type</label>
+              <select 
+                className="select-input" 
+                style={{ height: '42px', fontSize: '14px', borderRadius: '0px', padding: '0 1rem' }}
+                value={allTypes ? 'All' : filterAssetTypes[0]} 
+                onChange={(e) => setFilterAssetTypes([e.target.value])}
+              >
+                <option value="All">All Types</option>
+                {types.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
           </div>
-
-          {showPersonModal && (
-            <div className="modal-overlay" onClick={() => setShowPersonModal(false)}>
-              <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-                <div className="modal-title">
-                  <span>Filter Persons</span>
-                  <button className="modal-close" onClick={() => setShowPersonModal(false)}>×</button>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '1rem' }}>
-                  <div
-                    className={`filter-chip all ${filterPersons.includes('All') ? 'active' : 'inactive'}`}
-                    onClick={() => {
-                      setFilterPersons(['All']);
-                      setShowPersonModal(false);
-                    }}
-                  >All</div>
-                  {persons.map(p => {
-                    const isActive = filterPersons.includes(p);
-                    return (
-                      <div
-                        key={p}
-                        className={`filter-chip ${isActive ? 'active' : ''}`}
-                        style={isActive ? { background: personColor(p, personColors) } : {}}
-                        onClick={() => {
-                          let next = filterPersons.filter(x => x !== 'All');
-                          if (next.includes(p)) next = next.filter(x => x !== p);
-                          else next.push(p);
-                          if (next.length === 0) next = ['All'];
-                          setFilterPersons(next);
-                        }}
-                      >{p}</div>
-                    );
-                  })}
-                </div>
-                <div className="modal-actions" style={{ marginTop: '2rem' }}>
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowPersonModal(false)}>APPLY FILTERS</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showAssetTypeModal && (
-            <div className="modal-overlay" onClick={() => setShowAssetTypeModal(false)}>
-              <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-                <div className="modal-title">
-                  <span>Filter Asset Type</span>
-                  <button className="modal-close" onClick={() => setShowAssetTypeModal(false)}>×</button>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '1rem' }}>
-                  <div
-                    className={`filter-chip all ${filterAssetTypes.includes('All') ? 'active' : 'inactive'}`}
-                    onClick={() => {
-                      setFilterAssetTypes(['All']);
-                      setShowAssetTypeModal(false);
-                    }}
-                  >All</div>
-                  {types.map(t => {
-                    const isActive = filterAssetTypes.includes(t);
-                    return (
-                      <div
-                        key={t}
-                        className={`filter-chip ${isActive ? 'active' : ''}`}
-                        style={isActive ? { background: assetTypeColor(t, assetTypeColors) } : {}}
-                        onClick={() => {
-                          setFilterAssetTypes([t]);
-                          setShowAssetTypeModal(false);
-                        }}
-                      >{t}</div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className="stats-grid">
             <div className="stat-card"><div className="stat-label">Total Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
