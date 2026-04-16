@@ -2208,18 +2208,16 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick, dashboardDefaults, onShowSettings }) {
-      const [filterPersons, setFilterPersons] = useState(dashboardDefaults.persons);
-      const [filterAssetTypes, setFilterAssetTypes] = useState(dashboardDefaults.assetTypes);
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick, dashboardDefaults, onShowSettings, filters, onFilterChange }) {
+      const filterPersons = filters.persons || dashboardDefaults.persons;
+      const filterAssetTypes = filters.assetTypes || dashboardDefaults.assetTypes;
 
-      // Sync local filters with defaults when they change from the settings modal
-      useEffect(() => {
-        setFilterPersons(dashboardDefaults.persons);
-        setFilterAssetTypes(dashboardDefaults.assetTypes);
-      }, [dashboardDefaults]);
+      const setFilterPersons = (val) => onFilterChange({ ...filters, persons: val });
+      const setFilterAssetTypes = (val) => onFilterChange({ ...filters, assetTypes: val });
+
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const [drilldownAssetType, setDrilldownAssetType] = useState(null);
-      const [drilldownStock, setDrilldownStock] = useState(null); // Person-wise breakdown for a specific stock
+      const [drilldownStock, setDrilldownStock] = useState(null); 
       const [drilldown, setDrilldown] = useState(null);
 
       const { sells, holdings } = computeFIFO(transactions);
@@ -3907,12 +3905,22 @@
       const [loading, setLoading] = useState(true);
       const [portfolioFilter, setPortfolioFilter] = useState({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] });
       const [dashboardDefaults, setDashboardDefaults] = useState({ persons: ['All'], assetTypes: ['All'] });
+      const [dashboardFilters, setDashboardFilters] = useState(() => {
+        try {
+          const saved = sessionStorage.getItem('inv_dashboardFilters');
+          return saved ? JSON.parse(saved) : { persons: null, assetTypes: null };
+        } catch { return { persons: null, assetTypes: null }; }
+      });
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
       const ignoreSwipe = useRef(false);
+
+      useEffect(() => {
+        sessionStorage.setItem('inv_dashboardFilters', JSON.stringify(dashboardFilters));
+      }, [dashboardFilters]);
 
       const navItems = [
         { key: 'dashboard', label: 'Dashboard', icon: '▦' },
@@ -4261,7 +4269,7 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
