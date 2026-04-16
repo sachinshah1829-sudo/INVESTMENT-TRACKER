@@ -175,6 +175,14 @@
       border-radius: 0px;
     }
 
+    .select-input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+    }
+
     .form-input:focus,
     .select-input:focus {
       border-color: #000;
@@ -496,11 +504,17 @@
     }
 
     .stat-val {
-      font-size: 32px;
+      font-size: 26px;
       font-weight: 700;
-      letter-spacing: -0.02em;
-      font-family: var(--font-big);
-      line-height: 1.1;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .stat-sub {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-top: 10px;
     }
 
     .pos {
@@ -893,15 +907,14 @@
     }
 
     .filter-chip.active {
-      background: #EDFF66 !important;
-      color: #000 !important;
+      background: #000;
+      color: #fff;
       border-color: #000;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .filter-chip.all.active {
-      background: #EDFF66 !important;
-      color: #000 !important;
+      background: #000;
+      color: #fff;
     }
 
     /* DASHBOARD FILTER BLOCKS */
@@ -937,8 +950,8 @@
     }
 
     .dashboard-filter-block.active {
-      background: #EDFF66 !important;
-      color: #000 !important;
+      background: #000 !important;
+      color: #fff !important;
       border-color: #000;
       box-shadow: var(--elevation-3);
     }
@@ -1151,8 +1164,8 @@
     }
 
     .dock-btn.active {
-      background: var(--sidebar-active-bg);
-      color: #000;
+      background: #000;
+      color: #fff;
       box-shadow: var(--elevation-1);
       transform: translate(-1px, -1px);
     }
@@ -1298,20 +1311,20 @@
     .menu-toggle {
       display: none;
       position: fixed;
-      top: .75rem;
-      left: .75rem;
+      top: .6rem;
+      left: .6rem;
       z-index: 200;
-      background: var(--sidebar-bg);
-      color: #000;
-      border: 1px solid var(--border);
-      width: 36px;
-      height: 36px;
-      font-size: 18px;
+      background: #000;
+      color: #fff;
+      border: none;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
       cursor: pointer;
       align-items: center;
       justify-content: center;
       border-radius: 0px;
-      box-shadow: var(--elevation-1);
+      box-shadow: var(--elevation-2);
     }
 
     .sidebar-overlay {
@@ -1370,7 +1383,7 @@
     }
 
     .action-block .label {
-      font-family: var(--font-big);
+      font-family: 'Courier Prime', monospace;
       font-weight: 700;
       font-size: 15px;
       letter-spacing: -0.01em;
@@ -1379,7 +1392,7 @@
     }
 
     .action-block .sub {
-      font-family: var(--font-main);
+      font-family: 'Courier Prime', monospace;
       font-size: 10px;
       opacity: 0.8;
       letter-spacing: 0.02em;
@@ -1402,7 +1415,9 @@
       .menu-toggle {
         display: flex;
       }
-      .sidebar {
+      .sidebar-brand {
+        padding-left: 55px;
+      }
         transform: translateX(-100%);
         box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
       }
@@ -2347,7 +2362,7 @@
             <div style={{ flex: '1 1 240px', maxWidth: '300px' }}>
               <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Person Filter</label>
               <MultiSelect 
-                options={['All', ...persons.filter(p => p !== 'All')]} 
+                options={persons.filter(p => p !== 'All')} 
                 selected={filterPersons} 
                 onChange={setFilterPersons} 
               />
@@ -2372,7 +2387,7 @@
             <div className="stat-card">
               <div className="stat-label">Total {totalGain >= 0 ? 'Profit' : 'Loss'}</div>
               <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div>
-              <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
+              <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmtPct(gainPct)}</div>
             </div>
             <div className="stat-card"><div className="stat-label">Unrealized CAGR</div><div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div></div>
             <div className="stat-card"><div className="stat-label">Combined CAGR</div><div className={`stat-val ${combinedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(combinedCAGR)}</div></div>
@@ -3370,7 +3385,7 @@
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div className="page-title">Asset Prices</div>
               {priceMeta.lastUpdated && (
-                <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '4px 10px', border: '1px solid #ffe082', fontWeight: 700, letterSpacing: '.05em' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--surface)', padding: '4px 10px', border: '1px solid var(--border)', fontWeight: 700, letterSpacing: '.05em' }}>
                   LAST SYNCED: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                 </div>
               )}
@@ -3483,7 +3498,7 @@
               <label className="form-label">Name</label>
               <input className="form-input" type="text" value={name} onChange={e => setName(e.target.value)} autoFocus onKeyDown={e => e.key === 'Enter' && handleSave()} />
             </div>
-            <div style={{ fontSize: 12, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '.6rem .75rem', marginBottom: '.75rem', border: '1px solid #ffe082' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', background: 'var(--surface)', padding: '.6rem .75rem', marginBottom: '.75rem', border: '1px solid var(--border)' }}>
               ⚠ Renaming will also update this person's name in all their transactions.
             </div>
             <div className="modal-actions">
@@ -3727,7 +3742,7 @@
               <div key={s} style={{
                 flex: 1,
                 height: '6px',
-                background: step >= s ? 'var(--sidebar-active-bg)' : '#e0e0e0',
+                background: step >= s ? '#000' : '#e0e0e0',
                 border: '1px solid var(--border)',
                 boxShadow: step >= s ? '1px 1px 0px 0px #000' : 'none'
               }} />
