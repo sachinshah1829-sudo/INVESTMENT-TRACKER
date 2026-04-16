@@ -1165,6 +1165,7 @@
       cursor: pointer;
       font-size: 14px;
       width: 100%;
+      min-width: 0;
       box-sizing: border-box;
       transition: all 0.2s;
     }
@@ -1177,6 +1178,8 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
       margin-right: 8px;
     }
 
@@ -2413,7 +2416,7 @@
           </div>
 
           <div className="filter-row" style={{ display: 'flex', gap: '1.25rem', marginBottom: '2.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div style={{ flex: '1 1 240px', maxWidth: '300px' }}>
+            <div style={{ width: '280px', flexShrink: 0, minWidth: 0 }}>
               <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Person Filter</label>
               <MultiSelect 
                 options={persons.filter(p => !['All', 'All Persons'].includes(p))} 
@@ -2421,21 +2424,11 @@
                 onChange={setFilterPersons} 
               />
             </div>
-            <div style={{ flex: '1 1 240px', maxWidth: '300px' }}>
+            <div style={{ width: '280px', flexShrink: 0, minWidth: 0 }}>
               <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Asset Type</label>
               <select 
                 className="select-input" 
-                style={{ 
-                  height: '42px', 
-                  fontSize: '14px', 
-                  borderRadius: '0px', 
-                  padding: '0 1rem',
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 1rem center',
-                  backgroundSize: '12px'
-                }}
+                style={{ width: '100%', height: 42, textOverflow: 'ellipsis' }}
                 value={allTypes ? 'All' : filterAssetTypes[0]} 
                 onChange={(e) => setFilterAssetTypes([e.target.value])}
               >
@@ -2802,10 +2795,16 @@
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
               <span className="card-title" style={{ margin: 0 }}>All Transactions ({filtered.length})</span>
               <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <MultiSelect label="Person" options={[...new Set(valid.map(t => t.person))].sort()} selected={filterPersons} onChange={setFilterPersons} />
-                <MultiSelect label="Asset" options={[...new Set(valid.map(t => t.stock))].sort()} selected={filterStocks} onChange={setFilterStocks} />
-                <MultiSelect label="Asset Type" options={[...new Set(valid.map(t => t.assetType || 'STOCK'))].sort()} selected={filterAssetType} onChange={setFilterAssetType} />
-                <div className="filter-group">
+                <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}>
+                  <MultiSelect label="Person" options={[...new Set(valid.map(t => t.person))].sort()} selected={filterPersons} onChange={setFilterPersons} />
+                </div>
+                <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}>
+                  <MultiSelect label="Asset" options={[...new Set(valid.map(t => t.stock))].sort()} selected={filterStocks} onChange={setFilterStocks} />
+                </div>
+                <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}>
+                  <MultiSelect label="Asset Type" options={[...new Set(valid.map(t => t.assetType || 'STOCK'))].sort()} selected={filterAssetType} onChange={setFilterAssetType} />
+                </div>
+                <div className="filter-group" style={{ width: '180px', flexShrink: 0, minWidth: 0 }}>
                   <div className="filter-label">Search</div>
                   <input className="form-input" style={{ width: 160, fontSize: 12 }} placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
@@ -2961,18 +2960,18 @@
             <button className={`dock-btn ${viewMode === 'types' ? 'active' : ''}`} onClick={() => setViewMode('types')}>By Type</button>
           </div>
 
-          <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+          <div className="filter-bar" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             {viewMode === 'persons' && <>
-              <MultiSelect label="Person" options={personsList} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} />
-              <MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
-              <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
+              <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Person" options={personsList} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} /></div>
+              <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} /></div>
+              <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
             </>}
             {viewMode === 'assets' && <>
-              <MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} />
-              <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
+              <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} /></div>
+              <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
             </>}
             {viewMode === 'types' && <>
-              <MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} />
+              <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
             </>}
             <button className="btn-sm btn-reset" onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span></div>
@@ -3092,12 +3091,12 @@
             <div className="page-title">FIFO Reporting</div>
             <div className="page-sub">Tax harvesting & realized gains</div>
           </div>
-          <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <MultiSelect label="Person" options={persons} selected={filterPersons} onChange={setFilterPersons} />
-            <MultiSelect label="Asset Type" options={typesList} selected={filterAssetTypes} onChange={setFilterAssetTypes} />
-            <div className="filter-group">
+          <div className="filter-bar" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Person" options={persons} selected={filterPersons} onChange={setFilterPersons} /></div>
+            <div style={{ width: '220px', flexShrink: 0, minWidth: 0 }}><MultiSelect label="Asset Type" options={typesList} selected={filterAssetTypes} onChange={setFilterAssetTypes} /></div>
+            <div className="filter-group" style={{ width: '200px', flexShrink: 0, minWidth: 0 }}>
               <div className="filter-label">Stock Search</div>
-              <input className="form-input" style={{ width: 140, fontSize: 12 }} placeholder="Search..." value={stockFilter} onChange={e => setStockFilter(e.target.value)} />
+              <input className="form-input" style={{ width: '100%', fontSize: 12, height: 42 }} placeholder="Search..." value={stockFilter} onChange={e => setStockFilter(e.target.value)} />
             </div>
             <button className="btn-sm btn-reset" onClick={() => onFilterChange({ persons: ['All'], types: ['All'], search: '' })} title="Reset Filters">↺</button>
             <div className="filter-group"><div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{sells.length} records</span></div>
