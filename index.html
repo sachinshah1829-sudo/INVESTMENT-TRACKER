@@ -1716,41 +1716,6 @@
       return `hsl(${Math.abs(h) % 360},70%,85%)`;
     };
 
-    const normalizeSymbolForAPI = (name) => {
-      let s = (name || '').trim().toUpperCase();
-      if (!s) return null;
-      if (s.includes(' ')) return null; // Probably not a ticker
-      if (s.endsWith('.NS') || s.endsWith('.BO')) return s;
-      return s + '.NS';
-    };
-
-    const fetchLivePrices = async (symbols) => {
-      if (!symbols || symbols.length === 0) return {};
-      const batchSize = 10;
-      let results = {};
-      const unique = [...new Set(symbols)];
-      for (let i = 0; i < unique.length; i += batchSize) {
-        const chunk = unique.slice(i, i + batchSize);
-        const url = `https://nse-api-ruby.vercel.app/stock/list?symbols=${chunk.join(',')}&res=num`;
-        try {
-          const resp = await fetch(url);
-          if (!resp.ok) continue;
-          const data = await resp.json();
-          if (data.status === 'success' && data.stocks) {
-            data.stocks.forEach(s => {
-              const matched = chunk.find(c => c === s.ticker || c === s.symbol);
-              if (matched) results[matched] = s.last_price;
-              else results[s.symbol] = s.last_price;
-            });
-          }
-        } catch (err) {
-          console.error('Error fetching live prices:', err);
-        }
-      }
-      return results;
-    };
-
-
     // ── FIFO ENGINE ───────────────────────────────────────────
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
@@ -1850,13 +1815,13 @@
         const cagr = (currentVal != null && s.investedVal > 0 && stockAvgAge > 0) ? (Math.pow(currentVal / s.investedVal, 1 / stockAvgAge) - 1) * 100 : null;
 
         const personList = Object.keys(s.persons).sort();
-        const aggregated = {};
-        Object.values(s.persons).forEach(p => {
-          p.lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
-        });
-        const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+        const breakup = Object.entries(s.persons).map(([pName, pData]) => {
+          const pLots = pData.lots.map(l => `${l.qty}@${l.price}`).join(', ');
+          return `${pName}: ${pLots}`;
+        }).join(' | ');
 
         return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct, cagr, personList, breakup };
+
 
       });
     }
@@ -3170,7 +3135,7 @@
                 <thead>
                   <tr>
                     {viewMode === 'persons' && <th>Person</th>}
-                    {viewMode === 'assets' && <th>Person</th>}
+
 
                     {viewMode === 'types' && <th>Asset Type</th>}
                     {viewMode !== 'types' && <th>Asset</th>}
@@ -3188,7 +3153,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'types' ? 7 : 12}><div className="empty">No data</div></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'types' ? 7 : (viewMode === 'persons' ? 12 : 11)}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
                     const at = r.type || r.assetType || (r.stock ? (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') : 'STOCK');
                     return (
@@ -3202,15 +3167,7 @@
                         else if (viewMode === 'types') setDrilldownType(r.type);
                       }}>
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
-                        {viewMode === 'assets' && (
-                          <td>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                              {r.personList.map(p => (
-                                <span key={p} className="tag" style={{ background: personColor(p, personColors), color: '#1a1a1a', fontSize: '10px' }}>{p}</span>
-                              ))}
-                            </div>
-                          </td>
-                        )}
+
 
                         {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors), color: '#1a1a1a' }}>{r.type}</span></td>}
                         {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
@@ -3493,7 +3450,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, onSyncPrices
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3511,7 +3468,7 @@
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onSyncPrices={onSyncPrices} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
         </div>
       );
     }
@@ -3621,7 +3578,7 @@
       );
     }
 
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, onSyncPrices }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -3718,28 +3675,9 @@
               Example: <code>ADANI POWER, 181.94</code>
             </div>
             <textarea className="textarea-input" value={csvText} onChange={e => setCsvText(e.target.value)} placeholder={"ADANI POWER, 181.94\nBHEL, 291.12"} />
-            <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem' }}>
               <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={parse}>PREVIEW</button>
               {preview && <button className="btn-secondary" onClick={() => setPreview(null)}>CLEAR</button>}
-              <button 
-                className="btn-secondary" 
-                style={{ width: 'auto', padding: '.55rem 1.5rem', background: 'var(--sidebar-active-bg)', color: '#fff' }} 
-                onClick={async () => {
-                  try {
-                    const btn = document.activeElement;
-                    const original = btn.innerText;
-                    btn.innerText = 'SYNCING...';
-                    btn.disabled = true;
-                    await onSyncPrices();
-                    btn.innerText = original;
-                    btn.disabled = false;
-                  } catch (e) {
-                    alert('Sync failed: ' + e.message);
-                  }
-                }}
-              >
-                SYNC LIVE PRICES
-              </button>
             </div>
             {preview && <>
               <hr className="section-divider" />
@@ -4360,38 +4298,6 @@
         };
         init();
       }, [uid, loading]);
-      
-      const syncLivePrices = useCallback(async () => {
-        if (!uid) return false;
-        const stocks = [...new Set(transactions.map(t => t.stock))].filter(Boolean);
-        const apiSymbols = stocks.map(normalizeSymbolForAPI).filter(Boolean);
-        if (apiSymbols.length === 0) return false;
-
-        const live = await fetchLivePrices(apiSymbols);
-        if (Object.keys(live).length > 0) {
-          const updated = { ...stockPrices };
-          stocks.forEach(s => {
-            const apiSym = normalizeSymbolForAPI(s);
-            if (live[apiSym]) updated[s] = live[apiSym];
-            else if (live[s]) updated[s] = live[s];
-          });
-
-          await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({
-            prices: updated,
-            lastUpdated: Date.now()
-          });
-          return true;
-        }
-        return false;
-      }, [uid, transactions, stockPrices]);
-
-      const hasAutoSynced = useRef(false);
-      useEffect(() => {
-        if (!loading && transactions.length > 0 && !hasAutoSynced.current && uid) {
-          hasAutoSynced.current = true;
-          setTimeout(() => syncLivePrices(), 4000); 
-        }
-      }, [loading, transactions.length, uid, syncLivePrices]);
 
 
 
@@ -4639,7 +4545,7 @@
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
-                    transactions={transactions} onSyncPrices={syncLivePrices}
+                    transactions={transactions}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
