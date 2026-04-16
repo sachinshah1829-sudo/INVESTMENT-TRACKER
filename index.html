@@ -1943,10 +1943,13 @@
         <div className="filter-group" ref={ref}>
           {label && <div className="filter-label">{label}</div>}
           <div className="multi-select-wrap">
-            <div className="multi-select-trigger" onClick={() => setOpen(!open)} tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(!open); }}>
-              <span style={{ color: value ? 'inherit' : 'var(--text-muted)' }}>{value || placeholder}</span>
-              <span style={{ fontSize: 10 }}>▼</span>
+            <div className="form-input" onClick={() => setOpen(!open)} tabIndex={0} 
+                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(!open); if (onKeyDown) onKeyDown(e); }}>
+              <span style={{ color: value ? 'inherit' : 'var(--text-muted)', fontSize: '14px', fontWeight: 'normal' }}>{value || placeholder}</span>
+              <span style={{ fontSize: 10, opacity: 0.6 }}>▼</span>
             </div>
+
             {open && (
               <div className="multi-select-dropdown">
                 <input className="multi-select-search" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
