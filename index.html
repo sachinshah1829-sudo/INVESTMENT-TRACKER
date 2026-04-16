@@ -259,8 +259,8 @@
     }
 
     .sidebar {
-      width: 240px;
-      min-width: 240px;
+      width: 260px;
+      min-width: 260px;
       background: var(--sidebar-bg);
       display: flex;
       flex-direction: column;
@@ -270,7 +270,7 @@
       height: 100vh;
       z-index: 100;
       transition: transform .3s ease;
-      border-right: 2px solid var(--border);
+      border-right: 1px solid var(--border);
     }
 
     .sidebar-brand {
@@ -287,13 +287,13 @@
     }
 
     .sidebar-brand-name {
-      font-size: 28px;
-      font-weight: 700;
+      font-size: 30px;
+      font-weight: 800;
       color: #000;
       font-family: var(--font-big);
       text-transform: uppercase;
-      letter-spacing: -0.02em;
-      line-height: 1.1;
+      letter-spacing: -0.03em;
+      line-height: 1;
     }
 
     .sidebar-nav {
@@ -308,30 +308,34 @@
       gap: 12px;
       padding: .85rem 1.5rem;
       cursor: pointer;
-      color: var(--sidebar-muted);
+      color: var(--text);
       font-size: 14px;
       font-weight: 500;
-      transition: all .15s;
+      transition: all .2s;
       border: none;
       background: none;
       width: 100%;
       text-align: left;
       font-family: var(--font-main);
       letter-spacing: 0.01em;
+      opacity: 0.7;
     }
 
     .sidebar-item:hover {
-      color: var(--sidebar-text);
-      background: rgba(255, 255, 255, .05);
+      opacity: 1;
+      background: #F8F9FA;
     }
 
     .sidebar-item.active {
-      color: var(--sidebar-active);
-      background: var(--sidebar-active-bg);
+      color: #FFFFFF !important;
+      background: #000000 !important;
       font-weight: 700;
       font-family: var(--font-main);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .sidebar-item.active .sidebar-icon {
+      color: #FFFFFF !important;
     }
 
     .sidebar-icon {
@@ -358,14 +362,14 @@
     .sidebar-user-avatar {
       width: 32px;
       height: 32px;
-      background: var(--bg);
+      background: #E2E8F0;
       border: 1px solid var(--border);
       border-radius: 0px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      color: #666;
+      color: #000;
     }
 
     .sidebar-user-details {
@@ -394,9 +398,9 @@
     .btn-logout {
       width: 100%;
       padding: .65rem;
-      background: none;
+      background: #F8F9FA;
       border: 1px solid var(--border);
-      color: var(--red);
+      color: #000;
       font-family: var(--font-big);
       font-size: 11px;
       font-weight: 700;
@@ -405,12 +409,15 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 0px;
       text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn-logout:hover {
-      background: var(--red-bg);
-      border-color: var(--red);
-      transform: translateY(-1px);
+      background: #000;
+      color: #FFF;
+      border-color: #000;
     }
 
     .main {
@@ -1050,20 +1057,19 @@
       margin-bottom: 1rem;
     }
 
-    .top-gainer-card {
-      background: var(--green-bg);
-      border: 1px solid #c8e6c9;
+    .top-gainer-card,
+    .top-loser-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
       padding: 1rem;
       flex: 1;
       min-width: 200px;
+      box-shadow: var(--elevation-1);
     }
 
-    .top-loser-card {
-      background: var(--red-bg);
-      border: 1px solid #f7c1c1;
-      padding: 1rem;
-      flex: 1;
-      min-width: 200px;
+    .top-gainer-card .stat-val, 
+    .top-loser-card .stat-val {
+      font-size: 28px;
     }
 
     .empty {
@@ -1582,9 +1588,7 @@
     ];
 
     const PIE_COLORS = [
-      '#00E599', '#FF3366', '#FFB800', '#2196F3', '#EDFF66',
-      '#00C9A7', '#845EC2', '#D65DB1', '#FF6F91', '#FF9671',
-      '#FFC75F', '#F9F871', '#008E9B', '#4D8076', '#C34A36'
+      '#000000', '#1A1A1A', '#333333', '#4D4D4D', '#666666', '#808080', '#999999', '#B3B3B3', '#CCCCCC', '#E6E6E6'
     ];
 
     const DEFAULT_ASSET_TYPE_COLORS = {
@@ -1909,8 +1913,7 @@
       return (
         <div className="auth-wrapper">
           <div className="auth-card">
-            <div className="auth-brand" style={{ letterSpacing: '0.2em' }}>TRACKRR</div>
-            <div className="auth-title">.IN</div>
+            <div className="auth-brand" style={{ letterSpacing: '0.3em', fontWeight: 800 }}>TRACKRR.IN</div>
             <div className="auth-tabs">
               <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Login</button>
               <button className={`auth-tab${tab === 'signup' ? ' active' : ''}`} onClick={() => setTab('signup')}>Sign Up</button>
