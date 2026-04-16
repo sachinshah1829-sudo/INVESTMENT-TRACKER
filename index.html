@@ -161,19 +161,6 @@
       font-family: var(--font-main);
     }
 
-    .form-input {
-      width: 100%;
-      padding: .75rem 1rem;
-      border: 2px solid var(--border);
-      background: var(--input-bg);
-      font-family: var(--font-main);
-      font-size: 16px;
-      color: var(--text);
-      outline: none;
-      transition: all .1s;
-    }
-
-    .form-input:focus {
     .form-input,
     .select-input {
       width: 100%;
@@ -406,20 +393,24 @@
 
     .btn-logout {
       width: 100%;
-      padding: .4rem .75rem;
+      padding: .65rem;
       background: none;
-      border: 1px solid rgba(255, 255, 255, .15);
-      color: var(--sidebar-muted);
-      font-family: inherit;
+      border: 1px solid var(--border);
+      color: var(--red);
+      font-family: var(--font-big);
       font-size: 11px;
+      font-weight: 700;
       cursor: pointer;
       letter-spacing: .08em;
-      transition: all .15s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 8px;
+      text-transform: uppercase;
     }
 
     .btn-logout:hover {
-      border-color: rgba(255, 255, 255, .4);
-      color: var(--sidebar-text);
+      background: var(--red-bg);
+      border-color: var(--red);
+      transform: translateY(-1px);
     }
 
     .main {
