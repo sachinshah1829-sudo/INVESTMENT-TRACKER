@@ -1399,6 +1399,9 @@
     }
 
     @media(max-width: 768px) {
+      .menu-toggle.sidebar-is-open {
+        display: none !important;
+      }
       .menu-toggle {
         display: flex;
       }
@@ -4214,7 +4217,7 @@
             </div>
           )}
 
-          <button className="menu-toggle" onClick={() => setSidebarOpen(o => !o)}>☰</button>
+          <button className={`menu-toggle ${sidebarOpen ? 'sidebar-is-open' : ''}`} onClick={() => setSidebarOpen(o => !o)}>☰</button>
           <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="sidebar-brand" style={{ padding: '2rem 1.5rem' }}>
