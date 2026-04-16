@@ -38,7 +38,10 @@
       --elevation-3: 4px 4px 0px 0px #000000;
       --elevation-4: 6px 6px 0px 0px #000000;
       
-      --radius: 0px;
+      --radius: 12px;
+      
+      /* Transitions */
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       
       /* Fonts */
       --font-main: 'Courier Prime', monospace;
@@ -93,7 +96,8 @@
       padding: 2.5rem 2rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: var(--elevation-4);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.08);
     }
 
     .auth-brand {
@@ -159,12 +163,14 @@
       font-size: 16px;
       color: var(--text);
       outline: none;
-      transition: all .1s;
+      transition: var(--transition);
+      border-radius: 8px;
     }
 
     .form-input:focus {
-      box-shadow: inset var(--elevation-1);
+      border-color: #000;
       background: #fdfdfd;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
     }
 
     .btn-primary {
@@ -178,19 +184,19 @@
       font-weight: 700;
       cursor: pointer;
       letter-spacing: .05em;
-      transition: all 0.1s;
-      box-shadow: var(--elevation-2);
+      transition: var(--transition);
       text-transform: uppercase;
+      border-radius: var(--radius);
     }
 
     .btn-primary:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: var(--elevation-3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
     }
 
     .btn-primary:active {
-      transform: translate(1px, 1px);
-      box-shadow: 1px 1px 0px 0px var(--border);
+      transform: translateY(1px);
+      box-shadow: none;
     }
 
     .btn-primary:disabled {
@@ -394,7 +400,8 @@
       border: 2px solid var(--border);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: var(--elevation-3);
+      border-radius: var(--radius);
+      box-shadow: none;
     }
 
     .card-title {
@@ -419,13 +426,13 @@
       background: var(--surface);
       padding: 1.5rem;
       border: 2px solid var(--border);
-      box-shadow: var(--elevation-3);
-      transition: all 0.2s;
+      border-radius: var(--radius);
+      transition: var(--transition);
     }
 
     .stat-card:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: var(--elevation-4);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
     }
 
     .stat-label {
@@ -438,11 +445,12 @@
     }
 
     .stat-val {
-      font-size: 32px;
+      font-size: 38px;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
       font-family: var(--font-big);
-      line-height: 1.1;
+      line-height: 1;
+      margin-top: 4px;
     }
 
     .pos {
@@ -462,6 +470,7 @@
       position: relative;
       background: var(--surface);
       margin-bottom: 1rem;
+      border-radius: var(--radius);
     }
 
     /* Horizontal Scroll Indicator Fade */
@@ -580,11 +589,12 @@
       outline: none;
       appearance: none;
       cursor: pointer;
-      box-shadow: var(--elevation-1);
+      border-radius: 8px;
+      transition: var(--transition);
     }
 
     .select-input:focus {
-      box-shadow: var(--elevation-2);
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.05);
     }
 
     .textarea-input {
@@ -609,23 +619,23 @@
       background: var(--surface);
       color: var(--text);
       border: 2px solid var(--border);
+      border-radius: var(--radius);
       font-family: var(--font-main);
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.1s;
-      box-shadow: var(--elevation-2);
+      transition: var(--transition);
       text-transform: uppercase;
     }
 
     .btn-secondary:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: var(--elevation-3);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .btn-secondary:active {
-      transform: translate(1px, 1px);
-      box-shadow: 1px 1px 0px 0px var(--border);
+      transform: translateY(0);
+      box-shadow: none;
     }
 
     .btn-sm {
@@ -633,12 +643,12 @@
       background: var(--surface);
       color: #000;
       border: 3px solid var(--border);
+      border-radius: var(--radius);
       font-family: var(--font-main);
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.1s;
-      box-shadow: var(--elevation-1);
+      transition: var(--transition);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -647,8 +657,8 @@
     }
 
     .btn-sm:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: var(--elevation-2);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       background: #f8fafc;
     }
 
@@ -738,6 +748,7 @@
       overflow-y: auto;
       box-shadow: 12px 12px 0px 0px rgba(0,0,0,1);
       position: relative;
+      border-radius: var(--radius);
     }
 
     .modal-title {
@@ -1080,6 +1091,7 @@
       position: relative;
       margin-bottom: 2rem;
       padding: 4px;
+      border-radius: 14px;
     }
 
     .dock-btn {
@@ -1103,6 +1115,7 @@
       color: #000;
       box-shadow: var(--elevation-1);
       transform: translate(-1px, -1px);
+      border-radius: 10px;
     }
 
     /* GLASS REMOVED */
@@ -1281,27 +1294,28 @@
       border: 3px solid var(--border);
       padding: 1rem 0.75rem;
       cursor: pointer;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: var(--transition);
       display: flex;
       flex-direction: column;
       gap: 4px;
       position: relative;
       overflow: hidden;
-      background: var(--surface);
-      box-shadow: var(--elevation-2);
+      background: #F8F9FA;
+      box-shadow: none;
       min-height: 85px;
       justify-content: center;
+      border-radius: var(--radius);
     }
 
     .action-block:hover {
-      transform: translate(-3px, -3px);
-      box-shadow: var(--elevation-4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       z-index: 2;
     }
 
     .action-block:active {
-      transform: translate(1px, 1px);
-      box-shadow: var(--elevation-1);
+      transform: translateY(1px);
+      box-shadow: none;
     }
 
     .action-block.active {
@@ -1337,13 +1351,13 @@
       font-weight: 700;
     }
 
-    .action-block.bonus { background: #BBF7D0; color: #000; }
-    .action-block.split { background: #FF9671; color: #000; }
-    .action-block.merger { background: #845EC2; color: #fff; }
-    .action-block.demerger { background: #FF3366; color: #fff; }
-    .action-block.buyback { background: #FFB800; color: #000; }
-    .action-block.rights { background: #2196F3; color: #fff; }
-    .action-block.delist { background: #000000; color: #fff; }
+    .action-block.bonus:hover, .action-block.bonus.active { background: #BBF7D0; color: #000; }
+    .action-block.split:hover, .action-block.split.active { background: #FF9671; color: #000; }
+    .action-block.merger:hover, .action-block.merger.active { background: #845EC2; color: #fff; }
+    .action-block.demerger:hover, .action-block.demerger.active { background: #FF3366; color: #fff; }
+    .action-block.buyback:hover, .action-block.buyback.active { background: #FFB800; color: #000; }
+    .action-block.rights:hover, .action-block.rights.active { background: #2196F3; color: #fff; }
+    .action-block.delist:hover, .action-block.delist.active { background: #000000; color: #fff; }
 
     @media(max-width: 768px) {
       .sidebar {
@@ -3762,7 +3776,7 @@
             ))}
           </div>
 
-          <div className="card" style={{ maxWidth: 850, padding: '1.5rem' }}>
+          <div className="card" style={{ maxWidth: 850, padding: '1.5rem', border: '2px solid var(--border)' }}>
             <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ background: '#000', color: '#fff', padding: '2px 8px', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-main)' }}>STEP {step}</span>
               <span style={{ fontStyle: 'italic', fontSize: 13, color: 'var(--text-muted)' }}>
