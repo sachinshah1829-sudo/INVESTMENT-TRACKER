@@ -6,7 +6,8 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>Trackrr.in</title>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -21,7 +22,7 @@
       --sidebar-muted: #666666;
       --sidebar-active: #000000;
       --sidebar-active-bg: #EDFF66;
-      --border: #000000;
+      --border: #E2E8F0;
       --text: #000000;
       --text-muted: #555555;
       --green: #00E599;
@@ -31,15 +32,21 @@
       --amber: #FFB800;
       --amber-bg: #fff9e6;
       --input-bg: #ffffff;
+
+      /* Smooth CRED Elevations (Soft Shadows) */
+      --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --elevation-2: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --elevation-4: 0 16px 40px rgba(0, 0, 0, 0.16);
       
-      /* NeoPOP Elevations (Hard Shadows) */
-      --elevation-1: 1px 1px 0px 0px #000000;
-      --elevation-2: 2px 2px 0px 0px #000000;
-      --elevation-3: 4px 4px 0px 0px #000000;
-      --elevation-4: 6px 6px 0px 0px #000000;
-      
-      --radius: 0px;
-      
+      /* Brutalist Overrides (for specific sections) */
+      --hard-border: #000000;
+      --hard-elevation-1: 1px 1px 0px 0px #000000;
+      --hard-elevation-2: 2px 2px 0px 0px #000000;
+      --hard-elevation-3: 4px 4px 0px 0px #000000;
+      --hard-elevation-4: 6px 6px 0px 0px #000000;
+
+      --radius: 12px;
       /* Fonts */
       --font-main: 'Courier Prime', monospace;
       --font-big: 'Outfit', sans-serif;
@@ -67,12 +74,21 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    h1, h2, h3, h4, h5, .auth-title, .page-title, .stat-val, .modal-title, .sidebar-brand-name {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    .auth-title,
+    .page-title,
+    .stat-val,
+    .modal-title,
+    .sidebar-brand-name {
       font-family: var(--font-big);
       font-weight: 700;
       letter-spacing: -0.01em;
     }
-    
+
     * {
       font-family: inherit;
     }
@@ -167,30 +183,26 @@
       background: #fdfdfd;
     }
 
-    .btn-primary {
-      width: 100%;
-      padding: .85rem;
-      background: var(--text);
-      color: #fff;
-      border: 2px solid var(--border);
+      border: 1px solid var(--border);
       font-family: var(--font-main);
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       letter-spacing: .05em;
-      transition: all 0.1s;
+      transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
       box-shadow: var(--elevation-2);
       text-transform: uppercase;
+      border-radius: 12px;
     }
-
+ 
     .btn-primary:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: var(--elevation-3);
+      transform: translateY(-4px);
+      box-shadow: var(--elevation-4);
+      filter: brightness(1.1);
     }
-
+ 
     .btn-primary:active {
-      transform: translate(1px, 1px);
-      box-shadow: 1px 1px 0px 0px var(--border);
+      transform: translateY(0);
     }
 
     .btn-primary:disabled {
@@ -520,7 +532,10 @@
     }
 
     /* Currency columns or numbers should use Main font */
-    td:has(.stat-val), td.monospace, td:contains('₹'), td:contains('%') {
+    td:has(.stat-val),
+    td.monospace,
+    td:contains('₹'),
+    td:contains('%') {
       font-family: var(--font-main);
     }
 
@@ -619,20 +634,20 @@
     }
 
     .btn-secondary:hover {
-      transform: translate(-1px, -1px);
+      transform: translateY(-2px);
       box-shadow: var(--elevation-3);
+      filter: brightness(0.98);
     }
 
     .btn-secondary:active {
-      transform: translate(1px, 1px);
-      box-shadow: 1px 1px 0px 0px var(--border);
+      transform: translateY(0);
     }
 
     .btn-sm {
       padding: .4rem .75rem;
       background: var(--surface);
       color: #000;
-      border: 3px solid var(--border);
+      border: 1.5px solid var(--border);
       font-family: var(--font-main);
       font-size: 11px;
       font-weight: 700;
@@ -730,13 +745,13 @@
 
     .modal {
       background: var(--surface);
-      border: 3px solid var(--border);
+      border: 1.5px solid var(--border);
       padding: 2.5rem;
       width: 100%;
       max-width: 620px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 12px 12px 0px 0px rgba(0,0,0,1);
+      box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 1);
       position: relative;
     }
 
@@ -749,7 +764,7 @@
       align-items: center;
       font-family: var(--font-big);
       text-transform: uppercase;
-      border-bottom: 3px solid var(--border);
+      border-bottom: 2px solid var(--border);
       padding-bottom: 1rem;
       letter-spacing: -0.01em;
     }
@@ -803,6 +818,7 @@
     .filter-section {
       width: 100%;
     }
+
     .filter-blocks-title {
       font-size: 11px;
       text-transform: uppercase;
@@ -813,43 +829,54 @@
       justify-content: space-between;
       align-items: center;
     }
+
     .filter-blocks {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
     }
+
     .filter-chip {
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 600;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 700;
       border: 1px solid var(--border);
+      border-radius: 30px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s;
       user-select: none;
-      opacity: 0.4;
-      background: #f1f5f9;
-      color: #64748b;
+      background: #F8FAFC;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
+
     .filter-chip:hover {
-      opacity: 0.7;
+      background: #F1F5F9;
+      transform: translateY(-1px);
+      box-shadow: var(--elevation-1);
     }
+
     .filter-chip.active {
+      background: #000;
+      color: #fff;
+      border-color: #000;
       opacity: 1;
-      border-color: rgba(0,0,0,0.1);
-      color: #1a1a1a;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+
     .filter-chip.all {
       opacity: 1;
-      background: var(--sidebar-bg);
-      color: white;
+      background: #000;
+      color: #fff;
       border: none;
     }
+    
     .filter-chip.all.inactive {
-      background: #f1f5f9;
-      color: #64748b;
-      opacity: 0.4;
+      background: #F8FAFC;
+      color: #64748B;
       border: 1px solid var(--border);
+      opacity: 0.6;
     }
 
     /* DASHBOARD FILTER BLOCKS */
@@ -883,36 +910,29 @@
     }
 
     .dashboard-filter-block.active {
-      border: 2.5px solid var(--text) !important;
+      border: 2px solid #000 !important;
       box-shadow: var(--elevation-2);
-      transform: translate(1px, 1px);
+      background: #FFFFFF !important;
+      color: #000 !important;
+      z-index: 5;
     }
 
     .dashboard-filter-block .label {
+      font-family: var(--font-big);
       font-weight: 700;
       font-size: 13px;
       letter-spacing: 0.02em;
       text-transform: uppercase;
+      color: #1E293B;
     }
 
     .dashboard-filter-block .sub {
+      font-family: var(--font-main);
       font-size: 11px;
-      opacity: 0.8;
+      opacity: 0.7;
       letter-spacing: 0.05em;
       font-weight: 700;
-    }
-
-    /* Matching Corporate Action Colors for 'All' states */
-    .dashboard-filter-block.person-all {
-      background: #eff6ff;
-      color: #1d4ed8;
-      border-color: #bfdbfe;
-    }
-
-    .dashboard-filter-block.type-all {
-      background: #f5f3ff;
-      color: #6d28d2;
-      border-color: #ddd6fe;
+      color: #64748B;
     }
 
     .gear-btn {
@@ -927,10 +947,12 @@
       justify-content: center;
       transition: color 0.15s, transform 0.15s;
     }
+
     .gear-btn:hover {
       color: var(--text);
       transform: rotate(45deg) scale(1.1);
     }
+
     .gear-btn {
       background: var(--surface);
       border: 1.5px solid var(--border);
@@ -1075,7 +1097,7 @@
     .premium-dock {
       display: inline-flex;
       background: var(--surface);
-      border: 3px solid var(--border);
+      border: 1.5px solid var(--border);
       box-shadow: var(--elevation-3);
       position: relative;
       margin-bottom: 2rem;
@@ -1278,35 +1300,35 @@
     }
 
     .action-block {
-      border: 3px solid var(--border);
-      padding: 1rem 0.75rem;
+      border: 1px solid var(--border);
+      padding: 1.25rem 1rem;
       cursor: pointer;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
       display: flex;
       flex-direction: column;
       gap: 4px;
       position: relative;
       overflow: hidden;
-      background: var(--surface);
-      box-shadow: var(--elevation-2);
+      background: #F8FAFC;
+      border-radius: 12px;
       min-height: 85px;
       justify-content: center;
-    }
-
-    .action-block:hover {
-      transform: translate(-3px, -3px);
-      box-shadow: var(--elevation-4);
-      z-index: 2;
-    }
-
-    .action-block:active {
-      transform: translate(1px, 1px);
       box-shadow: var(--elevation-1);
     }
 
-    .action-block.active {
-      border: 3px solid var(--border);
+    .action-block:hover {
+      transform: translateY(-4px);
       box-shadow: var(--elevation-3);
+      background: #FFFFFF;
+    }
+
+    .action-block:active {
+      transform: translateY(0);
+    }
+
+    .action-block.active {
+      border: 2px solid #000;
+      box-shadow: var(--elevation-2);
       background: #EDFF66 !important;
       color: #000 !important;
     }
@@ -1314,8 +1336,8 @@
     .action-block.active::after {
       content: '✓';
       position: absolute;
-      top: 8px;
-      right: 10px;
+      top: 10px;
+      right: 12px;
       font-size: 16px;
       font-weight: 700;
     }
@@ -1327,28 +1349,59 @@
       letter-spacing: -0.01em;
       text-transform: uppercase;
       line-height: 1.1;
+      color: #334155;
+    }
+
+    .action-block.active .label {
+      color: #000 !important;
     }
 
     .action-block .sub {
       font-family: var(--font-main);
       font-size: 10px;
-      opacity: 0.8;
+      opacity: 0.7;
       letter-spacing: 0.02em;
       font-weight: 700;
+      color: #64748B;
+    }
+    
+    .action-block.active .sub {
+      color: #000 !important;
+      opacity: 1;
     }
 
-    .action-block.bonus { background: #BBF7D0; color: #000; }
-    .action-block.split { background: #FF9671; color: #000; }
-    .action-block.merger { background: #845EC2; color: #fff; }
-    .action-block.demerger { background: #FF3366; color: #fff; }
-    .action-block.buyback { background: #FFB800; color: #000; }
-    .action-block.rights { background: #2196F3; color: #fff; }
-    .action-block.delist { background: #000000; color: #fff; }
+    /* NEO-BRUTALIST OVERRIDE SCOPE */
+    .neo-brutalist {
+      --radius: 0px;
+      --border: var(--hard-border);
+      --elevation-1: var(--hard-elevation-1);
+      --elevation-2: var(--hard-elevation-2);
+      --elevation-3: var(--hard-elevation-3);
+      --elevation-4: var(--hard-elevation-4);
+    }
+
+    .neo-brutalist .card,
+    .neo-brutalist .stat-card,
+    .neo-brutalist .table-wrap,
+    .neo-brutalist .btn-sm {
+      border-radius: 0px !important;
+      border-color: #000 !important;
+    }
+
+    .neo-brutalist th {
+      background: var(--sidebar-active-bg);
+      border-bottom: 2px solid #000 !important;
+    }
+    
+    .neo-brutalist td {
+      border-bottom: 1.5px solid #000 !important;
+      border-right: 1.5px solid #000 !important;
+    }
 
     @media(max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
       }
 
       .sidebar.open {
@@ -1970,13 +2023,13 @@
       const stockGroups = {};
       rows.forEach(r => {
         if (!stockGroups[r.stock]) {
-          stockGroups[r.stock] = { 
-            stock: r.stock, 
-            totalQty: 0, 
-            investedVal: 0, 
-            currentVal: 0, 
+          stockGroups[r.stock] = {
+            stock: r.stock,
+            totalQty: 0,
+            investedVal: 0,
+            currentVal: 0,
             weightedAge: 0,
-            lots: [] 
+            lots: []
           };
         }
         const g = stockGroups[r.stock];
@@ -1997,7 +2050,7 @@
 
         const aggregated = {};
         g.lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
-        const breakup = Object.entries(aggregated).sort((a,b) => b[1]-a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+        const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
 
         return { ...g, avgBuy, absGain, absGainPct, cagr, currentPrice: cp, breakup };
       }).sort((a, b) => b.currentVal - a.currentVal);
@@ -2052,11 +2105,11 @@
 
     function StockHoldersModal({ stockName, rows, stockPrices, personColors, onClose }) {
       const [drilldown, setDrilldown] = useState(null);
-      
+
       const consolidated = rows.map(r => {
         const cp = stockPrices[r.stock] || stockPrices[r.stock.replace('NSE:', '')] || null;
         return { ...r, currentPrice: cp };
-      }).sort((a,b) => (b.currentVal || 0) - (a.currentVal || 0));
+      }).sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0));
 
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2120,7 +2173,7 @@
                 <tbody>
                   {rows.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this person</div></td></tr>}
                   {rows.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => {
-                    const at = r.assetType || (transactions.find(t => t.stock === r.stock && t.person === (person||r.person))?.assetType || 'STOCK');
+                    const at = r.assetType || (transactions.find(t => t.stock === r.stock && t.person === (person || r.person))?.assetType || 'STOCK');
                     return (
                       <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                         <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
@@ -2165,7 +2218,7 @@
 
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
-      
+
       const allPersons = filterPersons.includes('All');
       const allTypes = filterAssetTypes.includes('All');
 
@@ -2222,10 +2275,10 @@
       const topLoser = [...stockRows].sort((a, b) => a.absGain - b.absGain)[0];
 
       const sortedTypesPie = Object.entries(portfolio.reduce((acc, r) => {
-          const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
-          acc[at] = (acc[at] || 0) + (r.currentVal || r.investedVal);
-          return acc;
-        }, {})).sort((a, b) => b[1] - a[1]);
+        const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+        acc[at] = (acc[at] || 0) + (r.currentVal || r.investedVal);
+        return acc;
+      }, {})).sort((a, b) => b[1] - a[1]);
 
       const personWealth = portfolio.reduce((acc, r) => {
         if (!acc[r.person]) acc[r.person] = { invested: 0, current: 0 };
@@ -2242,57 +2295,57 @@
       ];
 
       const sortedAssetBreakdown = Object.entries(portfolio.reduce((acc, r) => {
-          acc[r.stock] = (acc[r.stock] || 0) + (r.currentVal || r.investedVal);
-          return acc;
-        }, {})).sort((a, b) => b[1] - a[1]);
+        acc[r.stock] = (acc[r.stock] || 0) + (r.currentVal || r.investedVal);
+        return acc;
+      }, {})).sort((a, b) => b[1] - a[1]);
 
       const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
 
       return (
         <div className="page" style={{ paddingBottom: '4rem' }}>
-      {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} />}
-      {drilldownAssetType && (
-        <AssetTypeDrilldownModal 
-          type={drilldownAssetType} 
-          rows={portfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)} 
-          stockPrices={stockPrices} 
-          personColors={personColors} 
-          onClose={() => setDrilldownAssetType(null)} 
-        />
-      )}
-      {drilldownStock && (
-        <StockHoldersModal 
-          stockName={drilldownStock} 
-          rows={(allPersons ? allPortfolio : portfolio).filter(r => r.stock === drilldownStock)} 
-          stockPrices={stockPrices} 
-          personColors={personColors} 
-          onClose={() => setDrilldownStock(null)} 
-        />
-      )}
+          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} />}
+          {drilldownAssetType && (
+            <AssetTypeDrilldownModal
+              type={drilldownAssetType}
+              rows={portfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)}
+              stockPrices={stockPrices}
+              personColors={personColors}
+              onClose={() => setDrilldownAssetType(null)}
+            />
+          )}
+          {drilldownStock && (
+            <StockHoldersModal
+              stockName={drilldownStock}
+              rows={(allPersons ? allPortfolio : portfolio).filter(r => r.stock === drilldownStock)}
+              stockPrices={stockPrices}
+              personColors={personColors}
+              onClose={() => setDrilldownStock(null)}
+            />
+          )}
 
           <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
             <div><div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div><div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div></div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                className="gear-btn" 
-                onClick={onShowSettings} 
+              <button
+                className="gear-btn"
+                onClick={onShowSettings}
                 title="Change Default Filters"
               >⚙</button>
-              <button 
-                className="btn-sm" 
-                style={{ height: 32 }} 
-                onClick={() => { 
-                  setFilterPersons(dashboardDefaults.persons); 
-                  setFilterAssetTypes(dashboardDefaults.assetTypes); 
+              <button
+                className="btn-sm"
+                style={{ height: 32 }}
+                onClick={() => {
+                  setFilterPersons(dashboardDefaults.persons);
+                  setFilterAssetTypes(dashboardDefaults.assetTypes);
                 }}
               >↺</button>
             </div>
           </div>
 
           <div className="dashboard-filter-grid">
-            <div 
+            <div
               className={`dashboard-filter-block ${!allPersons ? 'active' : 'person-all'}`}
-              style={!allPersons && filterPersons.length === 1 ? { 
+              style={!allPersons && filterPersons.length === 1 ? {
                 background: personColor(filterPersons[0], personColors),
                 borderColor: 'rgba(0,0,0,0.1)',
                 color: '#1a1a1a'
@@ -2304,9 +2357,9 @@
                 {allPersons ? 'All Persons' : (filterPersons.length === 1 ? filterPersons[0] : `${filterPersons.length} Selected`)}
               </div>
             </div>
-            <div 
+            <div
               className={`dashboard-filter-block ${!allTypes ? 'active' : 'type-all'}`}
-              style={!allTypes ? { 
+              style={!allTypes ? {
                 background: assetTypeColor(filterAssetTypes[0], assetTypeColors),
                 borderColor: 'rgba(0,0,0,0.1)',
                 color: '#1a1a1a'
@@ -2328,7 +2381,7 @@
                   <button className="modal-close" onClick={() => setShowPersonModal(false)}>×</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '1rem' }}>
-                  <div 
+                  <div
                     className={`filter-chip all ${filterPersons.includes('All') ? 'active' : 'inactive'}`}
                     onClick={() => {
                       setFilterPersons(['All']);
@@ -2338,8 +2391,8 @@
                   {persons.map(p => {
                     const isActive = filterPersons.includes(p);
                     return (
-                      <div 
-                        key={p} 
+                      <div
+                        key={p}
                         className={`filter-chip ${isActive ? 'active' : ''}`}
                         style={isActive ? { background: personColor(p, personColors) } : {}}
                         onClick={() => {
@@ -2368,7 +2421,7 @@
                   <button className="modal-close" onClick={() => setShowAssetTypeModal(false)}>×</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '1rem' }}>
-                  <div 
+                  <div
                     className={`filter-chip all ${filterAssetTypes.includes('All') ? 'active' : 'inactive'}`}
                     onClick={() => {
                       setFilterAssetTypes(['All']);
@@ -2378,8 +2431,8 @@
                   {types.map(t => {
                     const isActive = filterAssetTypes.includes(t);
                     return (
-                      <div 
-                        key={t} 
+                      <div
+                        key={t}
                         className={`filter-chip ${isActive ? 'active' : ''}`}
                         style={isActive ? { background: assetTypeColor(t, assetTypeColors) } : {}}
                         onClick={() => {
@@ -2446,61 +2499,61 @@
           {/* Condition 2: Selective Person, Asset All */}
           {!allPersons && allTypes && (
             <><div className="charts-row">
-                <div className="chart-card">
-                  <div className="card-title">Wealth by Asset Type</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
-                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                      {sortedTypesPie.map(([t, v]) => (
-                        <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                          <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="chart-card">
+                <div className="card-title">Wealth by Asset Type</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedTypesPie.map(([t, v]) => (
+                      <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
+              </div>
+              <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
           )}
 
           {/* Condition 3: Person All, Selective Asset */}
           {allPersons && !allTypes && (
             <><div className="charts-row">
-                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-                <div className="chart-card">
-                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
-                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                      {sortedAssetBreakdown.map(([s, v]) => (
-                        <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                          <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+              <div className="chart-card">
+                <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedAssetBreakdown.map(([s, v]) => (
+                      <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div></>
+              </div>
+            </div></>
           )}
 
           {/* Condition 4: Both Selective */}
           {!allPersons && !allTypes && (
             <><div className="charts-row">
-                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-                <div className="chart-card">
-                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
-                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                      {sortedAssetBreakdown.map(([s, v]) => (
-                        <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                          <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
-                        </div>
-                      ))}
-                    </div>
+              <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+              <div className="chart-card">
+                <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                    {sortedAssetBreakdown.map(([s, v]) => (
+                      <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
+              </div>
+            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
           )}
 
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
@@ -2517,7 +2570,7 @@
             <table style={{ minWidth: 1400 }}>
               <thead><tr><th>Person</th><th>Asset</th><th>Asset Type</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
               <tbody>
-                {portfolio.slice().sort((a,b)=>(b.currentVal||0)-(a.currentVal||0)).map((r, i) => {
+                {portfolio.slice().sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => {
                   const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
                   return (
                     <tr key={i} className="clickable" onClick={() => onSetDrilldown(r)}>
@@ -3993,7 +4046,7 @@
               // Only auto-apply defaults on first load if current filter is still 'All'
               setPortfolioFilter(prev => {
                 if (prev.persons.length === 1 && prev.persons[0] === 'All' && prev.assetTypes.length === 1 && prev.assetTypes[0] === 'All') {
-                   return { ...prev, ...data.dashboardDefaults };
+                  return { ...prev, ...data.dashboardDefaults };
                 }
                 return prev;
               });
@@ -4074,7 +4127,7 @@
         const updated = { ...stockPrices }; delete updated[stock];
         await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({ prices: updated, lastUpdated: new Date().toISOString() });
       };
-      
+
       const updateDashboardDefaults = async (defaults) => {
         setDashboardDefaults(defaults);
         if (uid) {
@@ -4167,63 +4220,63 @@
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                   Choose which filters should be active by default every time you open the dashboard.
                 </div>
-                
+
                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                   <label className="form-label">Default Persons</label>
-                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-                      <div 
-                        className={`filter-chip all ${dashboardDefaults.persons.includes('All') ? 'active' : 'inactive'}`}
-                        onClick={() => {
-                          updateDashboardDefaults({ ...dashboardDefaults, persons: ['All'] });
-                        }}
-                      >All</div>
-                      {persons.sort((a,b)=>a.name.localeCompare(b.name)).map(p => {
-                        const isActive = dashboardDefaults.persons.includes(p.name);
-                        return (
-                          <div 
-                            key={p.name} 
-                            className={`filter-chip ${isActive ? 'active' : ''}`}
-                            style={isActive ? { background: personColor(p.name, personColors) } : {}}
-                            onClick={() => {
-                              let next = dashboardDefaults.persons.filter(x => x !== 'All');
-                              if (next.includes(p.name)) next = next.filter(x => x !== p.name);
-                              else next.push(p.name);
-                              if (next.length === 0) next = ['All'];
-                              updateDashboardDefaults({ ...dashboardDefaults, persons: next });
-                            }}
-                          >{p.name}</div>
-                        );
-                      })}
-                   </div>
+                  <label className="form-label">Default Persons</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                    <div
+                      className={`filter-chip all ${dashboardDefaults.persons.includes('All') ? 'active' : 'inactive'}`}
+                      onClick={() => {
+                        updateDashboardDefaults({ ...dashboardDefaults, persons: ['All'] });
+                      }}
+                    >All</div>
+                    {persons.sort((a, b) => a.name.localeCompare(b.name)).map(p => {
+                      const isActive = dashboardDefaults.persons.includes(p.name);
+                      return (
+                        <div
+                          key={p.name}
+                          className={`filter-chip ${isActive ? 'active' : ''}`}
+                          style={isActive ? { background: personColor(p.name, personColors) } : {}}
+                          onClick={() => {
+                            let next = dashboardDefaults.persons.filter(x => x !== 'All');
+                            if (next.includes(p.name)) next = next.filter(x => x !== p.name);
+                            else next.push(p.name);
+                            if (next.length === 0) next = ['All'];
+                            updateDashboardDefaults({ ...dashboardDefaults, persons: next });
+                          }}
+                        >{p.name}</div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                   <label className="form-label">Default Asset Types</label>
-                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-                      <div 
-                        className={`filter-chip all ${dashboardDefaults.assetTypes.includes('All') ? 'active' : 'inactive'}`}
-                        onClick={() => {
-                          updateDashboardDefaults({ ...dashboardDefaults, assetTypes: ['All'] });
-                        }}
-                      >All</div>
-                      {assetTypes.sort((a,b)=>a.name.localeCompare(b.name)).map(t => {
-                        const isActive = dashboardDefaults.assetTypes.includes(t.name);
-                        return (
-                          <div 
-                            key={t.name} 
-                            className={`filter-chip ${isActive ? 'active' : ''}`}
-                            style={isActive ? { background: assetTypeColor(t.name, assetTypeColors) } : {}}
-                            onClick={() => {
-                              let next = dashboardDefaults.assetTypes.filter(x => x !== 'All');
-                              if (next.includes(t.name)) next = next.filter(x => x !== t.name);
-                              else next.push(t.name);
-                              if (next.length === 0) next = ['All'];
-                              updateDashboardDefaults({ ...dashboardDefaults, assetTypes: next });
-                            }}
-                          >{t.name}</div>
-                        );
-                      })}
-                   </div>
+                  <label className="form-label">Default Asset Types</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                    <div
+                      className={`filter-chip all ${dashboardDefaults.assetTypes.includes('All') ? 'active' : 'inactive'}`}
+                      onClick={() => {
+                        updateDashboardDefaults({ ...dashboardDefaults, assetTypes: ['All'] });
+                      }}
+                    >All</div>
+                    {assetTypes.sort((a, b) => a.name.localeCompare(b.name)).map(t => {
+                      const isActive = dashboardDefaults.assetTypes.includes(t.name);
+                      return (
+                        <div
+                          key={t.name}
+                          className={`filter-chip ${isActive ? 'active' : ''}`}
+                          style={isActive ? { background: assetTypeColor(t.name, assetTypeColors) } : {}}
+                          onClick={() => {
+                            let next = dashboardDefaults.assetTypes.filter(x => x !== 'All');
+                            if (next.includes(t.name)) next = next.filter(x => x !== t.name);
+                            else next.push(t.name);
+                            if (next.length === 0) next = ['All'];
+                            updateDashboardDefaults({ ...dashboardDefaults, assetTypes: next });
+                          }}
+                        >{t.name}</div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="modal-actions" style={{ marginTop: '2rem' }}>
@@ -4257,11 +4310,29 @@
               ))}
             </nav>
             <div className="sidebar-footer">
-              <div className="sidebar-user" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 10 }}>{user.email}</div>
-                <button onClick={() => setShowNavSettings(true)} style={{ background: 'none', border: 'none', color: 'var(--sidebar-muted)', cursor: 'pointer', padding: '5px' }} title="Sidebar Settings">⚙️</button>
+              <div className="sidebar-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F8FAFC', border: '1px solid var(--border)', borderRadius: '12px', marginBottom: '12px' }}>
+                <div style={{ width: '32px', height: '32px', background: 'var(--sidebar-active-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '14px', fontWeight: 'bold', border: '1.5px solid #000' }}>
+                  {user.email?.[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '800', color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email.split('@')[0]}</div>
+                  <div style={{ fontSize: '9px', color: '#64748B' }}>Verified Investor</div>
+                </div>
+                <button onClick={() => setShowNavSettings(true)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}>⚙️</button>
               </div>
-              <button className="btn-logout" onClick={() => auth.signOut()} style={{ marginTop: '10px' }}>LOGOUT</button>
+              <button className="btn-logout" onClick={() => auth.signOut()} style={{ 
+                width: '100%', 
+                padding: '10px', 
+                background: '#fff', 
+                border: '1px solid var(--border)', 
+                borderRadius: '8px', 
+                fontSize: '11px', 
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}>
+                LOGOUT
+              </button>
             </div>
           </aside>
           <main className="main">
@@ -4269,17 +4340,23 @@
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
+                {tab === 'portfolio' && (
+                  <div className="neo-brutalist">
+                    <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />
+                  </div>
+                )}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
                 {tab === 'manage' && (
-                  <ManageTab
-                    persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
-                    personColors={personColors} onColorChange={updatePersonColor}
-                    assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
-                    assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
-                    stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
-                    transactions={transactions}
-                  />
+                  <div className="neo-brutalist">
+                    <ManageTab
+                      persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
+                      personColors={personColors} onColorChange={updatePersonColor}
+                      assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
+                      assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
+                      stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
+                      transactions={transactions}
+                    />
+                  </div>
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
               </>
