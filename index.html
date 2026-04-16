@@ -6,8 +6,7 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>Trackrr.in</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -15,37 +14,33 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg: #F4F4F2;
+      --bg: #F4F4F4;
       --surface: #FFFFFF;
-      --sidebar-bg: #0D0D0D;
-      --sidebar-text: #F0F0F0;
+      --sidebar-bg: #FFFFFF;
+      --sidebar-text: #000000;
       --sidebar-muted: #666666;
       --sidebar-active: #000000;
       --sidebar-active-bg: #EDFF66;
-      --border: #E8E8E8;
-      --border-strong: #1a1a1a;
-      --text: #111111;
-      --text-muted: #888888;
-      --green: #00C896;
-      --green-bg: #F0FFF9;
+      --border: #000000;
+      --text: #000000;
+      --text-muted: #555555;
+      --green: #00E599;
+      --green-bg: #e6fff7;
       --red: #FF3366;
-      --red-bg: #FFF2F5;
-      --amber: #F5A623;
-      --amber-bg: #FFFCF0;
-      --input-bg: #F8F8F8;
-
-      /* Soft elevation — used broadly */
-      --elevation-1: 0 1px 4px rgba(0, 0, 0, 0.06);
-      --elevation-2: 0 2px 10px rgba(0, 0, 0, 0.08);
-      --elevation-3: 0 4px 20px rgba(0, 0, 0, 0.10);
-      --elevation-4: 0 8px 32px rgba(0, 0, 0, 0.14);
-
-      /* Hard NeoPOP — reserved for tables, modals, primary CTA only */
-      --neopop-sm: 2px 2px 0px 0px #1a1a1a;
-      --neopop-md: 4px 4px 0px 0px #1a1a1a;
-      --neopop-lg: 8px 8px 0px 0px rgba(0, 0, 0, 0.85);
-
-      --radius: 10px;
+      --red-bg: #fff0f3;
+      --amber: #FFB800;
+      --amber-bg: #fff9e6;
+      --input-bg: #ffffff;
+      
+      /* NeoPOP Elevations (Hard Shadows) */
+      --elevation-1: 1px 1px 0px 0px #000000;
+      --elevation-2: 2px 2px 0px 0px #000000;
+      --elevation-3: 4px 4px 0px 0px #000000;
+      --elevation-4: 6px 6px 0px 0px #000000;
+      
+      --radius: 0px;
+      
+      /* Fonts */
       --font-main: 'Courier Prime', monospace;
       --font-big: 'Outfit', sans-serif;
     }
@@ -72,22 +67,17 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    .auth-title,
-    .page-title,
-    .stat-val,
-    .modal-title,
-    .sidebar-brand-name {
+    h1, h2, h3, h4, h5, .auth-title, .page-title, .stat-val, .modal-title, .sidebar-brand-name {
       font-family: var(--font-big);
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
+    }
+    
+    * {
+      font-family: inherit;
     }
 
-    /* ── AUTH ─────────────────────────────────────────────── */
+    /* AUTH */
     .auth-wrapper {
       min-height: 100vh;
       display: flex;
@@ -99,17 +89,16 @@
 
     .auth-card {
       background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
+      border: 2px solid var(--border);
       padding: 2.5rem 2rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: var(--elevation-3);
+      box-shadow: var(--elevation-4);
     }
 
     .auth-brand {
       font-size: 11px;
-      letter-spacing: .2em;
+      letter-spacing: .15em;
       color: var(--text-muted);
       text-transform: uppercase;
       margin-bottom: .3rem;
@@ -120,6 +109,7 @@
       font-weight: 700;
       margin-bottom: 2rem;
       line-height: 1;
+      letter-spacing: -0.02em;
     }
 
     .auth-tabs {
@@ -155,7 +145,7 @@
       text-transform: uppercase;
       color: #000;
       display: block;
-      margin-bottom: .5rem;
+      margin-bottom: .6rem;
       font-weight: 700;
       font-family: var(--font-main);
     }
@@ -163,52 +153,48 @@
     .form-input {
       width: 100%;
       padding: .75rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      border: 2px solid var(--border);
       background: var(--input-bg);
       font-family: var(--font-main);
       font-size: 16px;
       color: var(--text);
       outline: none;
-      transition: border-color .15s, box-shadow .15s;
+      transition: all .1s;
     }
 
     .form-input:focus {
-      border-color: #1a1a1a;
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+      box-shadow: inset var(--elevation-1);
+      background: #fdfdfd;
     }
 
-    /* ── BUTTONS ──────────────────────────────────────────── */
     .btn-primary {
       width: 100%;
       padding: .85rem;
-      background: #111111;
+      background: var(--text);
       color: #fff;
-      border: none;
-      border-radius: 8px;
+      border: 2px solid var(--border);
       font-family: var(--font-main);
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
       letter-spacing: .05em;
-      transition: all 0.15s;
+      transition: all 0.1s;
+      box-shadow: var(--elevation-2);
       text-transform: uppercase;
-      box-shadow: var(--neopop-sm);
     }
 
     .btn-primary:hover {
       transform: translate(-1px, -1px);
-      box-shadow: var(--neopop-md);
+      box-shadow: var(--elevation-3);
     }
 
     .btn-primary:active {
       transform: translate(1px, 1px);
-      box-shadow: none;
+      box-shadow: 1px 1px 0px 0px var(--border);
     }
 
     .btn-primary:disabled {
-      opacity: .45;
+      opacity: .5;
       cursor: not-allowed;
       box-shadow: none;
       transform: none;
@@ -220,12 +206,11 @@
       background: var(--surface);
       color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 8px;
       font-family: inherit;
       font-size: 14px;
       cursor: pointer;
       margin-top: .75rem;
-      transition: background .15s, border-color .15s;
+      transition: background .15s;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -234,7 +219,6 @@
 
     .btn-google:hover {
       background: var(--bg);
-      border-color: #ccc;
     }
 
     .divider {
@@ -250,7 +234,7 @@
       margin-top: .5rem;
     }
 
-    /* ── LAYOUT ───────────────────────────────────────────── */
+    /* LAYOUT */
     .app {
       display: flex;
       min-height: 100vh;
@@ -270,25 +254,27 @@
       height: 100vh;
       z-index: 100;
       transition: transform .3s ease;
-      border-right: none;
+      border-right: 2px solid var(--border);
     }
 
     .sidebar-brand {
-      padding: 1.75rem 1.5rem 1rem;
+      padding: 1.5rem 1.25rem .75rem;
     }
 
     .sidebar-brand-sub {
       font-size: 9px;
       letter-spacing: .2em;
-      color: #444;
+      color: #000;
       text-transform: uppercase;
       font-weight: 500;
+      font-family: var(--font-aux);
     }
 
     .sidebar-brand-name {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 700;
-      color: #FFFFFF;
+      color: #000;
+      font-family: var(--font-big);
       text-transform: uppercase;
       letter-spacing: -0.02em;
       line-height: 1.1;
@@ -296,18 +282,18 @@
 
     .sidebar-nav {
       flex: 1;
-      padding: .75rem 0.75rem;
+      padding: .5rem 0;
       overflow-y: auto;
     }
 
     .sidebar-item {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: .75rem 1rem;
+      gap: 12px;
+      padding: .85rem 1.5rem;
       cursor: pointer;
       color: var(--sidebar-muted);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
       transition: all .15s;
       border: none;
@@ -316,20 +302,20 @@
       text-align: left;
       font-family: var(--font-main);
       letter-spacing: 0.01em;
-      border-radius: 8px;
-      margin-bottom: 2px;
     }
 
     .sidebar-item:hover {
-      color: #ccc;
-      background: rgba(255, 255, 255, 0.06);
+      color: var(--sidebar-text);
+      background: rgba(255, 255, 255, .05);
     }
 
     .sidebar-item.active {
       color: var(--sidebar-active);
       background: var(--sidebar-active-bg);
       font-weight: 700;
-      border-radius: 8px;
+      font-family: var(--font-main);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
 
     .sidebar-icon {
@@ -339,13 +325,13 @@
     }
 
     .sidebar-footer {
-      padding: 1.25rem 1rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.5rem 1.25rem;
+      border-top: 2px solid var(--border);
     }
 
     .sidebar-user {
       font-size: 11px;
-      color: #555;
+      color: var(--sidebar-muted);
       margin-bottom: .5rem;
       white-space: nowrap;
       overflow: hidden;
@@ -354,11 +340,10 @@
 
     .btn-logout {
       width: 100%;
-      padding: .45rem .75rem;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
-      color: #666;
+      padding: .4rem .75rem;
+      background: none;
+      border: 1px solid rgba(255, 255, 255, .15);
+      color: var(--sidebar-muted);
       font-family: inherit;
       font-size: 11px;
       cursor: pointer;
@@ -367,8 +352,8 @@
     }
 
     .btn-logout:hover {
-      border-color: rgba(255, 255, 255, 0.25);
-      color: #aaa;
+      border-color: rgba(255, 255, 255, .4);
+      color: var(--sidebar-text);
     }
 
     .main {
@@ -391,7 +376,7 @@
     }
 
     .page-title {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1;
@@ -400,29 +385,29 @@
     .page-sub {
       font-size: 12px;
       color: var(--text-muted);
-      margin-top: .25rem;
+      margin-top: .2rem;
     }
 
-    /* ── CARDS ────────────────────────────────────────────── */
+    /* CARDS */
     .card {
       background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
+      border: 2px solid var(--border);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: var(--elevation-1);
+      box-shadow: var(--elevation-3);
     }
 
     .card-title {
       font-size: 10px;
       letter-spacing: .15em;
       text-transform: uppercase;
-      color: #999;
+      color: #666;
       margin-bottom: 1rem;
       font-weight: 700;
+      font-family: var(--font-aux);
     }
 
-    /* ── STATS ────────────────────────────────────────────── */
+    /* STATS */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -433,15 +418,14 @@
     .stat-card {
       background: var(--surface);
       padding: 1.5rem;
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--elevation-1);
-      transition: box-shadow 0.2s, transform 0.2s;
+      border: 2px solid var(--border);
+      box-shadow: var(--elevation-3);
+      transition: all 0.2s;
     }
 
     .stat-card:hover {
-      box-shadow: var(--elevation-2);
-      transform: translateY(-1px);
+      transform: translate(-2px, -2px);
+      box-shadow: var(--elevation-4);
     }
 
     .stat-label {
@@ -454,7 +438,7 @@
     }
 
     .stat-val {
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 700;
       letter-spacing: -0.02em;
       font-family: var(--font-big);
@@ -462,23 +446,40 @@
     }
 
     .pos {
-      color: #00B87A;
+      color: var(--green);
     }
 
     .neg {
       color: var(--red);
     }
 
-    /* ── TABLES ───────────────────────────────────────────── */
+    /* TABLE */
     .table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--neopop-sm);
+      border: 2px solid var(--border);
+      box-shadow: var(--elevation-2);
       position: relative;
       background: var(--surface);
       margin-bottom: 1rem;
+    }
+
+    /* Horizontal Scroll Indicator Fade */
+    .table-wrap::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 30px;
+      background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.03));
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .table-wrap:has(table:not([style*="width: 100%"]))::after {
+      opacity: 1;
     }
 
     table {
@@ -489,25 +490,28 @@
     }
 
     th {
-      font-size: 11px;
-      letter-spacing: .06em;
+      font-size: 12px;
+      letter-spacing: .05em;
       text-transform: uppercase;
-      color: #555;
+      color: #000;
       text-align: left;
-      padding: .9rem .75rem;
-      border-bottom: 1px solid var(--border);
+      padding: 1rem .75rem;
+      border-bottom: 2px solid var(--border);
       font-weight: 700;
-      background: #FAFAFA;
+      background: var(--sidebar-active-bg);
       position: sticky;
       top: 0;
       z-index: 10;
+      overflow-wrap: break-word;
       font-family: var(--font-main);
     }
 
     td {
-      padding: .9rem .75rem;
-      border-bottom: 1px solid #F5F5F5;
+      padding: 1rem .75rem;
+      border-bottom: 1.5px solid var(--border);
+      border-right: 1.5px solid var(--border);
       transition: background 0.1s;
+      overflow-wrap: break-word;
       font-family: var(--font-main);
     }
 
@@ -515,39 +519,49 @@
       border-right: none;
     }
 
+    /* Currency columns or numbers should use Main font */
+    td:has(.stat-val), td.monospace, td:contains('₹'), td:contains('%') {
+      font-family: var(--font-main);
+    }
+
+    /* Sticky First Column on Mobile - REMOVED AS PER USER REQUEST */
+    @media(max-width: 768px) {
+      /* th:first-child, td:first-child removed */
+    }
+
     tr:last-child td {
       border-bottom: none;
     }
 
     tr.clickable:hover td {
-      background: #FAFAFA;
+      background: #f8fafc;
       cursor: pointer;
     }
 
-    /* ── TAGS ─────────────────────────────────────────────── */
+    /* TAGS */
     .tag {
       display: inline-block;
-      padding: 3px 10px;
+      padding: 4px 10px;
       font-size: 11px;
-      border-radius: 20px;
-      font-weight: 600;
-      line-height: 1.5;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      overflow-wrap: break-word;
+      line-height: 1.4;
       text-transform: uppercase;
       font-family: var(--font-main);
-      letter-spacing: 0.04em;
     }
 
     .badge-green {
-      background: #E8FFF5;
-      color: #00916A;
+      background: var(--primary-green);
+      color: #000;
     }
 
     .badge-red {
-      background: #FFF0F5;
-      color: var(--red);
+      background: var(--red);
+      color: #fff;
     }
 
-    /* ── FORMS ────────────────────────────────────────────── */
+    /* FORMS */
     .form-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -558,21 +572,19 @@
     .select-input {
       width: 100%;
       padding: .65rem .75rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      border: 2px solid var(--border);
       background: var(--input-bg);
       font-family: var(--font-main);
-      font-size: 14px;
+      font-size: 15px;
       color: var(--text);
       outline: none;
       appearance: none;
       cursor: pointer;
-      transition: border-color .15s;
+      box-shadow: var(--elevation-1);
     }
 
     .select-input:focus {
-      border-color: #1a1a1a;
-      background: #fff;
+      box-shadow: var(--elevation-2);
     }
 
     .textarea-input {
@@ -581,128 +593,134 @@
       min-height: 120px;
       resize: vertical;
       border: 1px solid var(--border);
-      border-radius: 8px;
       background: var(--input-bg);
       font-family: inherit;
       font-size: 12px;
       color: var(--text);
       outline: none;
-      transition: border-color .15s;
     }
 
     .textarea-input:focus {
-      border-color: #1a1a1a;
+      border-color: var(--text);
     }
 
     .btn-secondary {
       padding: .65rem 1.5rem;
       background: var(--surface);
       color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      border: 2px solid var(--border);
       font-family: var(--font-main);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.1s;
+      box-shadow: var(--elevation-2);
       text-transform: uppercase;
     }
 
     .btn-secondary:hover {
-      border-color: #999;
-      background: #FAFAFA;
+      transform: translate(-1px, -1px);
+      box-shadow: var(--elevation-3);
     }
 
     .btn-secondary:active {
-      transform: scale(0.98);
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px 0px var(--border);
     }
 
     .btn-sm {
-      padding: .35rem .85rem;
+      padding: .4rem .75rem;
       background: var(--surface);
-      color: #333;
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      color: #000;
+      border: 3px solid var(--border);
       font-family: var(--font-main);
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.1s;
+      box-shadow: var(--elevation-1);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
     }
 
     .btn-sm:hover {
-      border-color: #999;
-      background: #F5F5F5;
+      transform: translate(-2px, -2px);
+      box-shadow: var(--elevation-2);
+      background: #f8fafc;
     }
 
     .btn-sm:active {
-      transform: scale(0.97);
+      transform: translate(1px, 1px);
+      box-shadow: none;
     }
 
+    /* SQUARE ICON BUTTONS */
     .btn-reset {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       padding: 0;
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1;
       flex-shrink: 0;
     }
 
     .btn-sm-danger {
-      padding: .35rem .8rem;
+      padding: .4rem .8rem;
       background: var(--red-bg);
       color: var(--red);
-      border: 1px solid #FFD6E0;
-      border-radius: 6px;
+      border: 1.5px solid var(--border);
       font-family: var(--font-main);
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.1s;
+      box-shadow: 1px 1px 0px 0px var(--border);
     }
 
     .btn-sm-danger:hover {
-      background: #FFECF0;
+      transform: translate(-1px, -1px);
+      box-shadow: 2px 2px 0px 0px var(--border);
     }
 
     .btn-danger {
       padding: .65rem 1.5rem;
       background: var(--red);
       color: #fff;
-      border: none;
-      border-radius: 8px;
+      border: 2px solid var(--border);
       font-family: var(--font-main);
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.1s;
+      box-shadow: var(--elevation-2);
       text-transform: uppercase;
     }
 
     .btn-danger:hover {
-      opacity: .88;
+      transform: translate(-1px, -1px);
+      box-shadow: var(--elevation-3);
     }
 
     .btn-danger:active {
-      transform: scale(0.98);
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px 0px var(--border);
     }
 
     .btn-danger:disabled {
-      opacity: .45;
+      opacity: .5;
       cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
     }
 
-    /* ── MODAL ────────────────────────────────────────────── */
+    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, .45);
-      backdrop-filter: blur(4px);
       z-index: 500;
       display: flex;
       align-items: center;
@@ -712,28 +730,27 @@
 
     .modal {
       background: var(--surface);
-      border-radius: 16px;
-      border: 0.5px solid var(--border);
-      padding: 2rem;
+      border: 3px solid var(--border);
+      padding: 2.5rem;
       width: 100%;
       max-width: 620px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: var(--neopop-lg), var(--elevation-4);
+      box-shadow: 12px 12px 0px 0px rgba(0,0,0,1);
       position: relative;
     }
 
     .modal-title {
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 700;
-      margin-bottom: 1.75rem;
+      margin-bottom: 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-family: var(--font-big);
       text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: .875rem;
+      border-bottom: 3px solid var(--border);
+      padding-bottom: 1rem;
       letter-spacing: -0.01em;
     }
 
@@ -744,13 +761,6 @@
       cursor: pointer;
       color: var(--text-muted);
       line-height: 1;
-      padding: 4px;
-      border-radius: 4px;
-      transition: background .15s;
-    }
-
-    .modal-close:hover {
-      background: #f0f0f0;
     }
 
     .modal-actions {
@@ -760,6 +770,7 @@
       flex-wrap: wrap;
     }
 
+    /* SAVE FEEDBACK */
     .save-feedback {
       display: inline-flex;
       align-items: center;
@@ -769,7 +780,7 @@
       font-weight: 700;
     }
 
-    /* ── FILTER BAR ───────────────────────────────────────── */
+    /* FILTER BAR */
     .filter-bar {
       display: flex;
       gap: .5rem;
@@ -781,7 +792,6 @@
     .filter-bar select {
       padding: .35rem .6rem;
       border: 1px solid var(--border);
-      border-radius: 6px;
       background: var(--surface);
       font-family: inherit;
       font-size: 12px;
@@ -789,6 +799,10 @@
       outline: none;
     }
 
+    /* FILTER BLOCKS */
+    .filter-section {
+      width: 100%;
+    }
     .filter-blocks-title {
       font-size: 11px;
       text-transform: uppercase;
@@ -799,54 +813,46 @@
       justify-content: space-between;
       align-items: center;
     }
-
     .filter-blocks {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
     }
-
     .filter-chip {
-      padding: 5px 12px;
+      padding: 4px 10px;
       font-size: 12px;
       font-weight: 600;
       border: 1px solid var(--border);
-      border-radius: 20px;
       cursor: pointer;
       transition: all 0.15s;
       user-select: none;
-      opacity: 0.5;
-      background: #F5F5F5;
-      color: #666;
+      opacity: 0.4;
+      background: #f1f5f9;
+      color: #64748b;
     }
-
     .filter-chip:hover {
-      opacity: .75;
+      opacity: 0.7;
     }
-
     .filter-chip.active {
       opacity: 1;
+      border-color: rgba(0,0,0,0.1);
       color: #1a1a1a;
-      border-color: rgba(0, 0, 0, 0.15);
-      background: #fff;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
-
     .filter-chip.all {
       opacity: 1;
-      background: #111;
-      color: #fff;
-      border-color: transparent;
+      background: var(--sidebar-bg);
+      color: white;
+      border: none;
     }
-
     .filter-chip.all.inactive {
-      background: #F5F5F5;
-      color: #666;
-      opacity: 0.5;
+      background: #f1f5f9;
+      color: #64748b;
+      opacity: 0.4;
       border: 1px solid var(--border);
     }
 
-    /* ── DASHBOARD FILTER BLOCKS ──────────────────────────── */
+    /* DASHBOARD FILTER BLOCKS */
     .dashboard-filter-grid {
       display: flex;
       flex-wrap: nowrap;
@@ -856,29 +862,29 @@
     }
 
     .dashboard-filter-block {
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
+      border: 1px solid var(--border);
       padding: 1.25rem 1rem;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       flex-direction: column;
       gap: 4px;
+      position: relative;
+      overflow: hidden;
       background: var(--surface);
       flex: 1;
       max-width: 220px;
       min-width: 0;
-      box-shadow: var(--elevation-1);
     }
 
     .dashboard-filter-block:hover {
       transform: translateY(-2px);
-      box-shadow: var(--elevation-2);
+      box-shadow: var(--shadow-md);
     }
 
     .dashboard-filter-block.active {
-      border: 1.5px solid #1a1a1a;
-      box-shadow: var(--neopop-sm);
+      border: 2.5px solid var(--text) !important;
+      box-shadow: var(--elevation-2);
       transform: translate(1px, 1px);
     }
 
@@ -891,54 +897,55 @@
 
     .dashboard-filter-block .sub {
       font-size: 11px;
-      opacity: 0.7;
-      letter-spacing: 0.04em;
-      font-weight: 600;
+      opacity: 0.8;
+      letter-spacing: 0.05em;
+      font-weight: 700;
     }
 
+    /* Matching Corporate Action Colors for 'All' states */
     .dashboard-filter-block.person-all {
-      background: #EFF6FF;
-      color: #1D4ED8;
-      border-color: #BFDBFE;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
     }
 
     .dashboard-filter-block.type-all {
-      background: #F5F3FF;
-      color: #6D28D2;
-      border-color: #DDD6FE;
+      background: #f5f3ff;
+      color: #6d28d2;
+      border-color: #ddd6fe;
     }
 
     .gear-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: none;
+      border: none;
       cursor: pointer;
       color: var(--text-muted);
-      font-size: 15px;
-      padding: 6px 8px;
+      font-size: 16px;
+      padding: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s;
-      margin-left: 8px;
-      box-shadow: var(--elevation-1);
+      transition: color 0.15s, transform 0.15s;
     }
-
     .gear-btn:hover {
       color: var(--text);
-      border-color: #999;
-      transform: rotate(30deg);
+      transform: rotate(45deg) scale(1.1);
+    }
+    .gear-btn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      box-shadow: var(--elevation-1);
+      margin-left: 8px;
     }
 
-    /* ── BULK ACTIONS ─────────────────────────────────────── */
+    /* BULK ACTIONS */
     .bulk-bar {
       display: flex;
       gap: .5rem;
       align-items: center;
-      padding: .6rem .875rem;
-      background: #FFFCF0;
-      border: 1px solid #FFE9A0;
-      border-radius: 8px;
+      padding: .5rem .75rem;
+      background: var(--amber-bg);
+      border: 1px solid #ffe082;
       margin-bottom: .75rem;
       flex-wrap: wrap;
     }
@@ -949,7 +956,7 @@
       font-weight: 700;
     }
 
-    /* ── CHARTS ───────────────────────────────────────────── */
+    /* CHARTS */
     .charts-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -959,10 +966,9 @@
 
     .chart-card {
       background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius);
+      border: 2px solid var(--border);
       padding: 1.5rem;
-      box-shadow: var(--elevation-1);
+      box-shadow: var(--elevation-3);
     }
 
     .chart-wrap {
@@ -970,20 +976,20 @@
       height: 280px;
     }
 
-    /* ── PREVIEW ──────────────────────────────────────────── */
+    /* PREVIEW */
     .preview-table td {
       font-size: 12px;
     }
 
     .preview-ok {
-      background: #F0FFF9;
+      background: var(--green-bg);
     }
 
     .preview-err {
-      background: #FFF2F5;
+      background: var(--red-bg);
     }
 
-    /* ── MISC ─────────────────────────────────────────────── */
+    /* MISC */
     .cards-row {
       display: flex;
       gap: 1rem;
@@ -992,18 +998,16 @@
     }
 
     .top-gainer-card {
-      background: #F0FFF9;
-      border: 1px solid #C3F0DC;
-      border-radius: var(--radius);
+      background: var(--green-bg);
+      border: 1px solid #c8e6c9;
       padding: 1rem;
       flex: 1;
       min-width: 200px;
     }
 
     .top-loser-card {
-      background: #FFF2F5;
-      border: 1px solid #FFD6E0;
-      border-radius: var(--radius);
+      background: var(--red-bg);
+      border: 1px solid #f7c1c1;
       padding: 1rem;
       flex: 1;
       min-width: 200px;
@@ -1031,19 +1035,17 @@
 
     .import-progress {
       background: var(--green-bg);
-      border: 1px solid #C3F0DC;
-      border-radius: 8px;
+      border: 1px solid #c8e6c9;
       padding: .75rem 1rem;
       margin-top: .75rem;
       font-size: 12px;
-      color: #00916A;
+      color: var(--green);
     }
 
     .price-edit-input {
       width: 120px;
       padding: .25rem .5rem;
       border: 1px solid var(--border);
-      border-radius: 6px;
       background: var(--input-bg);
       font-family: inherit;
       font-size: 13px;
@@ -1052,7 +1054,7 @@
     }
 
     .price-edit-input:focus {
-      border-color: #1a1a1a;
+      border-color: var(--text);
     }
 
     .dup-error {
@@ -1061,60 +1063,57 @@
       margin-top: .3rem;
     }
 
+    /* CHECKBOX */
     input[type="checkbox"] {
       width: 15px;
       height: 15px;
       cursor: pointer;
-      accent-color: #111;
+      accent-color: var(--text);
     }
 
-    /* ── PREMIUM DOCK TOGGLE ──────────────────────────────── */
+    /* PREMIUM DOCK TOGGLE */
     .premium-dock {
       display: inline-flex;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 3px solid var(--border);
+      box-shadow: var(--elevation-3);
       position: relative;
       margin-bottom: 2rem;
       padding: 4px;
-      gap: 2px;
-      box-shadow: var(--elevation-1);
     }
 
     .dock-btn {
-      padding: 9px 22px;
-      font-size: 12px;
+      padding: 10px 24px;
+      font-size: 13px;
       font-weight: 700;
-      color: #888;
+      color: #666;
       cursor: pointer;
       position: relative;
       z-index: 2;
-      transition: all 0.15s;
+      transition: all 0.1s;
       background: none;
       border: none;
       font-family: var(--font-main);
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      border-radius: 7px;
     }
 
     .dock-btn.active {
-      background: #111111;
-      color: #fff;
+      background: var(--sidebar-active-bg);
+      color: #000;
+      box-shadow: var(--elevation-1);
+      transform: translate(-1px, -1px);
     }
 
-    .dock-btn:not(.active):hover {
-      background: #F5F5F5;
-      color: #333;
-    }
+    /* GLASS REMOVED */
 
-    /* ── COLOR PICKER ─────────────────────────────────────── */
+    /* COLOR PICKER */
     .color-swatch {
       width: 22px;
       height: 22px;
-      border: 1.5px solid rgba(0, 0, 0, .15);
+      border: 2px solid rgba(0, 0, 0, .18);
       cursor: pointer;
-      border-radius: 50%;
+      border-radius: 3px;
       display: inline-block;
       flex-shrink: 0;
       transition: transform .1s;
@@ -1129,12 +1128,11 @@
       z-index: 300;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
       padding: 10px;
       top: 28px;
       left: 0;
       width: 176px;
-      box-shadow: var(--elevation-3);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .14);
     }
 
     .color-preset-grid {
@@ -1148,8 +1146,8 @@
       width: 100%;
       aspect-ratio: 1;
       cursor: pointer;
-      border-radius: 50%;
-      border: 1px solid rgba(0, 0, 0, .08);
+      border-radius: 2px;
+      border: 1px solid rgba(0, 0, 0, .1);
       transition: transform .1s;
     }
 
@@ -1158,10 +1156,10 @@
     }
 
     .color-preset.selected {
-      border: 2px solid #111;
+      border: 2px solid var(--text);
     }
 
-    /* ── MULTI SELECT ─────────────────────────────────────── */
+    /* MULTI SELECT */
     .filter-group {
       display: flex;
       flex-direction: column;
@@ -1183,21 +1181,22 @@
 
     .multi-select-trigger {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: .55rem .875rem;
-      font-size: 12px;
+      border: 2px solid var(--border);
+      padding: .6rem 1rem;
+      font-size: 13px;
       font-family: var(--font-main);
       font-weight: 700;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: all .15s;
+      transition: all .1s;
+      box-shadow: var(--elevation-1);
     }
 
     .multi-select-trigger:hover {
-      border-color: #999;
+      box-shadow: var(--elevation-2);
+      transform: translate(-1px, -1px);
     }
 
     .multi-select-dropdown {
@@ -1207,8 +1206,7 @@
       z-index: 400;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      box-shadow: var(--elevation-3);
+      box-shadow: var(--shadow-md);
       margin-top: 4px;
       min-width: 200px;
       max-height: 280px;
@@ -1223,11 +1221,10 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      border-radius: 6px;
     }
 
     .multi-select-opt:hover {
-      background: #F5F5F5;
+      background: var(--bg);
     }
 
     .multi-select-opt input {
@@ -1243,17 +1240,16 @@
       font-size: 12px;
       outline: none;
       margin-bottom: 4px;
-      background: transparent;
     }
 
-    /* ── MOBILE TOGGLE ────────────────────────────────────── */
+    /* MOBILE TOGGLE */
     .menu-toggle {
       display: none;
       position: fixed;
       top: .75rem;
       left: .75rem;
       z-index: 200;
-      background: #111;
+      background: var(--sidebar-bg);
       color: #fff;
       border: none;
       width: 36px;
@@ -1262,7 +1258,7 @@
       cursor: pointer;
       align-items: center;
       justify-content: center;
-      border-radius: 8px;
+      border-radius: 4px;
     }
 
     .sidebar-overlay {
@@ -1273,7 +1269,7 @@
       z-index: 90;
     }
 
-    /* ── ACTION BLOCKS (Corporate Actions) ───────────────── */
+    /* WIZARD BLOCKS */
     .action-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -1282,36 +1278,37 @@
     }
 
     .action-block {
-      border: 1.5px solid #3A3A3A;
-      padding: 1rem .875rem;
+      border: 3px solid var(--border);
+      padding: 1rem 0.75rem;
       cursor: pointer;
-      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       gap: 4px;
-      background: #222222;
-      border-radius: 10px;
-      min-height: 80px;
+      position: relative;
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--elevation-2);
+      min-height: 85px;
       justify-content: center;
     }
 
     .action-block:hover {
-      background: #2E2E2E;
-      border-color: #555;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      transform: translate(-3px, -3px);
+      box-shadow: var(--elevation-4);
+      z-index: 2;
     }
 
     .action-block:active {
-      transform: translateY(0);
+      transform: translate(1px, 1px);
+      box-shadow: var(--elevation-1);
     }
 
     .action-block.active {
+      border: 3px solid var(--border);
+      box-shadow: var(--elevation-3);
       background: #EDFF66 !important;
-      border-color: #C8D900 !important;
       color: #000 !important;
-      box-shadow: var(--neopop-sm);
-      transform: translate(1px, 1px);
     }
 
     .action-block.active::after {
@@ -1319,67 +1316,39 @@
       position: absolute;
       top: 8px;
       right: 10px;
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
-      color: #000;
     }
 
     .action-block .label {
       font-family: var(--font-big);
       font-weight: 700;
-      font-size: 14px;
+      font-size: 15px;
       letter-spacing: -0.01em;
       text-transform: uppercase;
       line-height: 1.1;
-      color: #CCCCCC;
-    }
-
-    .action-block.active .label {
-      color: #000 !important;
     }
 
     .action-block .sub {
       font-family: var(--font-main);
       font-size: 10px;
+      opacity: 0.8;
       letter-spacing: 0.02em;
-      font-weight: 600;
-      color: #666;
+      font-weight: 700;
     }
 
-    .action-block.active .sub {
-      color: #444 !important;
-    }
+    .action-block.bonus { background: #BBF7D0; color: #000; }
+    .action-block.split { background: #FF9671; color: #000; }
+    .action-block.merger { background: #845EC2; color: #fff; }
+    .action-block.demerger { background: #FF3366; color: #fff; }
+    .action-block.buyback { background: #FFB800; color: #000; }
+    .action-block.rights { background: #2196F3; color: #fff; }
+    .action-block.delist { background: #000000; color: #fff; }
 
-    /* All corporate action type classes → grey (overrides old vivid colors) */
-    .action-block.bonus,
-    .action-block.split,
-    .action-block.merger,
-    .action-block.demerger,
-    .action-block.buyback,
-    .action-block.rights,
-    .action-block.delist {
-      background: #222222;
-      color: #CCCCCC;
-      border-color: #3A3A3A;
-    }
-
-    .action-block.bonus.active,
-    .action-block.split.active,
-    .action-block.merger.active,
-    .action-block.demerger.active,
-    .action-block.buyback.active,
-    .action-block.rights.active,
-    .action-block.delist.active {
-      background: #EDFF66 !important;
-      color: #000 !important;
-      border-color: #C8D900 !important;
-    }
-
-    /* ── MOBILE ───────────────────────────────────────────── */
     @media(max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
       }
 
       .sidebar.open {
@@ -1388,10 +1357,13 @@
 
       .sidebar-overlay.open {
         display: block;
+        backdrop-filter: blur(2px);
       }
 
       .menu-toggle {
         display: flex;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: var(--shadow-md);
       }
 
       .sidebar-brand {
@@ -1405,25 +1377,27 @@
       }
 
       .page {
-        padding: .875rem;
+        padding: 0.75rem;
         padding-top: 4rem;
         width: 100%;
         box-sizing: border-box;
       }
 
       .card {
-        padding: .875rem;
-        margin-left: -.875rem;
-        margin-right: -.875rem;
-        width: calc(100% + 1.75rem);
+        padding: 0.75rem;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+        width: calc(100% + 1.5rem);
         border-left: none;
         border-right: none;
-        border-radius: 0;
       }
 
       .stats-grid {
         grid-template-columns: 1fr;
-        gap: .75rem;
+        gap: 0.75rem;
+        margin-left: 0;
+        margin-right: 0;
+        width: 100%;
       }
 
       .charts-row {
@@ -1440,10 +1414,9 @@
       }
 
       .modal {
-        padding: 1.25rem;
-        margin: .5rem;
+        padding: 1.5rem;
+        margin: 0.5rem;
         width: auto;
-        border-radius: 14px;
       }
 
       table {
@@ -1460,7 +1433,7 @@
       }
 
       .stat-val {
-        font-size: 22px;
+        font-size: 20px;
       }
 
       .dashboard-filter-grid {
@@ -1471,23 +1444,25 @@
         padding: 1rem .75rem;
       }
 
+      .dashboard-filter-block .label {
+        font-size: 11px;
+      }
+
+      .dashboard-filter-block .sub {
+        font-size: 10px;
+      }
+
       .page-title {
-        font-size: 22px;
+        font-size: 20px;
       }
 
       .btn-primary,
       .btn-secondary {
         padding: 0.75rem 1rem;
-        font-size: 13px;
-      }
-
-      .premium-dock {
-        flex-wrap: wrap;
-        border-radius: 10px;
+        font-size: 14px;
       }
     }
   </style>
-
 </head>
 
 <body>
@@ -1995,13 +1970,13 @@
       const stockGroups = {};
       rows.forEach(r => {
         if (!stockGroups[r.stock]) {
-          stockGroups[r.stock] = {
-            stock: r.stock,
-            totalQty: 0,
-            investedVal: 0,
-            currentVal: 0,
+          stockGroups[r.stock] = { 
+            stock: r.stock, 
+            totalQty: 0, 
+            investedVal: 0, 
+            currentVal: 0, 
             weightedAge: 0,
-            lots: []
+            lots: [] 
           };
         }
         const g = stockGroups[r.stock];
@@ -2022,7 +1997,7 @@
 
         const aggregated = {};
         g.lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
-        const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+        const breakup = Object.entries(aggregated).sort((a,b) => b[1]-a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
 
         return { ...g, avgBuy, absGain, absGainPct, cagr, currentPrice: cp, breakup };
       }).sort((a, b) => b.currentVal - a.currentVal);
@@ -2077,11 +2052,11 @@
 
     function StockHoldersModal({ stockName, rows, stockPrices, personColors, onClose }) {
       const [drilldown, setDrilldown] = useState(null);
-
+      
       const consolidated = rows.map(r => {
         const cp = stockPrices[r.stock] || stockPrices[r.stock.replace('NSE:', '')] || null;
         return { ...r, currentPrice: cp };
-      }).sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0));
+      }).sort((a,b) => (b.currentVal || 0) - (a.currentVal || 0));
 
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2145,7 +2120,7 @@
                 <tbody>
                   {rows.length === 0 && <tr><td colSpan="10"><div className="empty">No holdings for this person</div></td></tr>}
                   {rows.sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => {
-                    const at = r.assetType || (transactions.find(t => t.stock === r.stock && t.person === (person || r.person))?.assetType || 'STOCK');
+                    const at = r.assetType || (transactions.find(t => t.stock === r.stock && t.person === (person||r.person))?.assetType || 'STOCK');
                     return (
                       <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                         <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
@@ -2190,7 +2165,7 @@
 
       const { sells, holdings } = computeFIFO(transactions);
       const allPortfolio = buildPortfolio(holdings, stockPrices);
-
+      
       const allPersons = filterPersons.includes('All');
       const allTypes = filterAssetTypes.includes('All');
 
@@ -2247,10 +2222,10 @@
       const topLoser = [...stockRows].sort((a, b) => a.absGain - b.absGain)[0];
 
       const sortedTypesPie = Object.entries(portfolio.reduce((acc, r) => {
-        const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
-        acc[at] = (acc[at] || 0) + (r.currentVal || r.investedVal);
-        return acc;
-      }, {})).sort((a, b) => b[1] - a[1]);
+          const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+          acc[at] = (acc[at] || 0) + (r.currentVal || r.investedVal);
+          return acc;
+        }, {})).sort((a, b) => b[1] - a[1]);
 
       const personWealth = portfolio.reduce((acc, r) => {
         if (!acc[r.person]) acc[r.person] = { invested: 0, current: 0 };
@@ -2267,57 +2242,57 @@
       ];
 
       const sortedAssetBreakdown = Object.entries(portfolio.reduce((acc, r) => {
-        acc[r.stock] = (acc[r.stock] || 0) + (r.currentVal || r.investedVal);
-        return acc;
-      }, {})).sort((a, b) => b[1] - a[1]);
+          acc[r.stock] = (acc[r.stock] || 0) + (r.currentVal || r.investedVal);
+          return acc;
+        }, {})).sort((a, b) => b[1] - a[1]);
 
       const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
 
       return (
         <div className="page" style={{ paddingBottom: '4rem' }}>
-          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} />}
-          {drilldownAssetType && (
-            <AssetTypeDrilldownModal
-              type={drilldownAssetType}
-              rows={portfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)}
-              stockPrices={stockPrices}
-              personColors={personColors}
-              onClose={() => setDrilldownAssetType(null)}
-            />
-          )}
-          {drilldownStock && (
-            <StockHoldersModal
-              stockName={drilldownStock}
-              rows={(allPersons ? allPortfolio : portfolio).filter(r => r.stock === drilldownStock)}
-              stockPrices={stockPrices}
-              personColors={personColors}
-              onClose={() => setDrilldownStock(null)}
-            />
-          )}
+      {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} />}
+      {drilldownAssetType && (
+        <AssetTypeDrilldownModal 
+          type={drilldownAssetType} 
+          rows={portfolio.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownAssetType)} 
+          stockPrices={stockPrices} 
+          personColors={personColors} 
+          onClose={() => setDrilldownAssetType(null)} 
+        />
+      )}
+      {drilldownStock && (
+        <StockHoldersModal 
+          stockName={drilldownStock} 
+          rows={(allPersons ? allPortfolio : portfolio).filter(r => r.stock === drilldownStock)} 
+          stockPrices={stockPrices} 
+          personColors={personColors} 
+          onClose={() => setDrilldownStock(null)} 
+        />
+      )}
 
           <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
             <div><div className="page-title">{isNetWorthView ? 'Global Net Worth' : 'Dashboard'}</div><div className="page-sub">{allPersons ? 'Consolidated view across all persons' : `Filtering ${filterPersons.length} persons`}</div></div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                className="gear-btn"
-                onClick={onShowSettings}
+              <button 
+                className="gear-btn" 
+                onClick={onShowSettings} 
                 title="Change Default Filters"
               >⚙</button>
-              <button
-                className="btn-sm"
-                style={{ height: 32 }}
-                onClick={() => {
-                  setFilterPersons(dashboardDefaults.persons);
-                  setFilterAssetTypes(dashboardDefaults.assetTypes);
+              <button 
+                className="btn-sm" 
+                style={{ height: 32 }} 
+                onClick={() => { 
+                  setFilterPersons(dashboardDefaults.persons); 
+                  setFilterAssetTypes(dashboardDefaults.assetTypes); 
                 }}
               >↺</button>
             </div>
           </div>
 
           <div className="dashboard-filter-grid">
-            <div
+            <div 
               className={`dashboard-filter-block ${!allPersons ? 'active' : 'person-all'}`}
-              style={!allPersons && filterPersons.length === 1 ? {
+              style={!allPersons && filterPersons.length === 1 ? { 
                 background: personColor(filterPersons[0], personColors),
                 borderColor: 'rgba(0,0,0,0.1)',
                 color: '#1a1a1a'
@@ -2329,9 +2304,9 @@
                 {allPersons ? 'All Persons' : (filterPersons.length === 1 ? filterPersons[0] : `${filterPersons.length} Selected`)}
               </div>
             </div>
-            <div
+            <div 
               className={`dashboard-filter-block ${!allTypes ? 'active' : 'type-all'}`}
-              style={!allTypes ? {
+              style={!allTypes ? { 
                 background: assetTypeColor(filterAssetTypes[0], assetTypeColors),
                 borderColor: 'rgba(0,0,0,0.1)',
                 color: '#1a1a1a'
@@ -2353,7 +2328,7 @@
                   <button className="modal-close" onClick={() => setShowPersonModal(false)}>×</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '1rem' }}>
-                  <div
+                  <div 
                     className={`filter-chip all ${filterPersons.includes('All') ? 'active' : 'inactive'}`}
                     onClick={() => {
                       setFilterPersons(['All']);
@@ -2363,8 +2338,8 @@
                   {persons.map(p => {
                     const isActive = filterPersons.includes(p);
                     return (
-                      <div
-                        key={p}
+                      <div 
+                        key={p} 
                         className={`filter-chip ${isActive ? 'active' : ''}`}
                         style={isActive ? { background: personColor(p, personColors) } : {}}
                         onClick={() => {
@@ -2393,7 +2368,7 @@
                   <button className="modal-close" onClick={() => setShowAssetTypeModal(false)}>×</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '1rem' }}>
-                  <div
+                  <div 
                     className={`filter-chip all ${filterAssetTypes.includes('All') ? 'active' : 'inactive'}`}
                     onClick={() => {
                       setFilterAssetTypes(['All']);
@@ -2403,8 +2378,8 @@
                   {types.map(t => {
                     const isActive = filterAssetTypes.includes(t);
                     return (
-                      <div
-                        key={t}
+                      <div 
+                        key={t} 
                         className={`filter-chip ${isActive ? 'active' : ''}`}
                         style={isActive ? { background: assetTypeColor(t, assetTypeColors) } : {}}
                         onClick={() => {
@@ -2471,61 +2446,61 @@
           {/* Condition 2: Selective Person, Asset All */}
           {!allPersons && allTypes && (
             <><div className="charts-row">
-              <div className="chart-card">
-                <div className="card-title">Wealth by Asset Type</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
-                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                    {sortedTypesPie.map(([t, v]) => (
-                      <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
-                      </div>
-                    ))}
+                <div className="chart-card">
+                  <div className="card-title">Wealth by Asset Type</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedTypesPie.map(([t, v]) => (
+                        <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
+                <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
           )}
 
           {/* Condition 3: Person All, Selective Asset */}
           {allPersons && !allTypes && (
             <><div className="charts-row">
-              <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-              <div className="chart-card">
-                <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
-                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                    {sortedAssetBreakdown.map(([s, v]) => (
-                      <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
-                      </div>
-                    ))}
+                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+                <div className="chart-card">
+                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedAssetBreakdown.map(([s, v]) => (
+                        <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div></>
+              </div></>
           )}
 
           {/* Condition 4: Both Selective */}
           {!allPersons && !allTypes && (
             <><div className="charts-row">
-              <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-              <div className="chart-card">
-                <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
-                  <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
-                    {sortedAssetBreakdown.map(([s, v]) => (
-                      <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
-                      </div>
-                    ))}
+                <div className="chart-card"><div className="card-title">{filterAssetTypes[0]} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+                <div className="chart-card">
+                  <div className="card-title">Portfolio by Asset ({filterAssetTypes[0]})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+                    <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                    <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
+                      {sortedAssetBreakdown.map(([s, v]) => (
+                        <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
+                          <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
+              </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
           )}
 
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
@@ -2542,7 +2517,7 @@
             <table style={{ minWidth: 1400 }}>
               <thead><tr><th>Person</th><th>Asset</th><th>Asset Type</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Value</th><th style={{ textAlign: 'right' }}>Gain ₹</th><th style={{ textAlign: 'right' }}>Gain %</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th></tr></thead>
               <tbody>
-                {portfolio.slice().sort((a, b) => (b.currentVal || 0) - (a.currentVal || 0)).map((r, i) => {
+                {portfolio.slice().sort((a,b)=>(b.currentVal||0)-(a.currentVal||0)).map((r, i) => {
                   const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
                   return (
                     <tr key={i} className="clickable" onClick={() => onSetDrilldown(r)}>
@@ -4018,7 +3993,7 @@
               // Only auto-apply defaults on first load if current filter is still 'All'
               setPortfolioFilter(prev => {
                 if (prev.persons.length === 1 && prev.persons[0] === 'All' && prev.assetTypes.length === 1 && prev.assetTypes[0] === 'All') {
-                  return { ...prev, ...data.dashboardDefaults };
+                   return { ...prev, ...data.dashboardDefaults };
                 }
                 return prev;
               });
@@ -4099,7 +4074,7 @@
         const updated = { ...stockPrices }; delete updated[stock];
         await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').set({ prices: updated, lastUpdated: new Date().toISOString() });
       };
-
+      
       const updateDashboardDefaults = async (defaults) => {
         setDashboardDefaults(defaults);
         if (uid) {
@@ -4192,63 +4167,63 @@
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                   Choose which filters should be active by default every time you open the dashboard.
                 </div>
-
+                
                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Default Persons</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-                    <div
-                      className={`filter-chip all ${dashboardDefaults.persons.includes('All') ? 'active' : 'inactive'}`}
-                      onClick={() => {
-                        updateDashboardDefaults({ ...dashboardDefaults, persons: ['All'] });
-                      }}
-                    >All</div>
-                    {persons.sort((a, b) => a.name.localeCompare(b.name)).map(p => {
-                      const isActive = dashboardDefaults.persons.includes(p.name);
-                      return (
-                        <div
-                          key={p.name}
-                          className={`filter-chip ${isActive ? 'active' : ''}`}
-                          style={isActive ? { background: personColor(p.name, personColors) } : {}}
-                          onClick={() => {
-                            let next = dashboardDefaults.persons.filter(x => x !== 'All');
-                            if (next.includes(p.name)) next = next.filter(x => x !== p.name);
-                            else next.push(p.name);
-                            if (next.length === 0) next = ['All'];
-                            updateDashboardDefaults({ ...dashboardDefaults, persons: next });
-                          }}
-                        >{p.name}</div>
-                      );
-                    })}
-                  </div>
+                   <label className="form-label">Default Persons</label>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                      <div 
+                        className={`filter-chip all ${dashboardDefaults.persons.includes('All') ? 'active' : 'inactive'}`}
+                        onClick={() => {
+                          updateDashboardDefaults({ ...dashboardDefaults, persons: ['All'] });
+                        }}
+                      >All</div>
+                      {persons.sort((a,b)=>a.name.localeCompare(b.name)).map(p => {
+                        const isActive = dashboardDefaults.persons.includes(p.name);
+                        return (
+                          <div 
+                            key={p.name} 
+                            className={`filter-chip ${isActive ? 'active' : ''}`}
+                            style={isActive ? { background: personColor(p.name, personColors) } : {}}
+                            onClick={() => {
+                              let next = dashboardDefaults.persons.filter(x => x !== 'All');
+                              if (next.includes(p.name)) next = next.filter(x => x !== p.name);
+                              else next.push(p.name);
+                              if (next.length === 0) next = ['All'];
+                              updateDashboardDefaults({ ...dashboardDefaults, persons: next });
+                            }}
+                          >{p.name}</div>
+                        );
+                      })}
+                   </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label className="form-label">Default Asset Types</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
-                    <div
-                      className={`filter-chip all ${dashboardDefaults.assetTypes.includes('All') ? 'active' : 'inactive'}`}
-                      onClick={() => {
-                        updateDashboardDefaults({ ...dashboardDefaults, assetTypes: ['All'] });
-                      }}
-                    >All</div>
-                    {assetTypes.sort((a, b) => a.name.localeCompare(b.name)).map(t => {
-                      const isActive = dashboardDefaults.assetTypes.includes(t.name);
-                      return (
-                        <div
-                          key={t.name}
-                          className={`filter-chip ${isActive ? 'active' : ''}`}
-                          style={isActive ? { background: assetTypeColor(t.name, assetTypeColors) } : {}}
-                          onClick={() => {
-                            let next = dashboardDefaults.assetTypes.filter(x => x !== 'All');
-                            if (next.includes(t.name)) next = next.filter(x => x !== t.name);
-                            else next.push(t.name);
-                            if (next.length === 0) next = ['All'];
-                            updateDashboardDefaults({ ...dashboardDefaults, assetTypes: next });
-                          }}
-                        >{t.name}</div>
-                      );
-                    })}
-                  </div>
+                   <label className="form-label">Default Asset Types</label>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem' }}>
+                      <div 
+                        className={`filter-chip all ${dashboardDefaults.assetTypes.includes('All') ? 'active' : 'inactive'}`}
+                        onClick={() => {
+                          updateDashboardDefaults({ ...dashboardDefaults, assetTypes: ['All'] });
+                        }}
+                      >All</div>
+                      {assetTypes.sort((a,b)=>a.name.localeCompare(b.name)).map(t => {
+                        const isActive = dashboardDefaults.assetTypes.includes(t.name);
+                        return (
+                          <div 
+                            key={t.name} 
+                            className={`filter-chip ${isActive ? 'active' : ''}`}
+                            style={isActive ? { background: assetTypeColor(t.name, assetTypeColors) } : {}}
+                            onClick={() => {
+                              let next = dashboardDefaults.assetTypes.filter(x => x !== 'All');
+                              if (next.includes(t.name)) next = next.filter(x => x !== t.name);
+                              else next.push(t.name);
+                              if (next.length === 0) next = ['All'];
+                              updateDashboardDefaults({ ...dashboardDefaults, assetTypes: next });
+                            }}
+                          >{t.name}</div>
+                        );
+                      })}
+                   </div>
                 </div>
 
                 <div className="modal-actions" style={{ marginTop: '2rem' }}>
