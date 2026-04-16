@@ -3333,10 +3333,10 @@
       );
     }
 
-    // ── PORTFOLIO DRILLDOWN MODAL ──────────────────────────────
     function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose }) {
       if (!data) return null;
       const [subTab, setSubTab] = useState('holdings');
+      const [filterPerson, setFilterPerson] = useState(null);
       const { person, stock, lots } = data;
       const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
       const now = new Date();
@@ -3346,14 +3346,16 @@
         const groups = {};
         lots.forEach(l => {
           if (!groups[l.person]) {
-            groups[l.person] = { person: l.person, qty: 0, invested: 0, weightedAge: 0 };
+            groups[l.person] = { person: l.person, qty: 0, invested: 0, weightedAge: 0, personLots: [] };
           }
           const g = groups[l.person];
           g.qty += l.qty;
           g.invested += l.qty * l.price;
+          g.personLots.push(l);
           const age = Math.max(0.001, (now - toJSDate(l.date)) / (1000 * 60 * 60 * 24 * 365));
           g.weightedAge += (l.qty * l.price) * age;
         });
+
         return Object.values(groups).map(g => {
           const avgBuy = g.invested / g.qty;
           const cval = cp ? g.qty * cp : null;
@@ -3361,9 +3363,20 @@
           const gainPct = gain != null ? (gain / g.invested) * 100 : null;
           const avgAge = g.invested > 0 ? g.weightedAge / g.invested : 0;
           const cagr = (cval != null && g.invested > 0 && avgAge > 0) ? (Math.pow(cval / g.invested, 1 / avgAge) - 1) * 100 : null;
-          return { ...g, avgBuy, cval, gain, gainPct, cagr };
+          
+          const aggregated = {};
+          g.personLots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
+          const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+
+          return { ...g, avgBuy, cval, gain, gainPct, cagr, breakup };
         }).sort((a, b) => (b.cval || 0) - (a.cval || 0));
       }, [lots, cp]);
+
+      const displayLots = useMemo(() => {
+        let l = [...lots];
+        if (filterPerson) l = l.filter(x => x.person === filterPerson);
+        return l.sort((a, b) => toJSDate(b.date) - toJSDate(a.date));
+      }, [lots, filterPerson]);
 
       return (
         <div className="modal-overlay" onClick={onClose}>
@@ -3376,10 +3389,19 @@
               <button className="modal-close" onClick={onClose}>×</button>
             </div>
 
-            <div className="premium-dock" style={{ marginBottom: '1.25rem', height: '36px' }}>
-              <button className={`dock-btn ${subTab === 'holdings' ? 'active' : ''}`} onClick={() => setSubTab('holdings')} style={{ fontSize: '12px', padding: '0 1rem' }}>Holdings</button>
-              <button className={`dock-btn ${subTab === 'persons' ? 'active' : ''}`} onClick={() => setSubTab('persons')} style={{ fontSize: '12px', padding: '0 1rem' }}>Persons</button>
-            </div>
+            {!person && (
+              <div className="premium-dock" style={{ marginBottom: '1.25rem', height: '36px' }}>
+                <button className={`dock-btn ${subTab === 'holdings' ? 'active' : ''}`} onClick={() => setSubTab('holdings')} style={{ fontSize: '12px', padding: '0 1rem' }}>Holdings</button>
+                <button className={`dock-btn ${subTab === 'persons' ? 'active' : ''}`} onClick={() => setSubTab('persons')} style={{ fontSize: '12px', padding: '0 1rem' }}>Persons</button>
+              </div>
+            )}
+
+            {filterPerson && subTab === 'holdings' && (
+              <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', background: '#f8f9fa', padding: '8px 12px', borderLeft: '3px solid #000' }}>
+                <span>Filtering lots for: <b>{filterPerson}</b></span>
+                <button onClick={() => setFilterPerson(null)} style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', fontWeight: 700, padding: 0, textDecoration: 'underline' }}>Clear Filter</button>
+              </div>
+            )}
 
             <div className="table-wrap" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
               {subTab === 'holdings' ? (
@@ -3390,7 +3412,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {lots.sort((a, b) => toJSDate(b.date) - toJSDate(a.date)).map((l, i) => {
+                    {displayLots.map((l, i) => {
                       const invested = l.qty * l.price;
                       const cval = cp ? l.qty * cp : null;
                       const gain = cval != null ? cval - invested : null;
@@ -3419,20 +3441,22 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Person</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Val</th><th style={{ textAlign: 'right' }}>Gain</th><th style={{ textAlign: 'right' }}>Gain%</th><th style={{ textAlign: 'right' }}>CAGR</th>
+                      <th>Person</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Avg Buy</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Curr Price</th><th style={{ textAlign: 'right' }}>Curr Val</th><th style={{ textAlign: 'right' }}>Gain</th><th style={{ textAlign: 'right' }}>Gain%</th><th style={{ textAlign: 'right' }}>CAGR</th><th>Holdings</th>
                     </tr>
                   </thead>
                   <tbody>
                     {personBreakdown.map((p, i) => (
-                      <tr key={i}>
+                      <tr key={i} className="clickable" onClick={() => { setFilterPerson(p.person); setSubTab('holdings'); }}>
                         <td><span className="tag" style={{ background: personColor(p.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{p.person}</span></td>
                         <td style={{ textAlign: 'right' }}>{p.qty}</td>
                         <td style={{ textAlign: 'right' }}>{fmt(p.avgBuy)}</td>
                         <td style={{ textAlign: 'right' }}>{fmt(p.invested)}</td>
+                        <td style={{ textAlign: 'right' }}>{cp ? fmt(cp) : '—'}</td>
                         <td style={{ textAlign: 'right' }}>{p.cval ? fmt(p.cval) : '—'}</td>
                         <td style={{ textAlign: 'right' }} className={p.gain >= 0 ? 'pos' : 'neg'}>{p.gain != null ? fmt(p.gain) : '—'}</td>
                         <td style={{ textAlign: 'right' }} className={p.gainPct >= 0 ? 'pos' : 'neg'}>{p.gainPct != null ? fmtPct(p.gainPct) : '—'}</td>
                         <td style={{ textAlign: 'right' }} className={p.cagr >= 0 ? 'pos' : 'neg'}>{p.cagr != null ? fmtPct(p.cagr) : '—'}</td>
+                        <td style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'normal' }}>{p.breakup}</td>
                       </tr>
                     ))}
                   </tbody>
