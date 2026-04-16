@@ -21,7 +21,7 @@
       --sidebar-text: #000000;
       --sidebar-muted: #666666;
       --sidebar-active: #000000;
-      --sidebar-active-bg: #000000;
+      --sidebar-active-bg: #786f80;
       --border: rgba(0, 0, 0, 0.08);
       --text: #000000;
       --text-muted: #666666;
@@ -326,10 +326,12 @@
     }
 
     .sidebar-item.active {
-      color: #fff;
+      color: var(--sidebar-active);
       background: var(--sidebar-active-bg);
       font-weight: 700;
       font-family: var(--font-main);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
 
     .sidebar-icon {
@@ -547,15 +549,15 @@
     }
 
     th {
-      font-size: 11px;
-      letter-spacing: .08em;
+      font-size: 12px;
+      letter-spacing: .05em;
       text-transform: uppercase;
-      color: #fff;
+      color: #000;
       text-align: left;
       padding: 1rem .75rem;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
       font-weight: 700;
-      background: #000;
+      background: var(--sidebar-active-bg);
       position: sticky;
       top: 0;
       z-index: 10;
@@ -892,14 +894,14 @@
     }
 
     .filter-chip.active {
-      background: #000 !important;
+      background: #786f80 !important;
       color: #fff !important;
       border-color: #000;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .filter-chip.all.active {
-      background: #000 !important;
+      background: #786f80 !important;
       color: #fff !important;
     }
 
@@ -936,7 +938,7 @@
     }
 
     .dashboard-filter-block.active {
-      background: #000 !important;
+      background: #786f80 !important;
       color: #fff !important;
       border-color: #000;
       box-shadow: var(--elevation-3);
@@ -1150,8 +1152,8 @@
     }
 
     .dock-btn.active {
-      background: #000;
-      color: #fff;
+      background: var(--sidebar-active-bg);
+      color: #000;
       box-shadow: var(--elevation-1);
       transform: translate(-1px, -1px);
     }
@@ -1352,7 +1354,7 @@
     }
 
     .action-block.active {
-      background: #000 !important;
+      background: #786f80 !important;
       color: #fff !important;
       border-color: #000;
       box-shadow: var(--elevation-3);
