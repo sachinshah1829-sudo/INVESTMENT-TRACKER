@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
-  <title>Tracker.in | Net Worth & Portfolio</title>
+  <title>ट्राैकर.इन | Net Worth & Portfolio</title>
   <link
     href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
@@ -1686,23 +1686,30 @@
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
       const sorted = [...valid].sort((a, b) => toJSDate(a.date) - toJSDate(b.date));
-      const buys = {}; const sells = [];
+      const buys = {}; const sells = []; const unmatched = [];
+      
       sorted.forEach(tx => {
         const key = `${tx.person}|${tx.stock}`;
         if (!buys[key]) buys[key] = [];
-        if (tx.qty > 0) { buys[key].push({ date: tx.date, price: tx.price, qty: tx.qty, person: tx.person }); }
-        else if (tx.qty < 0) {
+        
+        if (tx.qty > 0) { 
+          buys[key].push({ date: tx.date, price: tx.price, qty: tx.qty, person: tx.person }); 
+        } else if (tx.qty < 0) {
           let sq = Math.abs(tx.qty); const q = buys[key] || [];
           while (sq > 0 && q.length > 0) {
             const b = q[0]; const used = Math.min(b.qty, sq);
             const profit = (tx.price - b.price) * used;
-            const yrs = (toJSDate(tx.date) - toJSDate(b.date)) / (1000 * 60 * 60 * 24 * 365);
-            const cagr = yrs > 0 ? (Math.pow(tx.price / b.price, 1 / yrs) - 1) * 100 : null;
-            sells.push({ person: tx.person, stock: tx.stock, buyDate: b.date, buyPrice: b.price, sellDate: tx.date, sellPrice: tx.price, qty: used, profit, cagr, yrs });
+            const yrs = Math.max(0.001, (toJSDate(tx.date) - toJSDate(b.date)) / (1000 * 60 * 60 * 24 * 365));
+            const cagr = b.price > 0 ? (Math.pow(tx.price / b.price, 1 / yrs) - 1) * 100 : 0;
+            sells.push({ person: tx.person, stock: tx.stock, buyDate: b.date, buyPrice: b.price, sellDate: tx.date, sellPrice: tx.price, qty: used, profit, realizedGain: profit, cagr, yrs });
             b.qty -= used; sq -= used; if (b.qty === 0) q.shift();
+          }
+          if (sq > 0) {
+            unmatched.push({ ...tx, unmatchedQty: sq });
           }
         }
       });
+      
       const holdings = {};
       Object.entries(buys).forEach(([key, lots]) => {
         const [person, stock] = key.split('|');
@@ -1711,7 +1718,7 @@
         if (!holdings[stock]) holdings[stock] = {};
         holdings[stock][person] = rem;
       });
-      return { sells, holdings };
+      return { sells, holdings, unmatched };
     }
 
     function buildPortfolio(holdings, stockPrices) {
@@ -1984,8 +1991,8 @@
       return (
         <div className="auth-wrapper">
           <div className="auth-card">
-            <div className="auth-brand" style={{ letterSpacing: '0.2em' }}>TRACKER</div>
-            <div className="auth-title">.IN</div>
+            <div className="auth-brand" style={{ letterSpacing: '0.2em' }}>ट्राैकर</div>
+            <div className="auth-title">.इन</div>
             <div className="auth-tabs">
               <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Login</button>
               <button className={`auth-tab${tab === 'signup' ? ' active' : ''}`} onClick={() => setTab('signup')}>Sign Up</button>
@@ -3050,7 +3057,7 @@
 
     // ── FIFO RESULTS ─────────────────────────────────────────
     function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors, filters, onFilterChange }) {
-      const { sells: allSells } = computeFIFO(transactions);
+      const { sells: allSells, unmatched: allUnmatched } = computeFIFO(transactions);
       
       const filterPersons = filters.persons;
       const filterAssetTypes = filters.types;
@@ -3064,6 +3071,12 @@
         const at = transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK';
         return (filterPersons.includes('All') || filterPersons.includes(s.person)) &&
           (filterAssetTypes.includes('All') || filterAssetTypes.includes(at)) &&
+          (!stockFilter || s.stock.toLowerCase().includes(stockFilter.toLowerCase()));
+      });
+
+      const unmatched = allUnmatched.filter(s => {
+        return (filterPersons.includes('All') || filterPersons.includes(s.person)) &&
+          (filterAssetTypes.includes('All') || filterAssetTypes.includes(s.assetType)) &&
           (!stockFilter || s.stock.toLowerCase().includes(stockFilter.toLowerCase()));
       });
 
@@ -3082,11 +3095,11 @@
         ? (Math.pow(realizedValueSum / realizedCostSum, 1 / realizedAvgAge) - 1) * 100
         : null;
 
-      const persons = [...new Set(allSells.map(s => s.person))].sort();
+      const persons = [...new Set([...allSells.map(s => s.person), ...allUnmatched.map(u => u.person)])].sort();
       const typesList = assetTypes.map(t => t.name).sort();
 
       return (
-        <div className="page">
+        <div className="page" style={{ paddingBottom: '4rem' }}>
           <div className="page-header">
             <div className="page-title">FIFO Reporting</div>
             <div className="page-sub">Tax harvesting & realized gains</div>
@@ -3113,6 +3126,35 @@
             </div>
           </div>
 
+          {unmatched.length > 0 && (
+            <div className="card" style={{ border: '1px solid #ffccbc', background: '#fff9f7', marginBottom: '1.5rem' }}>
+              <div className="card-title" style={{ color: '#d84315', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>⚠ Unmatched Sell Transactions (Short Sells)</span>
+              </div>
+              <div style={{ fontSize: 12, color: '#d84315', marginBottom: '1rem' }}>
+                These sell transactions could not be matched with any existing buy lots. Realized gains cannot be calculated for these until matching buy transactions are added.
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Date</th><th>Person</th><th>Stock</th><th>Qty Remaining</th><th>Sell Price</th></tr>
+                  </thead>
+                  <tbody>
+                    {unmatched.map((u, i) => (
+                      <tr key={i}>
+                        <td>{fmtDate(u.date)}</td>
+                        <td><span className="tag" style={{ background: personColor(u.person, personColors), color: '#1a1a1a' }}>{u.person}</span></td>
+                        <td style={{ fontWeight: 700 }}>{u.stock}</td>
+                        <td className="neg">-{u.unmatchedQty}</td>
+                        <td>{fmt(u.price)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           <div className="card" style={{ padding: 0 }}>
             <div className="table-wrap">
               <table>
@@ -3122,6 +3164,7 @@
                   </tr>
                 </thead>
                 <tbody>
+                  {sellsView.length === 0 && <tr><td colSpan="9"><div className="empty">No matched sell transactions found. Realized gains appear here after a sell is matched with a buy.</div></td></tr>}
                   {sellsView.map((s, i) => {
                     const at = transactions.find(t => t.stock === s.stock && t.person === s.person)?.assetType || 'STOCK';
                     return (
@@ -4302,7 +4345,7 @@
           <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
           <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="sidebar-brand" style={{ padding: '2rem 1.5rem' }}>
-              <div className="sidebar-brand-name">Tracker.in</div>
+              <div className="sidebar-brand-name">ट्राैकर.इन</div>
             </div>
 
             <nav className="sidebar-nav">
