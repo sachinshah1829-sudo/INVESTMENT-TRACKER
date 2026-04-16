@@ -1812,7 +1812,7 @@
                 <div className="multi-select-opt" onClick={() => toggle('All')}>
                   <input type="checkbox" checked={selected.includes('All')} readOnly /> <span>All</span>
                 </div>
-                {options.map(o => (
+                {options.filter(o => !['All', 'All Persons'].includes(o)).map(o => (
                   <div key={o} className="multi-select-opt" onClick={() => toggle(o)}>
                     <input type="checkbox" checked={selected.includes(o)} readOnly /> <span>{o}</span>
                   </div>
@@ -2347,7 +2347,7 @@
             <div style={{ flex: '1 1 240px', maxWidth: '300px' }}>
               <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Person Filter</label>
               <MultiSelect 
-                options={['All', ...persons.filter(p => !['All', 'All Persons'].includes(p))]} 
+                options={persons.filter(p => !['All', 'All Persons'].includes(p))} 
                 selected={filterPersons} 
                 onChange={setFilterPersons} 
               />
