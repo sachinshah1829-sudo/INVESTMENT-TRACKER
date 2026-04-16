@@ -1814,7 +1814,15 @@
         const stockAvgAge = s.investedVal > 0 ? weightedAgeSum / s.investedVal : 0;
         const cagr = (currentVal != null && s.investedVal > 0 && stockAvgAge > 0) ? (Math.pow(currentVal / s.investedVal, 1 / stockAvgAge) - 1) * 100 : null;
 
-        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct, cagr };
+        const personList = Object.keys(s.persons).sort();
+        const aggregated = {};
+        Object.values(s.persons).forEach(p => {
+          p.lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
+        });
+        const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
+
+        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct, cagr, personList, breakup };
+
       });
     }
 
@@ -3128,6 +3136,8 @@
                 <thead>
                   <tr>
                     {viewMode === 'persons' && <th>Person</th>}
+                    {viewMode === 'assets' && <th>Person</th>}
+
                     {viewMode === 'types' && <th>Asset Type</th>}
                     {viewMode !== 'types' && <th>Asset</th>}
                     {viewMode !== 'types' && <th>Asset Type</th>}
@@ -3144,7 +3154,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'persons' ? 12 : viewMode === 'types' ? 7 : 11}><div className="empty">No data</div></td></tr>}
+                  {filtered.length === 0 && <tr><td colSpan={viewMode === 'types' ? 7 : 12}><div className="empty">No data</div></td></tr>}
                   {filtered.map((r, i) => {
                     const at = r.type || r.assetType || (r.stock ? (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') : 'STOCK');
                     return (
@@ -3158,6 +3168,16 @@
                         else if (viewMode === 'types') setDrilldownType(r.type);
                       }}>
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
+                        {viewMode === 'assets' && (
+                          <td>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {r.personList.map(p => (
+                                <span key={p} className="tag" style={{ background: personColor(p, personColors), color: '#1a1a1a', fontSize: '10px' }}>{p}</span>
+                              ))}
+                            </div>
+                          </td>
+                        )}
+
                         {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors), color: '#1a1a1a' }}>{r.type}</span></td>}
                         {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
                         {viewMode !== 'types' && <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>}
@@ -3172,7 +3192,8 @@
                         <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
                         <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
                         <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
-                        {viewMode !== 'types' && <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup || (viewMode === 'assets' ? 'Click for info' : '')}</td>}
+                        {viewMode !== 'types' && <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>}
+
                       </tr>
                     );
                   })}
