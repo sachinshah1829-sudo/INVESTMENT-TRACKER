@@ -1164,7 +1164,7 @@
       background: var(--surface);
       cursor: pointer;
       font-size: 14px;
-      width: 240px; /* Fixed width as requested */
+      width: 100%;
       box-sizing: border-box;
       transition: all 0.2s;
     }
@@ -1981,7 +1981,7 @@
       return (
         <div className="auth-wrapper">
           <div className="auth-card">
-            <div className="auth-brand" style={{ letterSpacing: '0.2em' }}>TRACKRR</div>
+            <div className="auth-brand" style={{ letterSpacing: '0.2em' }}>TRACKER</div>
             <div className="auth-title">.IN</div>
             <div className="auth-tabs">
               <button className={`auth-tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Login</button>
