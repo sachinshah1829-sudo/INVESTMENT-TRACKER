@@ -1716,6 +1716,41 @@
       return `hsl(${Math.abs(h) % 360},70%,85%)`;
     };
 
+    const normalizeSymbolForAPI = (name) => {
+      let s = (name || '').trim().toUpperCase();
+      if (!s) return null;
+      if (s.includes(' ')) return null; // Probably not a ticker
+      if (s.endsWith('.NS') || s.endsWith('.BO')) return s;
+      return s + '.NS';
+    };
+
+    const fetchLivePrices = async (symbols) => {
+      if (!symbols || symbols.length === 0) return {};
+      const batchSize = 10;
+      let results = {};
+      const unique = [...new Set(symbols)];
+      for (let i = 0; i < unique.length; i += batchSize) {
+        const chunk = unique.slice(i, i + batchSize);
+        const url = `https://nse-api-ruby.vercel.app/stock/list?symbols=${chunk.join(',')}&res=num`;
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          if (data.status === 'success' && data.stocks) {
+            data.stocks.forEach(s => {
+              const matched = chunk.find(c => c === s.ticker || c === s.symbol);
+              if (matched) results[matched] = s.last_price;
+              else results[s.symbol] = s.last_price;
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching live prices:', err);
+        }
+      }
+      return results;
+    };
+
+
     // ── FIFO ENGINE ───────────────────────────────────────────
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
@@ -3458,7 +3493,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, onSyncPrices
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3476,7 +3511,7 @@
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onSyncPrices={onSyncPrices} />}
         </div>
       );
     }
@@ -3586,7 +3621,7 @@
       );
     }
 
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, onSyncPrices }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -3683,9 +3718,28 @@
               Example: <code>ADANI POWER, 181.94</code>
             </div>
             <textarea className="textarea-input" value={csvText} onChange={e => setCsvText(e.target.value)} placeholder={"ADANI POWER, 181.94\nBHEL, 291.12"} />
-            <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem' }}>
+            <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
               <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={parse}>PREVIEW</button>
               {preview && <button className="btn-secondary" onClick={() => setPreview(null)}>CLEAR</button>}
+              <button 
+                className="btn-secondary" 
+                style={{ width: 'auto', padding: '.55rem 1.5rem', background: 'var(--sidebar-active-bg)', color: '#fff' }} 
+                onClick={async () => {
+                  try {
+                    const btn = document.activeElement;
+                    const original = btn.innerText;
+                    btn.innerText = 'SYNCING...';
+                    btn.disabled = true;
+                    await onSyncPrices();
+                    btn.innerText = original;
+                    btn.disabled = false;
+                  } catch (e) {
+                    alert('Sync failed: ' + e.message);
+                  }
+                }}
+              >
+                SYNC LIVE PRICES
+              </button>
             </div>
             {preview && <>
               <hr className="section-divider" />
@@ -4553,7 +4607,7 @@
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
-                    transactions={transactions}
+                    transactions={transactions} onSyncPrices={syncLivePrices}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
