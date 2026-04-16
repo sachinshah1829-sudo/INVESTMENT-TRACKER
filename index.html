@@ -1423,7 +1423,7 @@
       }
 
       .sidebar-brand {
-        padding-left: 3.75rem;
+        padding-left: 4rem;
       }
 
       .main {
@@ -2377,11 +2377,11 @@
           </div>
 
           <div className="stats-grid">
-            <div className="stat-card"><div className="stat-label">Total Value</div><div className="stat-val">{fmt(totalCurrent)}</div></div>
-            <div className="stat-card"><div className="stat-label">Invested</div><div className="stat-val">{fmt(totalInvested)}</div></div>
+            <div className="stat-card"><div className="stat-label">Total Value</div><div className="stat-val">{fmtWords(totalCurrent)}</div></div>
+            <div className="stat-card"><div className="stat-label">Invested</div><div className="stat-val">{fmtWords(totalInvested)}</div></div>
             <div className="stat-card">
               <div className="stat-label">Total {totalGain >= 0 ? 'Profit' : 'Loss'}</div>
-              <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmt(totalGain)}</div>
+              <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmtWords(totalGain)}</div>
               <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
             </div>
             <div className="stat-card"><div className="stat-label">Unrealized CAGR</div><div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div></div>
