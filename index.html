@@ -15,39 +15,32 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg: #F4F4F4;
+      --bg: #F8F9FA;
       --surface: #FFFFFF;
       --sidebar-bg: #FFFFFF;
       --sidebar-text: #000000;
       --sidebar-muted: #666666;
       --sidebar-active: #000000;
       --sidebar-active-bg: #EDFF66;
-      --border: #000000;
+      --border: rgba(0, 0, 0, 0.08);
       --text: #000000;
-      --text-muted: #555555;
-      --green: #00E599;
-      --green-bg: #e6fff7;
-      --red: #FF3366;
-      --red-bg: #fff0f3;
+      --text-muted: #666666;
+      --green: #00D18E;
+      --green-bg: #E6FBF5;
+      --red: #FF3B6F;
+      --red-bg: #FFF0F4;
       --amber: #FFB800;
-      --amber-bg: #fff9e6;
+      --amber-bg: #FFF9E6;
       --input-bg: #ffffff;
 
-      /* Hard NeoPOP Elevations */
-      --elevation-1: 1px 1px 0px 0px #000000;
-      --elevation-2: 3px 3px 0px 0px #000000;
-      --elevation-3: 5px 5px 0px 0px #000000;
-      --elevation-4: 8px 8px 0px 0px #000000;
+      /* Smooth CRED Elevations (Soft Shadows) */
+      --elevation-1: 0 2px 4px rgba(0, 0, 0, 0.04);
+      --elevation-2: 0 4px 12px rgba(0, 0, 0, 0.06);
+      --elevation-3: 0 12px 24px rgba(0, 0, 0, 0.08);
+      --elevation-4: 0 16px 32px rgba(0, 0, 0, 0.1);
 
-      /* Brutalist Overrides (for specific sections) */
-      --hard-border: #000000;
-      --hard-elevation-1: 1px 1px 0px 0px #000000;
-      --hard-elevation-2: 2px 2px 0px 0px #000000;
-      --hard-elevation-3: 4px 4px 0px 0px #000000;
-      --hard-elevation-4: 6px 6px 0px 0px #000000;
+      --radius: 12px;
 
-      --radius: 0px;
-      --border: #000000;
       /* Fonts */
       --font-main: 'Courier Prime', monospace;
       --font-big: 'Outfit', sans-serif;
@@ -106,11 +99,12 @@
 
     .auth-card {
       background: var(--surface);
-      border: 3px solid var(--border);
+      border: 1px solid var(--border);
       padding: 2.5rem 2rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: none;
+      box-shadow: var(--elevation-4);
+      border-radius: var(--radius);
     }
 
     .auth-brand {
@@ -180,39 +174,52 @@
     }
 
     .form-input:focus {
-      box-shadow: inset var(--elevation-1);
-      background: #fdfdfd;
+    .form-input,
+    .select-input {
+      width: 100%;
+      padding: .75rem 1rem;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: all 0.2s;
+      border-radius: 8px;
+    }
+
+    .form-input:focus,
+    .select-input:focus {
+      border-color: #000;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
     }
 
     .btn-primary {
       width: 100%;
-      padding: 1rem 1.5rem;
-      background: #FFFFFF;
-      color: #000000;
-      border: 3px solid #000000;
+      padding: .85rem 1.5rem;
+      background: #000;
+      color: #fff;
+      border: none;
       font-family: var(--font-big);
       font-size: 14px;
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
-      letter-spacing: 0.1em;
-      transition: all 0.1s;
-      box-shadow: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--elevation-2);
       text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      border-radius: 0px;
-      position: relative;
+      letter-spacing: 0.08em;
+      border-radius: var(--radius);
     }
 
-    .btn-primary:hover {
-      background: #000000;
-      color: #FFFFFF;
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--elevation-3);
+      filter: brightness(1.1);
     }
 
-    .btn-primary:active {
-      transform: scale(0.98);
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: var(--elevation-1);
     }
 
     .btn-primary:disabled {
@@ -220,8 +227,6 @@
       cursor: not-allowed;
       box-shadow: none;
       transform: none;
-      background: #777;
-      border-color: #777;
     }
 
     .btn-google {
@@ -349,17 +354,54 @@
     }
 
     .sidebar-footer {
-      padding: 1.5rem 1.25rem;
-      border-top: 2px solid var(--border);
+      padding: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
 
-    .sidebar-user {
+    .sidebar-user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .sidebar-user-avatar {
+      width: 32px;
+      height: 32px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #666;
+    }
+
+    .sidebar-user-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .sidebar-user-email {
       font-size: 11px;
-      color: var(--sidebar-muted);
-      margin-bottom: .5rem;
+      font-weight: 700;
+      color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      opacity: 0.9;
+    }
+
+    .sidebar-user-role {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
     .btn-logout {
@@ -415,10 +457,12 @@
     /* CARDS */
     .card {
       background: var(--surface);
-      border: 1.5px solid var(--border);
+      border: 1px solid var(--border);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: none;
+      box-shadow: var(--elevation-1);
+      border-radius: var(--radius);
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
     }
 
     .card-title {
@@ -442,8 +486,8 @@
     .stat-card {
       background: var(--surface);
       padding: 1.5rem;
-      border: 1.5px solid var(--border);
-      box-shadow: none;
+      border: 2px solid var(--border);
+      box-shadow: var(--elevation-3);
       transition: all 0.2s;
     }
 
@@ -481,8 +525,8 @@
     .table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      border: 1.5px solid var(--border);
-      box-shadow: none;
+      border: 2px solid var(--border);
+      box-shadow: var(--elevation-2);
       position: relative;
       background: var(--surface);
       margin-bottom: 1rem;
@@ -596,91 +640,81 @@
       margin-bottom: .75rem;
     }
 
-    .select-input {
-      width: 100%;
-      padding: .65rem .75rem;
-      border: 2px solid var(--border);
-      background: var(--input-bg);
-      font-family: var(--font-main);
-      font-size: 15px;
-      color: var(--text);
-      outline: none;
-      appearance: none;
-      cursor: pointer;
-      box-shadow: var(--elevation-1);
-    }
-
-    .select-input:focus {
-      box-shadow: var(--elevation-2);
-    }
-
     .textarea-input {
       width: 100%;
-      padding: .6rem .75rem;
+      padding: .75rem 1rem;
       min-height: 120px;
       resize: vertical;
       border: 1px solid var(--border);
       background: var(--input-bg);
       font-family: inherit;
-      font-size: 12px;
+      font-size: 14px;
       color: var(--text);
       outline: none;
+      border-radius: 8px;
+      transition: all 0.2s;
     }
 
     .textarea-input:focus {
-      border-color: var(--text);
+      border-color: #000;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
     }
 
     .btn-secondary {
-      padding: .85rem 1.5rem;
-      background: #FFFFFF;
-      color: #000000;
-      border: 1.5px solid #000000;
+      padding: .75rem 1.75rem;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
       font-family: var(--font-big);
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.1s;
-      box-shadow: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--elevation-1);
       text-transform: uppercase;
-      border-radius: 0px;
+      letter-spacing: 0.05em;
+      border-radius: var(--radius);
     }
 
     .btn-secondary:hover {
-      background: #f8f8f8;
-      border-color: #000;
+      transform: translateY(-2px);
+      box-shadow: var(--elevation-2);
+      background: #F8F9FA;
     }
 
     .btn-secondary:active {
-      transform: scale(0.98);
+      transform: translateY(0);
+      box-shadow: var(--elevation-1);
     }
 
     .btn-sm {
-      padding: .4rem .75rem;
+      padding: .5rem 1rem;
       background: var(--surface);
       color: #000;
-      border: 1.5px solid var(--border);
-      font-family: var(--font-main);
+      border: 1px solid var(--border);
+      font-family: var(--font-big);
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.1s;
-      box-shadow: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--elevation-1);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-radius: 0px;
+      letter-spacing: 0.08em;
+      border-radius: 8px;
     }
 
     .btn-sm:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--elevation-2);
       background: #f8fafc;
-      border-color: #000;
     }
 
     .btn-sm:active {
-      transform: scale(0.96);
+      transform: translateY(0);
+      box-shadow: var(--elevation-1);
     }
 
     /* SQUARE ICON BUTTONS */
@@ -695,45 +729,44 @@
 
     .btn-sm-danger {
       padding: .4rem .8rem;
-      background: #fff;
+      background: var(--red-bg);
       color: var(--red);
-      border: 1.5px solid var(--red);
+      border: none;
       font-family: var(--font-main);
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.1s;
-      box-shadow: none;
-      border-radius: 0px;
+      transition: all 0.2s;
+      border-radius: 6px;
     }
 
     .btn-sm-danger:hover {
-      background: var(--red);
-      color: #fff;
+      filter: brightness(0.9);
     }
 
     .btn-danger {
       padding: .65rem 1.5rem;
-      background: #fff;
-      color: var(--red);
-      border: 3px solid var(--red);
-      font-family: var(--font-big);
+      background: var(--red);
+      color: #fff;
+      border: none;
+      font-family: var(--font-main);
       font-size: 14px;
-      font-weight: 800;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.1s;
-      box-shadow: none;
+      transition: all 0.2s;
+      box-shadow: var(--elevation-2);
       text-transform: uppercase;
-      border-radius: 0px;
+      border-radius: var(--radius);
     }
 
     .btn-danger:hover {
-      background: var(--red);
-      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: var(--elevation-3);
     }
 
     .btn-danger:active {
-      transform: scale(0.98);
+      transform: translateY(0);
+      box-shadow: var(--elevation-1);
     }
 
     .btn-danger:disabled {
@@ -757,18 +790,15 @@
 
     .modal {
       background: var(--surface);
-      border: 3px solid var(--border);
+      border: 1px solid var(--border);
       padding: 2.5rem;
       width: 100%;
       max-width: 620px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: none;
+      box-shadow: var(--elevation-4);
       position: relative;
-    }
- Riverside Shadow for Modal */
-    .modal-overlay {
-      backdrop-filter: blur(2px);
+      border-radius: var(--radius);
     }
 
     .modal-title {
@@ -780,7 +810,7 @@
       align-items: center;
       font-family: var(--font-big);
       text-transform: uppercase;
-      border-bottom: 2px solid var(--border);
+      border-bottom: 1px solid var(--border);
       padding-bottom: 1rem;
       letter-spacing: -0.01em;
     }
@@ -853,46 +883,35 @@
     }
 
     .filter-chip {
-      padding: 6px 14px;
+      padding: 6px 12px;
       font-size: 11px;
       font-weight: 700;
       border: 1px solid var(--border);
-      border-radius: 0px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
-      background: #F8FAFC;
+      background: #F1F5F9;
       color: #64748B;
+      border-radius: 20px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.02em;
     }
 
     .filter-chip:hover {
-      background: #F1F5F9;
-      transform: translateY(-1px);
-      box-shadow: var(--elevation-1);
+      background: #E2E8F0;
+      color: #1A1A1A;
     }
 
     .filter-chip.active {
-      background: #000;
-      color: #fff;
+      background: #EDFF66 !important;
+      color: #000 !important;
       border-color: #000;
-      opacity: 1;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    .filter-chip.all {
-      opacity: 1;
-      background: #000;
-      color: #fff;
-      border: none;
-    }
-
-    .filter-chip.all.inactive {
-      background: #F8FAFC;
-      color: #64748B;
-      border: 1px solid var(--border);
-      opacity: 0.6;
+    .filter-chip.all.active {
+      background: #EDFF66 !important;
+      color: #000 !important;
     }
 
     /* DASHBOARD FILTER BLOCKS */
@@ -908,7 +927,7 @@
       border: 1px solid var(--border);
       padding: 1.25rem 1rem;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -918,37 +937,42 @@
       flex: 1;
       max-width: 220px;
       min-width: 0;
+      border-radius: var(--radius);
+      box-shadow: var(--elevation-1);
     }
 
     .dashboard-filter-block:hover {
       transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      box-shadow: var(--elevation-2);
     }
 
     .dashboard-filter-block.active {
-      border: 2px solid #000 !important;
-      box-shadow: var(--elevation-2);
-      background: #FFFFFF !important;
+      background: #EDFF66 !important;
       color: #000 !important;
-      z-index: 5;
+      border-color: #000;
+      box-shadow: var(--elevation-3);
     }
 
     .dashboard-filter-block .label {
-      font-family: var(--font-big);
       font-weight: 700;
       font-size: 13px;
       letter-spacing: 0.02em;
       text-transform: uppercase;
-      color: #1E293B;
     }
 
     .dashboard-filter-block .sub {
-      font-family: var(--font-main);
       font-size: 11px;
-      opacity: 0.7;
+      opacity: 0.8;
       letter-spacing: 0.05em;
       font-weight: 700;
-      color: #64748B;
+    }
+
+    /* Color removals for dashboard-filter-block */
+    .dashboard-filter-block.person-all,
+    .dashboard-filter-block.type-all {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border);
     }
 
     .gear-btn {
@@ -1113,7 +1137,7 @@
     .premium-dock {
       display: inline-flex;
       background: var(--surface);
-      border: 1.5px solid var(--border);
+      border: 3px solid var(--border);
       box-shadow: var(--elevation-3);
       position: relative;
       margin-bottom: 2rem;
@@ -1151,7 +1175,7 @@
       height: 22px;
       border: 2px solid rgba(0, 0, 0, .18);
       cursor: pointer;
-      border-radius: 0px;
+      border-radius: 3px;
       display: inline-block;
       flex-shrink: 0;
       transition: transform .1s;
@@ -1319,40 +1343,37 @@
       border: 1px solid var(--border);
       padding: 1.25rem 1rem;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       gap: 4px;
       position: relative;
       overflow: hidden;
-      background: #F8FAFC;
-      border-radius: 12px;
+      background: #F8F9FA;
+      box-shadow: var(--elevation-1);
+      min-height: 85px;
       justify-content: center;
-      box-shadow: none;
+      border-radius: var(--radius);
     }
 
     .action-block:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--elevation-3);
-      background: #FFFFFF;
-    }
-
-    .action-block:active {
-      transform: translateY(0);
+      transform: translateY(-2px);
+      box-shadow: var(--elevation-2);
+      background: var(--surface);
     }
 
     .action-block.active {
-      border: 2px solid #000;
-      box-shadow: var(--elevation-2);
       background: #EDFF66 !important;
       color: #000 !important;
+      border-color: #000;
+      box-shadow: var(--elevation-3);
     }
 
     .action-block.active::after {
       content: '✓';
       position: absolute;
-      top: 10px;
-      right: 12px;
+      top: 8px;
+      right: 10px;
       font-size: 16px;
       font-weight: 700;
     }
@@ -1364,68 +1385,32 @@
       letter-spacing: -0.01em;
       text-transform: uppercase;
       line-height: 1.1;
-      color: #334155;
-    }
-
-    .action-block.active .label {
-      color: #000 !important;
     }
 
     .action-block .sub {
       font-family: var(--font-main);
       font-size: 10px;
-      opacity: 0.7;
+      opacity: 0.8;
       letter-spacing: 0.02em;
       font-weight: 700;
-      color: #64748B;
     }
 
-    .action-block.active .sub {
-      color: #000 !important;
-      opacity: 1;
-    }
-
-    .neo-brutalist {
-      --radius: 0px;
-      --border: #000000;
-      --elevation-1: 1px 1px 0px 0px #000000;
-      --elevation-2: 3px 3px 0px 0px #000000;
-      --elevation-3: 5px 5px 0px 0px #000000;
-      --elevation-4: 8px 8px 0px 0px #000000;
-    }
-
-    /* Selective Shadowing for Neo-Brutalist Tabs */
-    .neo-brutalist .card,
-    .neo-brutalist .table-wrap {
-      box-shadow: none !important;
-    }
-
-    .neo-brutalist .premium-dock {
-      box-shadow: var(--elevation-3) !important;
-    }
-
-    .neo-brutalist .card,
-    .neo-brutalist .stat-card,
-    .neo-brutalist .table-wrap,
-    .neo-brutalist .btn-sm {
-      border-radius: 0px !important;
-      border-color: #000 !important;
-    }
-
-    .neo-brutalist th {
-      background: var(--sidebar-active-bg);
-      border-bottom: 2px solid #000 !important;
-    }
-
-    .neo-brutalist td {
-      border-bottom: 1.5px solid #000 !important;
-      border-right: 1.5px solid #000 !important;
+    /* Action Block Colors Removed */
+    .action-block.bonus,
+    .action-block.split,
+    .action-block.merger,
+    .action-block.demerger,
+    .action-block.buyback,
+    .action-block.rights,
+    .action-block.delist {
+      background: #F8F9FA;
+      color: var(--text);
     }
 
     @media(max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
       }
 
       .sidebar.open {
@@ -2431,10 +2416,7 @@
                   })}
                 </div>
                 <div className="modal-actions" style={{ marginTop: '2rem' }}>
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowPersonModal(false)}>
-                    <span>APPLY FILTERS</span>
-                    <span>→</span>
-                  </button>
+                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowPersonModal(false)}>APPLY FILTERS</button>
                 </div>
               </div>
             </div>
@@ -3864,10 +3846,7 @@
                     <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} />
                   </div>
                 </div>
-                <button className="btn-primary" disabled={!stock} onClick={() => setStep(2)}>
-                  <span>NEXT: SELECT ACTION</span>
-                  <span>→</span>
-                </button>
+                <button className="btn-primary" disabled={!stock} onClick={() => setStep(2)}>NEXT: SELECT ACTION</button>
               </div>
             )}
 
@@ -4210,7 +4189,7 @@
       const personList = persons.length > 0 ? persons : [...new Set(transactions.filter(t => t.person).map(t => t.person))].map(n => ({ id: n, name: n }));
 
       const goTo = k => { setTab(k); setSidebarOpen(false); };
-      const handlePersonDrilldown = p => { setPortfolioFilter({ persons: [p], stocks: ['All'], assetTypes: ['All'] }); setTab('portfolio'); };
+      const handlePersonDrilldown = p => { setPortfolioFilter({ persons: [p], stocks: ['All'] }); setTab('portfolio'); };
 
       return (
         <div className="app">
@@ -4266,7 +4245,6 @@
                         <div
                           key={p.name}
                           className={`filter-chip ${isActive ? 'active' : ''}`}
-                          style={isActive ? { background: personColor(p.name, personColors) } : {}}
                           onClick={() => {
                             let next = dashboardDefaults.persons.filter(x => x !== 'All');
                             if (next.includes(p.name)) next = next.filter(x => x !== p.name);
@@ -4295,7 +4273,6 @@
                         <div
                           key={t.name}
                           className={`filter-chip ${isActive ? 'active' : ''}`}
-                          style={isActive ? { background: assetTypeColor(t.name, assetTypeColors) } : {}}
                           onClick={() => {
                             let next = dashboardDefaults.assetTypes.filter(x => x !== 'All');
                             if (next.includes(t.name)) next = next.filter(x => x !== t.name);
@@ -4340,29 +4317,17 @@
               ))}
             </nav>
             <div className="sidebar-footer">
-              <div className="sidebar-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F8FAFC', border: '1px solid var(--border)', borderRadius: '0px', marginBottom: '12px' }}>
-                <div style={{ width: '32px', height: '32px', background: 'var(--sidebar-active-bg)', borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', border: '1.5px solid #000' }}>
-                  {user.email?.[0].toUpperCase()}
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-avatar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 </div>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '800', color: '#000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email.split('@')[0]}</div>
-                  <div style={{ fontSize: '9px', color: '#64748B' }}>Verified Investor</div>
+                <div className="sidebar-user-details">
+                  <div className="sidebar-user-email">{user.email}</div>
+                  <div className="sidebar-user-role">Premium Member</div>
                 </div>
-                <button onClick={() => setShowNavSettings(true)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}>⚙️</button>
+                <button onClick={() => setShowNavSettings(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '5px', marginLeft: 'auto' }} title="Sidebar Settings">⚙️</button>
               </div>
-              <button className="btn-logout" onClick={() => auth.signOut()} style={{
-                width: '100%',
-                padding: '10px',
-                background: '#fff',
-                border: '1px solid var(--border)',
-                borderRadius: '0px',
-                fontSize: '11px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}>
-                LOGOUT
-              </button>
+              <button className="btn-logout" onClick={() => auth.signOut()}>Logout</button>
             </div>
           </aside>
           <main className="main">
@@ -4370,23 +4335,17 @@
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} />}
-                {tab === 'portfolio' && (
-                  <div className="neo-brutalist">
-                    <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />
-                  </div>
-                )}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
                 {tab === 'manage' && (
-                  <div className="neo-brutalist">
-                    <ManageTab
-                      persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
-                      personColors={personColors} onColorChange={updatePersonColor}
-                      assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
-                      assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
-                      stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
-                      transactions={transactions}
-                    />
-                  </div>
+                  <ManageTab
+                    persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
+                    personColors={personColors} onColorChange={updatePersonColor}
+                    assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
+                    assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
+                    stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
+                    transactions={transactions}
+                  />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
               </>
