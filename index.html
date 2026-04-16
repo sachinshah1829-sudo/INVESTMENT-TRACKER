@@ -288,7 +288,7 @@
     }
 
     .sidebar-brand-name {
-      font-size: 34px;
+      font-size: 30px;
       font-weight: 700;
       color: #000;
       font-family: var(--font-big);
@@ -896,7 +896,7 @@
       background: #000 !important;
       color: #fff !important;
       border-color: #000;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .filter-chip.all.active {
@@ -1122,18 +1122,25 @@
     }
 
     @media (max-width: 768px) {
-      .filter-bar, .filter-row {
+
+      .filter-bar,
+      .filter-row {
         gap: 0.75rem !important;
       }
+
       .filter-col {
         width: calc(50% - 0.4rem) !important;
         flex: none !important;
       }
+
       /* Ensure the trigger height is consistent */
-      .multi-select-trigger, .select-input, .form-input {
+      .multi-select-trigger,
+      .select-input,
+      .form-input {
         height: 40px !important;
         font-size: 12px !important;
       }
+
       .filter-label {
         font-size: 11px !important;
       }
@@ -1173,6 +1180,7 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
+
     .multi-select-wrap {
       position: relative;
       width: 100%;
@@ -1493,9 +1501,11 @@
       .menu-toggle.sidebar-is-open {
         display: none !important;
       }
+
       .menu-toggle {
         display: flex;
       }
+
       .sidebar {
         transform: translateX(-100%);
         box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
@@ -1711,13 +1721,13 @@
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
       const sorted = [...valid].sort((a, b) => toJSDate(a.date) - toJSDate(b.date));
       const buys = {}; const sells = []; const unmatched = [];
-      
+
       sorted.forEach(tx => {
         const key = `${tx.person}|${tx.stock}`;
         if (!buys[key]) buys[key] = [];
-        
-        if (tx.qty > 0) { 
-          buys[key].push({ date: tx.date, price: tx.price, qty: tx.qty, person: tx.person }); 
+
+        if (tx.qty > 0) {
+          buys[key].push({ date: tx.date, price: tx.price, qty: tx.qty, person: tx.person });
         } else if (tx.qty < 0) {
           let sq = Math.abs(tx.qty); const q = buys[key] || [];
           while (sq > 0 && q.length > 0) {
@@ -1733,7 +1743,7 @@
           }
         }
       });
-      
+
       const holdings = {};
       Object.entries(buys).forEach(([key, lots]) => {
         const [person, stock] = key.split('|');
@@ -1943,9 +1953,9 @@
         <div className="filter-group" ref={ref}>
           {label && <div className="filter-label">{label}</div>}
           <div className="multi-select-wrap">
-            <div className="form-input" onClick={() => setOpen(!open)} tabIndex={0} 
-                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(!open); if (onKeyDown) onKeyDown(e); }}>
+            <div className="form-input" onClick={() => setOpen(!open)} tabIndex={0}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(!open); if (onKeyDown) onKeyDown(e); }}>
               <span style={{ color: value ? 'inherit' : 'var(--text-muted)', fontSize: '14px', fontWeight: 'normal' }}>{value || placeholder}</span>
               <span style={{ fontSize: 10, opacity: 0.6 }}>▼</span>
             </div>
@@ -1989,7 +1999,7 @@
               type="text"
               value={value}
               onChange={e => { onChange(e.target.value); setOpen(true); }}
-              onFocus={() => setOpen(true)}
+              onClick={() => setOpen(true)}
               placeholder={placeholder}
               onKeyDown={onKeyDown}
               autoComplete="off"
@@ -2399,7 +2409,7 @@
 
       const [drilldownPerson, setDrilldownPerson] = useState(null);
       const [drilldownAssetType, setDrilldownAssetType] = useState(null);
-      const [drilldownStock, setDrilldownStock] = useState(null); 
+      const [drilldownStock, setDrilldownStock] = useState(null);
       const [drilldown, setDrilldown] = useState(null);
 
       const { sells, holdings } = computeFIFO(transactions);
@@ -2533,18 +2543,18 @@
           <div className="filter-row" style={{ display: 'flex', gap: '1.25rem', marginBottom: '2.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ width: '280px', flexShrink: 0, minWidth: 0 }}>
               <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Person Filter</label>
-              <MultiSelect 
-                options={persons.filter(p => !['All', 'All Persons'].includes(p))} 
-                selected={filterPersons} 
-                onChange={setFilterPersons} 
+              <MultiSelect
+                options={persons.filter(p => !['All', 'All Persons'].includes(p))}
+                selected={filterPersons}
+                onChange={setFilterPersons}
               />
             </div>
             <div style={{ width: '280px', flexShrink: 0, minWidth: 0 }}>
               <label className="form-label" style={{ marginBottom: '.5rem', display: 'block' }}>Asset Type</label>
-              <select 
-                className="select-input" 
+              <select
+                className="select-input"
                 style={{ width: '100%', height: 42, textOverflow: 'ellipsis' }}
-                value={allTypes ? 'All' : filterAssetTypes[0]} 
+                value={allTypes ? 'All' : filterAssetTypes[0]}
                 onChange={(e) => setFilterAssetTypes([e.target.value])}
               >
                 <option value="All">All Types</option>
@@ -2865,7 +2875,7 @@
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
                 <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
-                <button className="btn-sm" style={{ height: 38 }} onClick={() => { setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' }); focusStock(); }} title="Clear form">CLEAR</button>
+                <button className="btn-sm" style={{ height: 38 }} onClick={() => { setForm({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: '' }); }} title="Clear form">CLEAR</button>
                 <button className="btn-secondary" onClick={() => setCsvMode(true)}>IMPORT CSV</button>
               </div>
             </div>
@@ -3090,7 +3100,7 @@
               <button className="btn-sm btn-reset" onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺</button>
             </div>
             <div className="filter-col" style={{ width: 'auto' }}>
-               <div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span>
+              <div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span>
             </div>
           </div>
           <div className="card" style={{ padding: 0 }}>
@@ -3168,7 +3178,7 @@
     // ── FIFO RESULTS ─────────────────────────────────────────
     function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors, filters, onFilterChange }) {
       const { sells: allSells, unmatched: allUnmatched } = computeFIFO(transactions);
-      
+
       const filterPersons = filters.persons;
       const filterAssetTypes = filters.types;
       const stockFilter = filters.search;
