@@ -4471,8 +4471,6 @@
 
             <nav className="sidebar-nav">
               {navItems.filter(n => {
-                // By default, Portfolio and Actions are hidden
-                if ((n.key === 'portfolio' || n.key === 'actions') && visibleTabs[n.key] === undefined) return false;
                 return visibleTabs[n.key] !== false;
               }).map(item => (
                 <button
