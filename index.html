@@ -2339,8 +2339,10 @@
                 className="btn-sm"
                 style={{ height: 32 }}
                 onClick={() => {
-                  setFilterPersons(dashboardDefaults.persons);
-                  setFilterAssetTypes(dashboardDefaults.assetTypes);
+                  onFilterChange({
+                    persons: dashboardDefaults.persons,
+                    assetTypes: dashboardDefaults.assetTypes
+                  });
                 }}
               >↺</button>
             </div>
