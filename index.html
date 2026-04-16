@@ -22,7 +22,7 @@
       --sidebar-muted: #666666;
       --sidebar-active: #000000;
       --sidebar-active-bg: #EDFF66;
-      --border: #E2E8F0;
+      --border: #000000;
       --text: #000000;
       --text-muted: #555555;
       --green: #00E599;
@@ -33,11 +33,11 @@
       --amber-bg: #fff9e6;
       --input-bg: #ffffff;
 
-      /* Smooth CRED Elevations (Soft Shadows) */
-      --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.05);
-      --elevation-2: 0 4px 12px rgba(0, 0, 0, 0.08);
-      --elevation-3: 0 8px 24px rgba(0, 0, 0, 0.12);
-      --elevation-4: 0 16px 40px rgba(0, 0, 0, 0.16);
+      /* Hard NeoPOP Elevations */
+      --elevation-1: 1px 1px 0px 0px #000000;
+      --elevation-2: 3px 3px 0px 0px #000000;
+      --elevation-3: 5px 5px 0px 0px #000000;
+      --elevation-4: 8px 8px 0px 0px #000000;
       
       /* Brutalist Overrides (for specific sections) */
       --hard-border: #000000;
@@ -46,7 +46,8 @@
       --hard-elevation-3: 4px 4px 0px 0px #000000;
       --hard-elevation-4: 6px 6px 0px 0px #000000;
 
-      --radius: 12px;
+      --radius: 0px;
+      --border: #000000;
       /* Fonts */
       --font-main: 'Courier Prime', monospace;
       --font-big: 'Outfit', sans-serif;
@@ -183,26 +184,35 @@
       background: #fdfdfd;
     }
 
-      border: 1px solid var(--border);
-      font-family: var(--font-main);
-      font-size: 15px;
-      font-weight: 700;
+    .btn-primary {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: #000000;
+      color: #FFFFFF;
+      border: 1px solid #000000;
+      font-family: var(--font-big);
+      font-size: 14px;
+      font-weight: 800;
       cursor: pointer;
-      letter-spacing: .05em;
-      transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-      box-shadow: var(--elevation-2);
+      letter-spacing: 0.08em;
+      transition: all 0.1s;
+      box-shadow: 4px 4px 0px 0px #000000;
       text-transform: uppercase;
-      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border-radius: 0px;
     }
  
     .btn-primary:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--elevation-4);
-      filter: brightness(1.1);
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0px 0px #000000;
     }
  
     .btn-primary:active {
-      transform: translateY(0);
+      transform: translate(3px, 3px);
+      box-shadow: 0px 0px 0px 0px #000000;
     }
 
     .btn-primary:disabled {
@@ -210,6 +220,8 @@
       cursor: not-allowed;
       box-shadow: none;
       transform: none;
+      background: #777;
+      border-color: #777;
     }
 
     .btn-google {
@@ -403,10 +415,10 @@
     /* CARDS */
     .card {
       background: var(--surface);
-      border: 2px solid var(--border);
+      border: 1.5px solid var(--border);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: var(--elevation-3);
+      box-shadow: none;
     }
 
     .card-title {
@@ -469,8 +481,8 @@
     .table-wrap {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      border: 2px solid var(--border);
-      box-shadow: var(--elevation-2);
+      border: 1.5px solid var(--border);
+      box-shadow: none;
       position: relative;
       background: var(--surface);
       margin-bottom: 1rem;
@@ -620,27 +632,28 @@
     }
 
     .btn-secondary {
-      padding: .65rem 1.5rem;
-      background: var(--surface);
-      color: var(--text);
-      border: 2px solid var(--border);
-      font-family: var(--font-main);
-      font-size: 14px;
-      font-weight: 700;
+      padding: .85rem 1.5rem;
+      background: #FFFFFF;
+      color: #000000;
+      border: 1.5px solid #000000;
+      font-family: var(--font-big);
+      font-size: 13px;
+      font-weight: 800;
       cursor: pointer;
       transition: all 0.1s;
-      box-shadow: var(--elevation-2);
+      box-shadow: 3px 3px 0px 0px #000000;
       text-transform: uppercase;
+      border-radius: 0px;
     }
 
     .btn-secondary:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--elevation-3);
-      filter: brightness(0.98);
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0px 0px #000000;
     }
 
     .btn-secondary:active {
-      transform: translateY(0);
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px 0px #000000;
     }
 
     .btn-sm {
@@ -1370,14 +1383,23 @@
       opacity: 1;
     }
 
-    /* NEO-BRUTALIST OVERRIDE SCOPE */
     .neo-brutalist {
       --radius: 0px;
-      --border: var(--hard-border);
-      --elevation-1: var(--hard-elevation-1);
-      --elevation-2: var(--hard-elevation-2);
-      --elevation-3: var(--hard-elevation-3);
-      --elevation-4: var(--hard-elevation-4);
+      --border: #000000;
+      --elevation-1: 1px 1px 0px 0px #000000;
+      --elevation-2: 3px 3px 0px 0px #000000;
+      --elevation-3: 5px 5px 0px 0px #000000;
+      --elevation-4: 8px 8px 0px 0px #000000;
+    }
+
+    /* Selective Shadowing for Neo-Brutalist Tabs */
+    .neo-brutalist .card,
+    .neo-brutalist .table-wrap {
+      box-shadow: none !important;
+    }
+
+    .neo-brutalist .premium-dock {
+      box-shadow: var(--elevation-3) !important;
     }
 
     .neo-brutalist .card,
@@ -2407,7 +2429,10 @@
                   })}
                 </div>
                 <div className="modal-actions" style={{ marginTop: '2rem' }}>
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowPersonModal(false)}>APPLY FILTERS</button>
+                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => setShowPersonModal(false)}>
+                    <span>APPLY FILTERS</span>
+                    <span>→</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -3837,7 +3862,10 @@
                     <input type="date" className="form-input" value={date} onChange={e => setDate(e.target.value)} />
                   </div>
                 </div>
-                <button className="btn-primary" disabled={!stock} onClick={() => setStep(2)}>NEXT: SELECT ACTION</button>
+                <button className="btn-primary" disabled={!stock} onClick={() => setStep(2)}>
+                  <span>NEXT: SELECT ACTION</span>
+                  <span>→</span>
+                </button>
               </div>
             )}
 
@@ -4180,7 +4208,8 @@
       const personList = persons.length > 0 ? persons : [...new Set(transactions.filter(t => t.person).map(t => t.person))].map(n => ({ id: n, name: n }));
 
       const goTo = k => { setTab(k); setSidebarOpen(false); };
-      const handlePersonDrilldown = p => { setPortfolioFilter({ persons: [p], stocks: ['All'] }); setTab('portfolio'); };
+      const goTo = k => { setTab(k); setSidebarOpen(false); };
+      const handlePersonDrilldown = p => { setPortfolioFilter({ persons: [p], stocks: ['All'], assetTypes: ['All'] }); setTab('portfolio'); };
 
       return (
         <div className="app">
