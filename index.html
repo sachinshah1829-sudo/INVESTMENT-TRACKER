@@ -4208,7 +4208,6 @@
       const personList = persons.length > 0 ? persons : [...new Set(transactions.filter(t => t.person).map(t => t.person))].map(n => ({ id: n, name: n }));
 
       const goTo = k => { setTab(k); setSidebarOpen(false); };
-      const goTo = k => { setTab(k); setSidebarOpen(false); };
       const handlePersonDrilldown = p => { setPortfolioFilter({ persons: [p], stocks: ['All'], assetTypes: ['All'] }); setTab('portfolio'); };
 
       return (
@@ -4339,8 +4338,8 @@
               ))}
             </nav>
             <div className="sidebar-footer">
-              <div className="sidebar-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F8FAFC', border: '1px solid var(--border)', borderRadius: '12px', marginBottom: '12px' }}>
-                <div style={{ width: '32px', height: '32px', background: 'var(--sidebar-active-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontSize: '14px', fontWeight: 'bold', border: '1.5px solid #000' }}>
+              <div className="sidebar-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F8FAFC', border: '1px solid var(--border)', borderRadius: '0px', marginBottom: '12px' }}>
+                <div style={{ width: '32px', height: '32px', background: 'var(--sidebar-active-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', border: '1.5px solid #000' }}>
                   {user.email?.[0].toUpperCase()}
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -4354,7 +4353,7 @@
                 padding: '10px', 
                 background: '#fff', 
                 border: '1px solid var(--border)', 
-                borderRadius: '8px', 
+                borderRadius: '0px', 
                 fontSize: '11px', 
                 fontWeight: 'bold',
                 cursor: 'pointer',
