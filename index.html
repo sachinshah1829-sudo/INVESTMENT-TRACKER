@@ -21,9 +21,9 @@
       --sidebar-bg: #FFFFFF;
       --sidebar-text: #000000;
       --sidebar-muted: #666666;
-      --sidebar-active: #000000;
-      --sidebar-active-bg: #000000;
-      --accent: #000000;
+      --sidebar-active: #d97757;
+      --sidebar-active-bg: #fbf0e8;
+      --accent: #d97757;
       --border: rgba(0, 0, 0, 0.08);
       --text: #000000;
       --text-muted: #666666;
@@ -144,8 +144,8 @@
     }
 
     .auth-tab.active {
-      color: var(--text);
-      border-bottom-color: var(--text);
+      color: var(--accent);
+      border-bottom-color: var(--accent);
     }
 
     .form-group {
@@ -178,14 +178,14 @@
 
     .form-input:focus,
     .select-input:focus {
-      border-color: #000;
-      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1);
     }
 
     .btn-primary {
       width: 100%;
       padding: .85rem 1.5rem;
-      background: #000;
+      background: var(--accent);
       color: #fff;
       border: none;
       font-family: var(--font-big);
@@ -289,7 +289,7 @@
     }
 
     .sidebar-brand-name {
-      font-size: 34px;
+      font-size: 32px;
       font-weight: 700;
       color: #000;
       font-family: var(--font-big);
@@ -328,8 +328,8 @@
     }
 
     .sidebar-item.active {
-      color: #ffffff;
-      background: #000000;
+      color: var(--sidebar-active);
+      background: var(--sidebar-active-bg);
       font-weight: 700;
       font-family: var(--font-main);
     }
@@ -408,7 +408,7 @@
     }
 
     .btn-logout:hover {
-      background: #000;
+      background: var(--accent);
       color: #fff;
       transform: translateY(-1px);
     }
@@ -895,15 +895,15 @@
     }
 
     .filter-chip.active {
-      background: #000 !important;
-      color: #fff !important;
-      border-color: #000;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      background: var(--sidebar-active-bg) !important;
+      color: var(--sidebar-active) !important;
+      border-color: var(--sidebar-active);
+      box-shadow: 0 2px 4px rgba(217, 119, 87, 0.1);
     }
 
     .filter-chip.all.active {
-      background: #000 !important;
-      color: #fff !important;
+      background: var(--sidebar-active-bg) !important;
+      color: var(--sidebar-active) !important;
     }
 
     /* DASHBOARD FILTER BLOCKS */
@@ -939,9 +939,9 @@
     }
 
     .dashboard-filter-block.active {
-      background: #000 !important;
-      color: #fff !important;
-      border-color: #000;
+      background: var(--sidebar-active-bg) !important;
+      color: var(--sidebar-active) !important;
+      border-color: var(--sidebar-active);
       box-shadow: var(--elevation-3);
     }
 
@@ -998,15 +998,15 @@
       gap: .5rem;
       align-items: center;
       padding: .5rem .75rem;
-      background: var(--amber-bg);
-      border: 1px solid #ffe082;
+      background: var(--sidebar-active-bg);
+      border: 1px solid var(--border);
       margin-bottom: .75rem;
       flex-wrap: wrap;
     }
 
     .bulk-bar-text {
       font-size: 12px;
-      color: var(--amber);
+      color: var(--sidebar-active);
       font-weight: 700;
     }
 
@@ -1153,7 +1153,7 @@
       width: 15px;
       height: 15px;
       cursor: pointer;
-      accent-color: var(--text);
+      accent-color: var(--accent);
     }
 
     /* PREMIUM DOCK TOGGLE */
@@ -1205,7 +1205,7 @@
     }
 
     .multi-select-trigger:hover {
-      border-color: #000;
+      border-color: var(--accent);
     }
 
     .multi-select-trigger span:first-child {
@@ -1253,7 +1253,7 @@
 
     .dock-btn.active {
       background: var(--sidebar-active-bg);
-      color: #fff;
+      color: var(--sidebar-active);
       box-shadow: var(--elevation-1);
       transform: translate(-1px, -1px);
     }
@@ -1402,7 +1402,7 @@
       left: .75rem;
       z-index: 200;
       background: var(--sidebar-bg);
-      color: #000;
+      color: var(--accent);
       border: 1px solid var(--border);
       width: 36px;
       height: 36px;
@@ -1454,9 +1454,9 @@
     }
 
     .action-block.active {
-      background: #000 !important;
-      color: #fff !important;
-      border-color: #000;
+      background: var(--sidebar-active-bg) !important;
+      color: var(--sidebar-active) !important;
+      border-color: var(--sidebar-active);
       box-shadow: var(--elevation-3);
     }
 
@@ -2971,7 +2971,7 @@
                 <tbody>
                   {filtered.length === 0 && <tr><td colSpan={selectMode ? 7 : 6}><div className="empty">No transactions</div></td></tr>}
                   {filtered.map(tx => (
-                    <tr key={tx.id} className="clickable" onClick={() => selectMode ? toggleSelect(tx.id) : setEditTx(tx)} style={selected.has(tx.id) ? { background: '#fffde7' } : {}}>
+                    <tr key={tx.id} className="clickable" onClick={() => selectMode ? toggleSelect(tx.id) : setEditTx(tx)} style={selected.has(tx.id) ? { background: 'var(--sidebar-active-bg)' } : {}}>
                       {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(tx.id)} onChange={() => toggleSelect(tx.id)} /></td>}
                       <td style={{ whiteSpace: 'normal' }}>{fmtDate(tx.date)}</td>
                       <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{tx.person}</span></td>
@@ -3930,7 +3930,7 @@
                   </tr></thead>
                   <tbody>
                     {persons.map(p => (
-                      <tr key={p.id} className="clickable" style={selected.has(p.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(p.id) : setEditPerson(p)}>
+                      <tr key={p.id} className="clickable" style={selected.has(p.id) ? { background: 'var(--sidebar-active-bg)' } : {}} onClick={() => selectMode ? toggleSelect(p.id) : setEditPerson(p)}>
                         {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>}
                         <td>
                           <span className="tag" style={{ background: personColor(p.name, personColors), color: '#1a1a1a' }}>{p.name}</span>
@@ -4088,14 +4088,14 @@
                 height: '6px',
                 background: step >= s ? 'var(--sidebar-active-bg)' : '#e0e0e0',
                 border: '1px solid var(--border)',
-                boxShadow: step >= s ? '1px 1px 0px 0px #000' : 'none'
+                boxShadow: step >= s ? '1px 1px 0px 0px var(--accent)' : 'none'
               }} />
             ))}
           </div>
 
           <div className="card" style={{ maxWidth: 850, padding: '1.5rem' }}>
             <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ background: '#000', color: '#fff', padding: '2px 8px', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-main)' }}>STEP {step}</span>
+              <span style={{ background: 'var(--accent)', color: '#fff', padding: '2px 8px', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-main)' }}>STEP {step}</span>
               <span style={{ fontStyle: 'italic', fontSize: 13, color: 'var(--text-muted)' }}>
                 {step === 1 ? 'Identify the source asset' : step === 2 ? 'Choose the adjustment type' : 'Confirm ledger entries'}
               </span>
