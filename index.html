@@ -20,14 +20,14 @@
       --surface: #ffffff;
       --sidebar-bg: #ffffff;
       --sidebar-text: #1d1c1a;
-      --sidebar-muted: #666666;
+      --sidebar-muted: #8c8576;
       --sidebar-active: #da7756;
       --sidebar-active-bg: #f5f2ed;
       --accent: #da7756;
       --accent-light: #fef3e2;
-      --border: rgba(0, 0, 0, 0.08);
+      --border: rgba(182, 173, 154, 0.3);
       --text: #1d1c1a;
-      --text-muted: #666666;
+      --text-muted: #8c8576;
       --green: #00D18E;
       --green-bg: #E6FBF5;
       --red: #FF3B6F;
@@ -171,7 +171,7 @@
       width: 100%;
       padding: .75rem 1rem;
       border: 1px solid var(--border);
-      background: var(--input-bg);
+      background: var(--bg);
       font-family: inherit;
       font-size: 14px;
       color: var(--text);
@@ -882,24 +882,22 @@
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
-      background: #F1F5F9;
-      color: #64748B;
+      background: var(--sidebar-active-bg);
+      color: var(--sidebar-muted);
       border-radius: 0px;
       text-transform: uppercase;
       letter-spacing: 0.02em;
     }
 
     .filter-chip:hover {
-      background: #E2E8F0;
-      color: #1A1A1A;
-      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+      background: var(--header-bg);
+      color: var(--text);
     }
 
     .filter-chip.active {
       background: var(--accent) !important;
       color: #ffffff !important;
       border-color: var(--accent);
-      box-shadow: 0 2px 4px rgba(218, 119, 86, 0.2);
     }
 
     .filter-chip.all.active {
@@ -1226,7 +1224,7 @@
       left: 0;
       width: 100%;
       min-width: 220px;
-      background: #fff;
+      background: var(--surface);
       border: 1px solid var(--border);
       z-index: 1000;
       box-shadow: none;
@@ -1335,7 +1333,7 @@
     }
 
     .multi-select-trigger {
-      background: var(--surface);
+      background: var(--bg);
       border: 1px solid var(--border);
       padding: .6rem 1rem;
       font-size: 13px;
@@ -2081,8 +2079,8 @@
                 bodyFont: { family: 'Courier Prime', size: isMobile ? 10 : 11 },
                 titleFont: { family: 'Courier Prime', size: isMobile ? 11 : 12 },
                 displayColors: false,
-                backgroundColor: 'rgba(29, 28, 26, 0.9)',
-                titleColor: '#fef3e2',
+                backgroundColor: 'rgba(29, 28, 26, 0.95)',
+                titleColor: 'var(--accent-light)',
                 bodyColor: '#ffffff',
                 callbacks: {
                   label: ctx => {
