@@ -1055,18 +1055,20 @@
 
     .top-gainer-card {
       background: var(--green-bg);
-      border: 1px solid #c8e6c9;
+      border: 1px solid var(--green);
       padding: 1rem;
       flex: 1;
       min-width: 200px;
+      border-radius: var(--radius);
     }
 
     .top-loser-card {
       background: var(--red-bg);
-      border: 1px solid #f7c1c1;
+      border: 1px solid var(--red);
       padding: 1rem;
       flex: 1;
       min-width: 200px;
+      border-radius: var(--radius);
     }
 
     .empty {
@@ -2039,7 +2041,7 @@
             plugins: { legend: { labels: { font: { family: 'Courier Prime', size: 11 }, boxWidth: 12 } } },
             scales: {
               x: { ticks: { font: { family: 'Courier Prime', size: 10 }, maxRotation: 45 }, grid: { display: false } },
-              y: { ticks: { font: { family: 'Courier Prime', size: 10 }, callback: v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v) }, grid: { color: '#f0ede6' } }
+              y: { ticks: { font: { family: 'Courier Prime', size: 10 }, callback: v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v) }, grid: { color: 'var(--border)' } }
             }
           }
         });
@@ -2506,8 +2508,8 @@
 
       const pLabels = sortedFullPersons.map(([p]) => p);
       const barDatasets = [
-        { label: 'Value', data: pLabels.map(p => personWealth[p].current), backgroundColor: '#87BFDB' },
-        { label: 'Invested', data: pLabels.map(p => personWealth[p].invested), backgroundColor: '#2B5F7A' }
+        { label: 'Value', data: pLabels.map(p => personWealth[p].current), backgroundColor: '#da7756' },
+        { label: 'Invested', data: pLabels.map(p => personWealth[p].invested), backgroundColor: '#fef3e2' }
       ];
 
       const sortedAssetBreakdown = Object.entries(portfolio.reduce((acc, r) => {
@@ -2515,7 +2517,7 @@
         return acc;
       }, {})).sort((a, b) => b[1] - a[1]);
 
-      const PIE_COLORS = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
+      const PIE_COLORS = ['#da7756', '#d97757', '#e5e2da', '#845EC2', '#D65DB1', '#FF6F91', '#FF9671', '#FFC75F', '#F9F871', '#008E9B'];
 
       return (
         <div className="page" style={{ paddingBottom: '4rem' }}>
@@ -3278,11 +3280,11 @@
           </div>
 
           {unmatched.length > 0 && (
-            <div className="card" style={{ border: '1px solid #ffccbc', background: '#fff9f7', marginBottom: '1.5rem' }}>
-              <div className="card-title" style={{ color: '#d84315', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="card" style={{ border: '1px solid var(--accent)', background: 'var(--accent-light)', marginBottom: '1.5rem' }}>
+              <div className="card-title" style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span>⚠ Unmatched Sell Transactions (Short Sells)</span>
               </div>
-              <div style={{ fontSize: 12, color: '#d84315', marginBottom: '1rem' }}>
+              <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: '1rem' }}>
                 These sell transactions could not be matched with any existing buy lots. Realized gains cannot be calculated for these until matching buy transactions are added.
               </div>
               <div className="table-wrap">
@@ -3404,9 +3406,9 @@
             )}
 
             {filterPerson && subTab === 'holdings' && (
-              <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', background: '#f8f9fa', padding: '8px 12px', borderLeft: '3px solid #000' }}>
+              <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', background: 'var(--accent-light)', padding: '8px 12px', borderLeft: '3px solid var(--accent)' }}>
                 <span>Filtering lots for: <b>{filterPerson}</b></span>
-                <button onClick={() => setFilterPerson(null)} style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', fontWeight: 700, padding: 0, textDecoration: 'underline' }}>Clear Filter</button>
+                <button onClick={() => setFilterPerson(null)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontWeight: 700, padding: 0, textDecoration: 'underline' }}>Clear Filter</button>
               </div>
             )}
 
@@ -4091,7 +4093,7 @@
               <div key={s} style={{
                 flex: 1,
                 height: '6px',
-                background: step >= s ? 'var(--sidebar-active-bg)' : '#e0e0e0',
+                background: step >= s ? 'var(--sidebar-active-bg)' : 'var(--bg)',
                 border: '1px solid var(--border)',
                 boxShadow: step >= s ? '1px 1px 0px 0px var(--accent)' : 'none'
               }} />
@@ -4147,8 +4149,8 @@
                   ))}
                 </div>
 
-                <div style={{ background: '#F8F9FA', padding: '1rem', border: '3px solid var(--border)', boxShadow: 'var(--elevation-2)', marginTop: '0.75rem' }}>
-                  <div className="card-title" style={{ color: '#000', marginBottom: '0.75rem', fontSize: 13 }}>Parameters for {action?.toUpperCase()}</div>
+                <div style={{ background: 'var(--surface)', padding: '1rem', border: '3px solid var(--border)', boxShadow: 'var(--elevation-2)', marginTop: '0.75rem' }}>
+                  <div className="card-title" style={{ color: 'var(--text)', marginBottom: '0.75rem', fontSize: 13 }}>Parameters for {action?.toUpperCase()}</div>
                   {['buyback', 'rights'].includes(action) && (
                     <div className="form-group" style={{ marginBottom: '1rem' }}>
                       <label className="form-label">Participating Person</label>
