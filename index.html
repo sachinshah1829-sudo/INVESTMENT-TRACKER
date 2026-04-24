@@ -16,16 +16,17 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg: #F8F9FA;
-      --surface: #FFFFFF;
-      --sidebar-bg: #FFFFFF;
-      --sidebar-text: #000000;
+      --bg: #fbfaf8;
+      --surface: #ffffff;
+      --sidebar-bg: #ffffff;
+      --sidebar-text: #1d1c1a;
       --sidebar-muted: #666666;
-      --sidebar-active: #d97757;
-      --sidebar-active-bg: #fbf0e8;
-      --accent: #d97757;
+      --sidebar-active: #da7756;
+      --sidebar-active-bg: #f5f2ed;
+      --accent: #da7756;
+      --accent-light: #fef3e2;
       --border: rgba(0, 0, 0, 0.08);
-      --text: #000000;
+      --text: #1d1c1a;
       --text-muted: #666666;
       --green: #00D18E;
       --green-bg: #E6FBF5;
@@ -34,6 +35,7 @@
       --amber: #FFB800;
       --amber-bg: #FFF9E6;
       --input-bg: #ffffff;
+      --header-bg: #fef3e2;
 
       /* Smooth CRED Elevations (Soft Shadows) */
       --elevation-1: 0 2px 4px rgba(0, 0, 0, 0.04);
@@ -41,7 +43,7 @@
       --elevation-3: 0 12px 24px rgba(0, 0, 0, 0.08);
       --elevation-4: 0 16px 32px rgba(0, 0, 0, 0.1);
 
-      --radius: 0px;
+      --radius: 4px;
 
       /* Fonts */
       --font-main: 'Courier Prime', monospace;
@@ -552,12 +554,12 @@
       font-size: 12px;
       letter-spacing: .05em;
       text-transform: uppercase;
-      color: #000;
+      color: #1d1c1a;
       text-align: left;
       padding: 1.25rem .75rem;
       border-bottom: 2px solid var(--border);
       font-weight: 700;
-      background: #F8F9FA;
+      background: var(--header-bg);
       position: sticky;
       top: 0;
       z-index: 10;
@@ -596,7 +598,7 @@
     }
 
     tr.clickable:hover td {
-      background: #f8fafc;
+      background: var(--accent-light);
       cursor: pointer;
     }
 
@@ -670,7 +672,7 @@
     .btn-secondary:hover {
       transform: translateY(-2px);
       box-shadow: var(--elevation-2);
-      background: #F8F9FA;
+      background: var(--bg);
     }
 
     .btn-secondary:active {
@@ -700,7 +702,7 @@
     .btn-sm:hover {
       transform: translateY(-1px);
       box-shadow: var(--elevation-2);
-      background: #f8fafc;
+      background: var(--accent-light);
     }
 
     .btn-sm:active {
@@ -895,10 +897,10 @@
     }
 
     .filter-chip.active {
-      background: var(--sidebar-active-bg) !important;
-      color: var(--sidebar-active) !important;
-      border-color: var(--sidebar-active);
-      box-shadow: 0 2px 4px rgba(217, 119, 87, 0.1);
+      background: var(--accent) !important;
+      color: #ffffff !important;
+      border-color: var(--accent);
+      box-shadow: 0 2px 4px rgba(218, 119, 86, 0.2);
     }
 
     .filter-chip.all.active {
@@ -939,9 +941,9 @@
     }
 
     .dashboard-filter-block.active {
-      background: var(--sidebar-active-bg) !important;
-      color: var(--sidebar-active) !important;
-      border-color: var(--sidebar-active);
+      background: var(--accent-light) !important;
+      color: var(--accent) !important;
+      border-color: var(--accent);
       box-shadow: var(--elevation-3);
     }
 
@@ -1242,7 +1244,7 @@
     }
 
     .multi-select-opt:hover {
-      background: #f8f9fa;
+      background: var(--accent-light);
     }
 
     .multi-select-opt span {
@@ -1440,7 +1442,7 @@
       gap: 4px;
       position: relative;
       overflow: hidden;
-      background: #F8F9FA;
+      background: var(--surface);
       box-shadow: var(--elevation-1);
       min-height: 85px;
       justify-content: center;
@@ -1494,7 +1496,7 @@
     .action-block.buyback,
     .action-block.rights,
     .action-block.delist {
-      background: #F8F9FA;
+      background: var(--surface);
       color: var(--text);
     }
 
@@ -1685,16 +1687,16 @@
     };
 
     const PRESET_COLORS = [
-      '#f0fdf4', '#eff6ff', '#f5f3ff', '#f0f9ff', '#fffbeb', '#fdf2f8', '#fef2f2',
-      '#eef2ff', '#fdf4ff', '#fff1f2', '#fff7ed', '#f0fdfa', '#ecfdf5', '#f7fee7',
+      '#fef3e2', '#fdf7f0', '#f5f3ff', '#f0f9ff', '#fffbeb', '#fdf2f8', '#fef2f2',
+      '#da7756', '#fdf4ff', '#fff1f2', '#fff7ed', '#f0fdfa', '#ecfdf5', '#f7fee7',
       '#fecaca', '#fde68a', '#a7f3d0', '#bfdbfe', '#ddd6fe', '#fbcfe8', '#fed7aa',
       '#bae6fd', '#d9f99d', '#c7d2fe', '#fef08a', '#99f6e4', '#e2e8f0', '#cbd5e1'
     ];
 
     const PIE_COLORS = [
-      '#00E599', '#FF3366', '#FFB800', '#2196F3', '#EDFF66',
-      '#00C9A7', '#845EC2', '#D65DB1', '#FF6F91', '#FF9671',
-      '#FFC75F', '#F9F871', '#008E9B', '#4D8076', '#C34A36'
+      '#da7756', '#d97757', '#e5e2da', '#845EC2', '#D65DB1',
+      '#FF6F91', '#FF9671', '#FFC75F', '#F9F871', '#008E9B',
+      '#00D18E', '#FF3B6F', '#FFB800', '#2196F3', '#EDFF66'
     ];
 
     const DEFAULT_ASSET_TYPE_COLORS = {
@@ -2054,7 +2056,7 @@
         const isMobile = window.innerWidth < 480;
         chart.current = new Chart(ref.current, {
           type: 'doughnut',
-          data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1, borderColor: '#1a1a1a' }] },
+          data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#ffffff' }] },
           options: {
             responsive: true, maintainAspectRatio: false,
             cutout: '70%',
@@ -2076,9 +2078,12 @@
               tooltip: {
                 padding: 8,
                 caretSize: 4,
-                bodyFont: { size: isMobile ? 10 : 11 },
-                titleFont: { size: isMobile ? 11 : 12 },
+                bodyFont: { family: 'Courier Prime', size: isMobile ? 10 : 11 },
+                titleFont: { family: 'Courier Prime', size: isMobile ? 11 : 12 },
                 displayColors: false,
+                backgroundColor: 'rgba(29, 28, 26, 0.9)',
+                titleColor: '#fef3e2',
+                bodyColor: '#ffffff',
                 callbacks: {
                   label: ctx => {
                     const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
@@ -3365,7 +3370,7 @@
           const gainPct = gain != null ? (gain / g.invested) * 100 : null;
           const avgAge = g.invested > 0 ? g.weightedAge / g.invested : 0;
           const cagr = (cval != null && g.invested > 0 && avgAge > 0) ? (Math.pow(cval / g.invested, 1 / avgAge) - 1) * 100 : null;
-          
+
           const aggregated = {};
           g.personLots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
           const breakup = Object.entries(aggregated).sort((a, b) => b[1] - a[1]).map(([p, q]) => `${q}@${p}`).join(', ');
