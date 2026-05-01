@@ -1984,7 +1984,7 @@
       );
     }
 
-    function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef }) {
+    function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef, onAiSuggest, aiLoading }) {
       const [open, setOpen] = useState(false);
       const ref = useRef(null);
       useEffect(() => {
@@ -2009,7 +2009,35 @@
               placeholder={placeholder}
               onKeyDown={onKeyDown}
               autoComplete="off"
+              style={{ paddingRight: onAiSuggest ? '40px' : '1rem' }}
             />
+            {onAiSuggest && (
+              <button 
+                onClick={(e) => { e.preventDefault(); onAiSuggest(); }}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  fontSize: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 2,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+                title="AI Suggest Exact Name"
+              >
+                {aiLoading ? '...' : 'AI'}
+              </button>
+            )}
             {open && filtered.length > 0 && (
               <div className="multi-select-dropdown" style={{ minWidth: '100%' }}>
                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -2742,7 +2770,7 @@
 
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange }) {
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange, onAiSuggest, aiLoading, onUpdatePrices, stockPrices }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
@@ -2897,7 +2925,25 @@
                   <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
                 <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
-                <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
+                <SearchableInput 
+                  label="Asset Name" 
+                  inputRef={stockRef} 
+                  value={form.stock} 
+                  options={uniqueStocks} 
+                  onChange={val => set('stock', val)} 
+                  placeholder="E.g. ADANI POWER" 
+                  onKeyDown={e => handleQuickKey(e, focusQty)} 
+                  onAiSuggest={async () => {
+                    const res = await onAiSuggest(form.stock);
+                    if (res) {
+                      set('stock', res);
+                      if (!stockPrices[res]) {
+                        await onUpdatePrices({ [res]: 0 }); // Add with 0 price if new
+                      }
+                    }
+                  }}
+                  aiLoading={aiLoading}
+                />
                 <div className="filter-group">
                   <label className="filter-label">Qty (- for Sell)</label>
                   <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} />
@@ -3538,7 +3584,8 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions,
+      aiConfig, onUpdateAiConfig
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3552,11 +3599,51 @@
             <button className={`dock-btn ${subTab === 'persons' ? 'active' : ''}`} onClick={() => setSubTab('persons')}>Persons</button>
             <button className={`dock-btn ${subTab === 'assets' ? 'active' : ''}`} onClick={() => setSubTab('assets')}>Asset Types</button>
             <button className={`dock-btn ${subTab === 'prices' ? 'active' : ''}`} onClick={() => setSubTab('prices')}>Prices</button>
+            <button className={`dock-btn ${subTab === 'ai' ? 'active' : ''}`} onClick={() => setSubTab('ai')}>AI Settings</button>
           </div>
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
           {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
+          {subTab === 'ai' && <AiSettingsTab aiConfig={aiConfig} onUpdate={onUpdateAiConfig} />}
+        </div>
+      );
+    }
+
+    function AiSettingsTab({ aiConfig, onUpdate }) {
+      const [key, setKey] = useState(aiConfig.apiKey || '');
+      const [saving, setSaving] = useState(false);
+      const handleSave = async () => {
+        setSaving(true);
+        await onUpdate({ apiKey: key.trim() });
+        setSaving(false);
+        alert("AI Settings saved!");
+      };
+      return (
+        <div className="card">
+          <div className="card-title">Groq AI Settings</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+            Enter your Groq API key to enable AI asset suggestions. You can get one from <a href="https://console.groq.com/keys" target="_blank" style={{ color: 'var(--accent)' }}>Groq Console</a>.
+          </div>
+          <div className="form-group">
+            <label className="filter-label">Groq API Key</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input 
+                className="form-input" 
+                type="password" 
+                value={key} 
+                onChange={e => setKey(e.target.value)} 
+                placeholder="gsk_..." 
+                style={{ flex: 1 }}
+              />
+              <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ width: 'auto' }}>
+                {saving ? 'SAVING...' : 'SAVE KEY'}
+              </button>
+            </div>
+          </div>
+          <div style={{ marginTop: '1rem', fontSize: 11, background: 'var(--accent-light)', padding: '10px', borderLeft: '3px solid var(--accent)' }}>
+            <b>Tip:</b> Once saved, you can click the "AI" button in the Asset Name field while adding transactions to auto-correct rough company names.
+          </div>
         </div>
       );
     }
@@ -4272,6 +4359,8 @@
       const [fifoFilters, setFifoFilters] = useState({ persons: ['All'], types: ['All'], search: '' });
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
+      const [aiConfig, setAiConfig] = useState({ apiKey: '' });
+      const [aiLoading, setAiLoading] = useState(false);
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
@@ -4353,7 +4442,8 @@
             }
           }
         }, () => { });
-        return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t5(); };
+        const t6 = db.collection(`users/${uid}/inv_meta`).doc('inv_aiConfig').onSnapshot(snap => { if (snap.exists) setAiConfig(snap.data()); }, () => { });
+        return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t5(); t6(); };
       }, [user]);
 
       // INITIALIZE DEFAULTS & MIGRATION
@@ -4465,12 +4555,56 @@
         }
       };
       const deleteAssetType = async id => { await db.collection(`users/${uid}/inv_assetTypes`).doc(id).delete(); };
-
+      
       const updateTabVisibility = async (key, isVisible) => {
         const updated = { ...visibleTabs, [key]: isVisible };
         setVisibleTabs(updated);
-        if (uid) {
-          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ visibleTabs: updated }, { merge: true });
+        if (uid) await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ visibleTabs: updated }, { merge: true });
+      };
+
+      const updateAiConfig = async (config) => {
+        setAiConfig(config);
+        if (uid) await db.collection(`users/${uid}/inv_meta`).doc('inv_aiConfig').set(config, { merge: true });
+      };
+
+      const fetchAiSuggestion = async (roughName) => {
+        let currentApiKey = aiConfig.apiKey;
+        if (!currentApiKey) {
+          const key = prompt("Please enter your Groq API Key to enable AI suggestions:");
+          if (key) {
+            await updateAiConfig({ apiKey: key.trim() });
+            currentApiKey = key.trim();
+          } else return null;
+        }
+        
+        if (!currentApiKey) return null;
+
+        setAiLoading(true);
+        try {
+          const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentApiKey}`
+            },
+            body: JSON.stringify({
+              model: "llama3-8b-8192",
+              messages: [
+                { role: "system", content: "You are a financial data expert. Return ONLY the exact official NSE/BSE ticker symbol or the most standard market name for the company provided in UPPERCASE. No explanations, no extra text. Example: 'Tata Motors' -> 'TATA MOTORS', 'Adani Pwr' -> 'ADANI POWER'." },
+                { role: "user", content: roughName }
+              ],
+              temperature: 0.1
+            })
+          });
+          const data = await res.json();
+          const suggestion = data.choices?.[0]?.message?.content?.trim().toUpperCase();
+          return suggestion;
+        } catch (e) {
+          console.error("AI Error:", e);
+          alert("AI Suggestion failed. Please check your API key.");
+          return null;
+        } finally {
+          setAiLoading(false);
         }
       };
 
@@ -4624,7 +4758,7 @@
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} onAiSuggest={fetchAiSuggestion} aiLoading={aiLoading} onUpdatePrices={updatePrices} stockPrices={stockPrices} />}
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} />}
                 {tab === 'manage' && (
@@ -4635,6 +4769,7 @@
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
                     transactions={transactions}
+                    aiConfig={aiConfig} onUpdateAiConfig={updateAiConfig}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
