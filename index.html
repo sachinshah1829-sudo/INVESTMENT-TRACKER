@@ -1998,7 +1998,7 @@
       return (
         <div className="filter-group" ref={ref}>
           {label && <div className="filter-label">{label}</div>}
-          <div className="multi-select-wrap">
+          <div className="multi-select-wrap" style={{ position: 'relative' }}>
             <input
               ref={inputRef}
               className="form-input"
@@ -2009,29 +2009,34 @@
               placeholder={placeholder}
               onKeyDown={onKeyDown}
               autoComplete="off"
-              style={{ paddingRight: onAiSuggest ? '40px' : '1rem' }}
+              style={{ paddingRight: onAiSuggest ? '42px' : '1rem' }}
             />
             {onAiSuggest && (
               <button 
-                onClick={(e) => { e.preventDefault(); onAiSuggest(); }}
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  e.stopPropagation(); 
+                  onAiSuggest(); 
+                }}
                 style={{
                   position: 'absolute',
-                  right: '8px',
+                  right: '6px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'var(--accent)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: '4px',
-                  width: '24px',
-                  height: '24px',
+                  width: '28px',
+                  height: '28px',
                   cursor: 'pointer',
                   fontSize: '10px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  zIndex: 2,
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  zIndex: 10,
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                  fontWeight: 700
                 }}
                 title="AI Suggest Exact Name"
               >
@@ -4579,6 +4584,11 @@
         
         if (!currentApiKey) return null;
 
+        if (!roughName || roughName.trim().length < 2) {
+          alert("Please type a rough name in the Asset Name field first.");
+          return null;
+        }
+
         setAiLoading(true);
         try {
           const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -4596,12 +4606,18 @@
               temperature: 0.1
             })
           });
+
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `API error: ${res.status}`);
+          }
+
           const data = await res.json();
-          const suggestion = data.choices?.[0]?.message?.content?.trim().toUpperCase();
+          const suggestion = data.choices?.[0]?.message?.content?.trim().replace(/^"|"$/g, '').toUpperCase();
           return suggestion;
         } catch (e) {
           console.error("AI Error:", e);
-          alert("AI Suggestion failed. Please check your API key.");
+          alert("AI Error: " + e.message);
           return null;
         } finally {
           setAiLoading(false);
