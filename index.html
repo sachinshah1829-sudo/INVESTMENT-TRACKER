@@ -1792,6 +1792,61 @@
       return `hsl(${Math.abs(h) % 360},70%,85%)`;
     };
 
+    // ── MARKET DATA SERVICE ──────────────────────────────────
+    const marketService = {
+      proxy: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+      
+      async search(query) {
+        if (!query || query.length < 2) return [];
+        try {
+          const url = this.proxy(`https://query1.finance.yahoo.com/v1/finance/search?q=${query}&quotesCount=10&newsCount=0`);
+          const resp = await fetch(url);
+          const data = await resp.json();
+          const json = JSON.parse(data.contents);
+          return (json.quotes || []).map(q => ({
+            symbol: q.symbol,
+            name: q.shortname || q.longname || q.symbol,
+            type: q.quoteType,
+            exchange: q.exchange
+          }));
+        } catch (e) { console.error('Search error:', e); return []; }
+      },
+
+      async getPrices(symbols) {
+        if (!symbols || symbols.length === 0) return {};
+        try {
+          const url = this.proxy(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(',')}`);
+          const resp = await fetch(url);
+          const data = await resp.json();
+          const json = JSON.parse(data.contents);
+          const prices = {};
+          (json.quoteResponse?.result || []).forEach(r => {
+            if (r.regularMarketPrice) prices[r.symbol] = r.regularMarketPrice;
+          });
+          return prices;
+        } catch (e) { console.error('Price error:', e); return {}; }
+      },
+
+      async getMFNAVs() {
+        try {
+          const url = this.proxy('https://www.amfiindia.com/spages/NAVAll.txt');
+          const resp = await fetch(url);
+          const data = await resp.json();
+          const lines = data.contents.split('\n');
+          const navs = {};
+          lines.forEach(line => {
+            const parts = line.split(';');
+            if (parts.length > 5) {
+              const code = parts[0].trim();
+              const nav = parseFloat(parts[4]);
+              if (!isNaN(nav)) navs[code] = nav;
+            }
+          });
+          return navs;
+        } catch (e) { console.error('MF error:', e); return {}; }
+      }
+    };
+
     // ── FIFO ENGINE ───────────────────────────────────────────
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
@@ -2056,16 +2111,35 @@
       );
     }
 
-    function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef }) {
+    function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef, onRemoteSearch, onSelectDetail }) {
       const [open, setOpen] = useState(false);
+      const [remoteOptions, setRemoteOptions] = useState([]);
+      const [loading, setLoading] = useState(false);
       const ref = useRef(null);
+      const timer = useRef(null);
+
       useEffect(() => {
         if (!open) return;
         const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
         document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
       }, [open]);
 
-      const filtered = options.filter(o => o.toLowerCase().includes((value || '').toLowerCase()));
+      const handleSearch = (val) => {
+        onChange(val);
+        setOpen(true);
+        if (onRemoteSearch) {
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(async () => {
+            if (val.length < 2) { setRemoteOptions([]); return; }
+            setLoading(true);
+            const res = await onRemoteSearch(val);
+            setRemoteOptions(res);
+            setLoading(false);
+          }, 500);
+        }
+      };
+
+      const localFiltered = options.filter(o => o.toLowerCase().includes((value || '').toLowerCase()));
 
       return (
         <div className="filter-group" ref={ref}>
@@ -2076,18 +2150,31 @@
               className="form-input"
               type="text"
               value={value}
-              onChange={e => { onChange(e.target.value); setOpen(true); }}
+              onChange={e => handleSearch(e.target.value)}
               onClick={() => setOpen(true)}
               placeholder={placeholder}
               onKeyDown={onKeyDown}
               autoComplete="off"
             />
-            {open && filtered.length > 0 && (
+            {open && (localFiltered.length > 0 || remoteOptions.length > 0 || loading) && (
               <div className="multi-select-dropdown" style={{ minWidth: '100%' }}>
-                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  {filtered.map(o => (
-                    <div key={o} className="multi-select-opt" onClick={() => { onChange(o); setOpen(false); }}>
-                      <span>{o}</span>
+                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                  {loading && <div className="multi-select-opt" style={{ opacity: 0.6, fontSize: 11 }}>Searching markets...</div>}
+                  {localFiltered.map(o => (
+                    <div key={'local-' + o} className="multi-select-opt" onClick={() => { onChange(o); setOpen(false); }}>
+                      <span style={{ fontWeight: 600 }}>{o}</span> <span style={{ fontSize: 10, opacity: 0.5 }}>(In Portfolio)</span>
+                    </div>
+                  ))}
+                  {remoteOptions.map(o => (
+                    <div key={'remote-' + o.symbol} className="multi-select-opt" onClick={() => { 
+                      onChange(o.symbol); 
+                      if (onSelectDetail) onSelectDetail(o);
+                      setOpen(false); 
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 600 }}>{o.symbol}</span>
+                        <span style={{ fontSize: 10, opacity: 0.7 }}>{o.name} ({o.exchange})</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2833,7 +2920,7 @@
 
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange, privacyMode, groqKey }) {
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange, privacyMode }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
@@ -2884,53 +2971,6 @@
       const focusStock = () => setTimeout(() => stockRef.current?.focus(), 0);
       const focusQty = () => setTimeout(() => qtyRef.current?.focus(), 0);
       const focusPrice = () => setTimeout(() => priceRef.current?.focus(), 0);
- 
-      // AI Suggestion logic
-      const [aiSuggestion, setAiSuggestion] = useState('');
-      const [aiLoading, setAiLoading] = useState(false);
-
-      const fetchAiSuggestion = async (val) => {
-        if (!groqKey || val.length < 3) { setAiSuggestion(''); return; }
-        setAiLoading(true);
-        try {
-          const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${groqKey}`
-            },
-            body: JSON.stringify({
-              model: 'llama3-8b-8192',
-              messages: [{
-                role: 'system',
-                content: 'You are a financial expert. Suggest the official market ticker or name for the given rough asset name. Return ONLY the suggested name, no explanation. If unsure, return empty string.'
-              }, {
-                role: 'user',
-                content: val
-              }],
-              temperature: 0
-            })
-          });
-          const data = await resp.json();
-          const suggested = data.choices[0]?.message?.content?.trim()?.replace(/["']/g, '');
-          if (suggested && suggested.toUpperCase() !== val.toUpperCase() && suggested.length < 50) {
-            setAiSuggestion(suggested);
-          } else {
-            setAiSuggestion('');
-          }
-        } catch (e) {
-          setAiSuggestion('');
-        }
-        setAiLoading(false);
-      };
-
-      useEffect(() => {
-        const t = setTimeout(() => {
-          if (form.stock && form.stock.length >= 3) fetchAiSuggestion(form.stock);
-          else setAiSuggestion('');
-        }, 500);
-        return () => clearTimeout(t);
-      }, [form.stock]);
 
       const handleAdd = async () => {
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
@@ -3035,35 +3075,20 @@
                   <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
                 <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
-                <div style={{ position: 'relative', flex: 1.5, minWidth: '220px' }}>
-                  <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
-                  {aiLoading && <div style={{ position: 'absolute', right: '8px', top: '35px', fontSize: '10px', color: 'var(--accent)', zIndex: 11 }}>AI thinking...</div>}
-                  {!groqKey && form.stock.length >= 3 && <div style={{ position: 'absolute', right: '8px', top: '35px', fontSize: '9px', color: 'var(--red)', opacity: 0.7, zIndex: 11 }}>Key missing in Manage > Settings</div>}
-                  {aiSuggestion && (
-                    <div 
-                      onClick={() => { set('stock', aiSuggestion); setAiSuggestion(''); }}
-                      style={{ 
-                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
-                        background: '#fff', color: 'var(--accent)', 
-                        padding: '8px 12px', fontSize: '12px', borderRadius: '4px',
-                        marginTop: '4px', cursor: 'pointer', border: '2px solid var(--accent)',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        fontFamily: 'var(--font-aux)', fontWeight: 700
-                      }}
-                    >
-                      <span>✨ Suggest official: <strong>{aiSuggestion}</strong></span>
-                      <span style={{ fontSize: '10px', background: 'var(--accent)', color: '#fff', padding: '2px 6px' }}>FIX</span>
-                    </div>
-                  )}
-                  {form.stock.length >= 3 && groqKey && !aiSuggestion && !aiLoading && (
-                    <button 
-                      onClick={() => fetchAiSuggestion(form.stock)}
-                      style={{ position: 'absolute', right: '8px', top: '32px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: 0 }}
-                      title="Force AI Refresh"
-                    >✨</button>
-                  )}
-                </div>
+                <SearchableInput 
+                  label="Asset Name" 
+                  inputRef={stockRef} 
+                  value={form.stock} 
+                  options={uniqueStocks} 
+                  onChange={val => set('stock', val)} 
+                  placeholder="E.g. ADANI POWER" 
+                  onKeyDown={e => handleQuickKey(e, focusQty)} 
+                  onRemoteSearch={q => marketService.search(q)}
+                  onSelectDetail={o => {
+                    const typeMap = { 'Equity': 'STOCK', 'ETF': 'ETF', 'Mutual Fund': 'MUTUAL FUND' };
+                    if (typeMap[o.type]) set('assetType', typeMap[o.type]);
+                  }}
+                />
                 <div className="filter-group">
                   <label className="filter-label">Qty (- for Sell)</label>
                   <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} />
@@ -3705,8 +3730,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode,
-      groqKey, onUpdateGroqKey
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode, onSyncPrices
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3720,47 +3744,14 @@
             <button className={`dock-btn ${subTab === 'persons' ? 'active' : ''}`} onClick={() => setSubTab('persons')}>Persons</button>
             <button className={`dock-btn ${subTab === 'assets' ? 'active' : ''}`} onClick={() => setSubTab('assets')}>Asset Types</button>
             <button className={`dock-btn ${subTab === 'prices' ? 'active' : ''}`} onClick={() => setSubTab('prices')}>Prices</button>
-            <button className={`dock-btn ${subTab === 'settings' ? 'active' : ''}`} onClick={() => setSubTab('settings')}>Settings</button>
           </div>
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
-          {subTab === 'settings' && <SettingsTab groqKey={groqKey} onUpdateGroqKey={onUpdateGroqKey} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} onSync={onSyncPrices} />}
         </div>
       );
     }
-    function SettingsTab({ groqKey, onUpdateGroqKey }) {
-      const [key, setKey] = useState(groqKey || '');
-      const [saving, setSaving] = useState(false);
-      const handleSave = async () => {
-        setSaving(true);
-        await onUpdateGroqKey(key);
-        setSaving(false);
-      };
-      return (
-        <div className="card">
-          <div className="card-title">AI Settings</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-            Enter your Groq API Key to enable AI-powered asset name suggestions and corrections.
-          </div>
-          <div className="form-group">
-            <label className="form-label">Groq API Key</label>
-            <input
-              className="form-input"
-              type="password"
-              value={key}
-              onChange={e => setKey(e.target.value)}
-              placeholder="gsk_..."
-            />
-          </div>
-          <button className="btn-primary" style={{ marginTop: '1rem', width: 'auto', padding: '0.6rem 2rem' }} onClick={handleSave} disabled={saving}>
-            {saving ? 'SAVING...' : 'SAVE SETTINGS'}
-          </button>
-        </div>
-      );
-    }
-
 
     // ── ASSET TYPES TAB ──────────────────────────────────────
     function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetTypeColors, onColorChange }) {
@@ -3867,10 +3858,11 @@
       );
     }
 
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode, onSync }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
+      const [syncing, setSyncing] = useState(false);
       const [editEntry, setEditEntry] = useState(null);
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
@@ -3983,8 +3975,11 @@
 
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <div className="card-title" style={{ margin: 0 }}>STORED PRICES ({filteredEntries.length})</div>
+                <button className="btn-primary btn-sm" onClick={async () => { setSyncing(true); await onSync(); setSyncing(false); }} disabled={syncing} style={{ padding: '4px 12px' }}>
+                  {syncing ? 'SYNCING...' : 'SYNC LIVE PRICES'}
+                </button>
               </div>
               <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
             </div>
@@ -4474,7 +4469,6 @@
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
       const [privacyMode, setPrivacyMode] = useState(false);
-      const [groqKey, setGroqKey] = useState('');
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
@@ -4534,8 +4528,15 @@
         const t2_1 = db.collection(`users/${uid}/inv_assetTypes`).onSnapshot(snap => { setAssetTypes(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
         const t3 = db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').onSnapshot(snap => {
           if (snap.exists) {
-            setStockPrices(snap.data().prices || {});
-            setPriceMeta({ lastUpdated: snap.data().lastUpdated || null });
+            const data = snap.data();
+            setStockPrices(data.prices || {});
+            setPriceMeta({ lastUpdated: data.lastUpdated || null });
+            // Auto-refresh on load if not updated in the last 1 hour
+            const last = data.lastUpdated ? new Date(data.lastUpdated) : 0;
+            if (Date.now() - last > 3600000) {
+              console.log('Refreshing prices on load...');
+              syncLivePrices(data.prices || {});
+            }
           }
         }, () => { });
         const t4 = db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').onSnapshot(snap => { if (snap.exists) setPersonColors(snap.data().colors || {}); }, () => { });
@@ -4545,7 +4546,6 @@
             const data = snap.data();
             setVisibleTabs(data.visibleTabs || {});
             setPrivacyMode(data.privacyMode || false);
-            setGroqKey(data.groqKey || '');
             if (data.dashboardDefaults) {
               setDashboardDefaults(data.dashboardDefaults);
               // Only auto-apply defaults on first load if current filter is still 'All'
@@ -4593,6 +4593,42 @@
       }, [uid, loading]);
 
 
+
+      const syncLivePrices = async (currentPrices = stockPrices) => {
+        const stocks = Object.keys(currentPrices);
+        if (stocks.length === 0) return;
+        
+        const mfs = stocks.filter(s => /^[0-9]+$/.test(s)); // Numeric codes are MFs
+        const nonMfs = stocks.filter(s => !/^[0-9]+$/.test(s));
+        
+        const newPrices = { ...currentPrices };
+        let changed = false;
+
+        // Sync Stocks/ETFs
+        if (nonMfs.length > 0) {
+          const results = await marketService.getPrices(nonMfs);
+          Object.entries(results).forEach(([s, p]) => {
+            if (newPrices[s] !== p) { newPrices[s] = p; changed = true; }
+          });
+        }
+
+        // Sync Mutual Funds
+        if (mfs.length > 0) {
+          const navs = await marketService.getMFNAVs();
+          mfs.forEach(code => {
+            if (navs[code] && newPrices[code] !== navs[code]) {
+              newPrices[code] = navs[code]; changed = true;
+            }
+          });
+        }
+
+        if (changed) {
+          await updatePrices(newPrices, true);
+        } else {
+          // Update lastUpdated timestamp even if prices didn't change
+          await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').update({ lastUpdated: new Date().toISOString() });
+        }
+      };
 
       const addTx = async tx => {
         await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, createdAt: new Date().toISOString() });
@@ -4693,12 +4729,6 @@
         setPrivacyMode(val);
         if (uid) {
           await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ privacyMode: val }, { merge: true });
-        }
-      };
-      const updateGroqKey = async (val) => {
-        setGroqKey(val);
-        if (uid) {
-          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ groqKey: val }, { merge: true });
         }
       };
 
@@ -4859,7 +4889,7 @@
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} groqKey={groqKey} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
                 {tab === 'manage' && (
@@ -4869,8 +4899,7 @@
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
-                    transactions={transactions} privacyMode={privacyMode}
-                    groqKey={groqKey} onUpdateGroqKey={updateGroqKey}
+                    transactions={transactions} privacyMode={privacyMode} onSyncPrices={syncLivePrices}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} privacyMode={privacyMode} />}
