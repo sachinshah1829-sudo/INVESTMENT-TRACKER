@@ -2928,7 +2928,7 @@
         const t = setTimeout(() => {
           if (form.stock && form.stock.length >= 3) fetchAiSuggestion(form.stock);
           else setAiSuggestion('');
-        }, 1000);
+        }, 500);
         return () => clearTimeout(t);
       }, [form.stock]);
 
@@ -3035,23 +3035,33 @@
                   <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
                 <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
-                <div style={{ position: 'relative', flex: 1.5, minWidth: '200px' }}>
+                <div style={{ position: 'relative', flex: 1.5, minWidth: '220px' }}>
                   <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
-                  {aiLoading && <div style={{ position: 'absolute', right: '8px', top: '35px', fontSize: '10px', color: 'var(--accent)' }}>AI thinking...</div>}
+                  {aiLoading && <div style={{ position: 'absolute', right: '8px', top: '35px', fontSize: '10px', color: 'var(--accent)', zIndex: 11 }}>AI thinking...</div>}
+                  {!groqKey && form.stock.length >= 3 && <div style={{ position: 'absolute', right: '8px', top: '35px', fontSize: '9px', color: 'var(--red)', opacity: 0.7, zIndex: 11 }}>Key missing in Manage > Settings</div>}
                   {aiSuggestion && (
                     <div 
                       onClick={() => { set('stock', aiSuggestion); setAiSuggestion(''); }}
                       style={{ 
-                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-                        background: 'var(--accent-light)', color: 'var(--accent)', 
-                        padding: '6px 12px', fontSize: '11px', borderRadius: '6px',
-                        marginTop: '4px', cursor: 'pointer', border: '1px dashed var(--accent)',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                        background: '#fff', color: 'var(--accent)', 
+                        padding: '8px 12px', fontSize: '12px', borderRadius: '4px',
+                        marginTop: '4px', cursor: 'pointer', border: '2px solid var(--accent)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        fontFamily: 'var(--font-aux)', fontWeight: 700
                       }}
                     >
-                      <span>Suggest official: <strong>{aiSuggestion}</strong></span>
-                      <span style={{ fontSize: '10px', opacity: 0.7 }}>Click to fix</span>
+                      <span>✨ Suggest official: <strong>{aiSuggestion}</strong></span>
+                      <span style={{ fontSize: '10px', background: 'var(--accent)', color: '#fff', padding: '2px 6px' }}>FIX</span>
                     </div>
+                  )}
+                  {form.stock.length >= 3 && groqKey && !aiSuggestion && !aiLoading && (
+                    <button 
+                      onClick={() => fetchAiSuggestion(form.stock)}
+                      style={{ position: 'absolute', right: '8px', top: '32px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: 0 }}
+                      title="Force AI Refresh"
+                    >✨</button>
                   )}
                 </div>
                 <div className="filter-group">
