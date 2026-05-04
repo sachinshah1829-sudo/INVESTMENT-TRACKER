@@ -4483,7 +4483,11 @@
 
 
 
-      const addTx = async tx => { await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, createdAt: new Date().toISOString() }); };
+      const addTx = async tx => {
+        await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, createdAt: new Date().toISOString() });
+        const s = tx.stock.toUpperCase();
+        if (!stockPrices[s]) { await updatePrices({ [s]: tx.price }); }
+      };
       const bulkAddTx = async (txs) => {
         const batchSize = 500;
         for (let i = 0; i < txs.length; i += batchSize) {
@@ -4491,6 +4495,12 @@
           txs.slice(i, i + batchSize).forEach(tx => { const ref = db.collection(`users/${uid}/inv_transactions`).doc(); batch.set(ref, { ...tx, createdAt: new Date().toISOString() }); });
           await batch.commit();
         }
+        const newPrices = {};
+        txs.forEach(tx => {
+          const s = tx.stock.toUpperCase();
+          if (!stockPrices[s] && !newPrices[s]) { newPrices[s] = tx.price; }
+        });
+        if (Object.keys(newPrices).length > 0) { await updatePrices(newPrices); }
       };
       const updateTx = async (id, data) => { await db.collection(`users/${uid}/inv_transactions`).doc(id).update(data); };
       const deleteTx = async id => { await db.collection(`users/${uid}/inv_transactions`).doc(id).delete(); };
