@@ -1792,73 +1792,6 @@
       return `hsl(${Math.abs(h) % 360},70%,85%)`;
     };
 
-    // ── MARKET DATA SERVICE ──────────────────────────────────
-    const marketService = {
-      // Use corsproxy.io for better reliability
-      proxy: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      
-      async search(query) {
-        if (!query || query.length < 2) return [];
-        try {
-          const url = this.proxy(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=20&newsCount=0&lang=en-IN&region=IN`);
-          const resp = await fetch(url);
-          if (!resp.ok) throw new Error('Search failed');
-          const json = await resp.json();
-          
-          // Filter for Indian Exchanges (NSE/BSE) or Mutual Funds
-          const indianQuotes = (json.quotes || []).filter(q => 
-            q.exchange === 'NSI' || q.exchange === 'BSE' || q.quoteType === 'MUTUALFUND' || q.symbol.endsWith('.NS') || q.symbol.endsWith('.BO')
-          );
-
-          // Group by type
-          const groups = { 'STOCKS': [], 'MF': [], 'ETF': [], 'BONDS': [] };
-          indianQuotes.forEach(q => {
-            const item = { symbol: q.symbol, name: q.longname || q.shortname || q.symbol, exchange: q.exchange };
-            if (q.quoteType === 'EQUITY') groups['STOCKS'].push(item);
-            else if (q.quoteType === 'MUTUALFUND') groups['MF'].push(item);
-            else if (q.quoteType === 'ETF') groups['ETF'].push(item);
-            else if (q.quoteType === 'BOND') groups['BONDS'].push(item);
-          });
-          return groups;
-        } catch (e) { console.error('Search error:', e); return {}; }
-      },
-
-      async getPrices(symbols) {
-        if (!symbols || symbols.length === 0) return {};
-        console.log('Fetching prices for:', symbols);
-        try {
-          const url = this.proxy(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`);
-          const resp = await fetch(url);
-          const json = await resp.json();
-          console.log('Price raw results:', json);
-          const prices = {};
-          (json.quoteResponse?.result || []).forEach(r => {
-            if (r.regularMarketPrice) prices[r.symbol] = r.regularMarketPrice;
-          });
-          return prices;
-        } catch (e) { console.error('Price error:', e); return {}; }
-      },
-
-      async getMFNAVs() {
-        try {
-          const url = this.proxy('https://www.amfiindia.com/spages/NAVAll.txt');
-          const resp = await fetch(url);
-          const data = await resp.json();
-          const lines = data.contents.split('\n');
-          const navs = {};
-          lines.forEach(line => {
-            const parts = line.split(';');
-            if (parts.length > 5) {
-              const code = parts[0].trim();
-              const nav = parseFloat(parts[4]);
-              if (!isNaN(nav)) navs[code] = nav;
-            }
-          });
-          return navs;
-        } catch (e) { console.error('MF error:', e); return {}; }
-      }
-    };
-
     // ── FIFO ENGINE ───────────────────────────────────────────
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
@@ -2123,35 +2056,16 @@
       );
     }
 
-    function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef, onRemoteSearch, onSelectDetail }) {
+    function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef }) {
       const [open, setOpen] = useState(false);
-      const [remoteOptions, setRemoteOptions] = useState([]);
-      const [loading, setLoading] = useState(false);
       const ref = useRef(null);
-      const timer = useRef(null);
-
       useEffect(() => {
         if (!open) return;
         const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
         document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
       }, [open]);
 
-      const handleSearch = (val) => {
-        onChange(val);
-        setOpen(true);
-        if (onRemoteSearch) {
-          if (timer.current) clearTimeout(timer.current);
-          timer.current = setTimeout(async () => {
-            if (val.length < 2) { setRemoteOptions({}); return; }
-            setLoading(true);
-            const res = await onRemoteSearch(val);
-            setRemoteOptions(res || {});
-            setLoading(false);
-          }, 600);
-        }
-      };
-
-      const localFiltered = options.filter(o => o.toLowerCase().includes((value || '').toLowerCase()));
+      const filtered = options.filter(o => o.toLowerCase().includes((value || '').toLowerCase()));
 
       return (
         <div className="filter-group" ref={ref}>
@@ -2162,37 +2076,20 @@
               className="form-input"
               type="text"
               value={value}
-              onChange={e => handleSearch(e.target.value)}
+              onChange={e => { onChange(e.target.value); setOpen(true); }}
               onClick={() => setOpen(true)}
               placeholder={placeholder}
               onKeyDown={onKeyDown}
               autoComplete="off"
             />
-            {open && (localFiltered.length > 0 || Object.values(remoteOptions).some(g => g.length > 0) || loading) && (
-              <div className="multi-select-dropdown" style={{ minWidth: '300px' }}>
-                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                  {loading && <div className="multi-select-opt" style={{ opacity: 0.6, fontSize: 11 }}>Searching Indian markets...</div>}
-                  
-                  {Object.entries(remoteOptions).map(([group, items]) => {
-                    if (items.length === 0) return null;
-                    return (
-                      <div key={group}>
-                        <div style={{ background: 'var(--bg-card)', padding: '4px 10px', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{group}</div>
-                        {items.map(o => (
-                          <div key={'remote-' + o.symbol} className="multi-select-opt" onClick={() => { 
-                            onChange(o.symbol); 
-                            if (onSelectDetail) onSelectDetail({ ...o, group });
-                            setOpen(false); 
-                          }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontWeight: 600, fontSize: 13 }}>{o.name}</span>
-                              <span style={{ fontSize: 10, opacity: 0.6 }}>{o.symbol} • {o.exchange}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
+            {open && filtered.length > 0 && (
+              <div className="multi-select-dropdown" style={{ minWidth: '100%' }}>
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  {filtered.map(o => (
+                    <div key={o} className="multi-select-opt" onClick={() => { onChange(o); setOpen(false); }}>
+                      <span>{o}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -3091,20 +2988,7 @@
                   <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
                 <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
-                <SearchableInput 
-                  label="Asset Name" 
-                  inputRef={stockRef} 
-                  value={form.stock} 
-                  options={uniqueStocks} 
-                  onChange={val => set('stock', val)} 
-                  placeholder="E.g. ADANI POWER" 
-                  onKeyDown={e => handleQuickKey(e, focusQty)} 
-                  onRemoteSearch={q => marketService.search(q)}
-                  onSelectDetail={o => {
-                    const typeMap = { 'STOCKS': 'STOCK', 'ETF': 'ETF', 'MF': 'MUTUAL FUND', 'BONDS': 'BONDS' };
-                    if (typeMap[o.group]) set('assetType', typeMap[o.group]);
-                  }}
-                />
+                <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
                 <div className="filter-group">
                   <label className="filter-label">Qty (- for Sell)</label>
                   <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} />
@@ -3746,7 +3630,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode, onSyncPrices
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3764,7 +3648,7 @@
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} onSync={onSyncPrices} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
         </div>
       );
     }
@@ -3874,11 +3758,10 @@
       );
     }
 
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode, onSync }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
-      const [syncing, setSyncing] = useState(false);
       const [editEntry, setEditEntry] = useState(null);
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
@@ -3991,11 +3874,8 @@
 
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div className="card-title" style={{ margin: 0 }}>STORED PRICES ({filteredEntries.length})</div>
-                <button className="btn-primary btn-sm" onClick={async () => { setSyncing(true); await onSync(); setSyncing(false); }} disabled={syncing} style={{ padding: '4px 12px' }}>
-                  {syncing ? 'SYNCING...' : 'SYNC LIVE PRICES'}
-                </button>
               </div>
               <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
             </div>
@@ -4544,15 +4424,8 @@
         const t2_1 = db.collection(`users/${uid}/inv_assetTypes`).onSnapshot(snap => { setAssetTypes(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }, () => { });
         const t3 = db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').onSnapshot(snap => {
           if (snap.exists) {
-            const data = snap.data();
-            setStockPrices(data.prices || {});
-            setPriceMeta({ lastUpdated: data.lastUpdated || null });
-            // Auto-refresh on load if not updated in the last 1 hour
-            const last = data.lastUpdated ? new Date(data.lastUpdated) : 0;
-            if (Date.now() - last > 3600000) {
-              console.log('Refreshing prices on load...');
-              syncLivePrices(data.prices || {});
-            }
+            setStockPrices(snap.data().prices || {});
+            setPriceMeta({ lastUpdated: snap.data().lastUpdated || null });
           }
         }, () => { });
         const t4 = db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').onSnapshot(snap => { if (snap.exists) setPersonColors(snap.data().colors || {}); }, () => { });
@@ -4609,68 +4482,6 @@
       }, [uid, loading]);
 
 
-
-      const syncLivePrices = async (currentPrices = stockPrices) => {
-        const stocks = Object.keys(currentPrices);
-        if (stocks.length === 0) return;
-        
-        const mfs = stocks.filter(s => /^[0-9]+$/.test(s)); // Numeric codes are MFs
-        const rawNonMfs = stocks.filter(s => !/^[0-9]+$/.test(s));
-        
-        // Resolve symbols in parallel for performance
-        const resolutionPromises = rawNonMfs.map(async s => {
-          // If it looks like a ticker (ends in .NS or .BO), use as is
-          if (s.endsWith('.NS') || s.endsWith('.BO')) return { original: s, ticker: s };
-          
-          // Otherwise try to find the ticker from the name
-          try {
-            const groups = await marketService.search(s);
-            const all = Object.values(groups).flat();
-            if (all.length > 0) {
-              // Exact name match priority
-              const exact = all.find(m => m.name.toUpperCase() === s.toUpperCase() || m.symbol.toUpperCase() === s.toUpperCase());
-              return { original: s, ticker: exact ? exact.symbol : all[0].symbol };
-            }
-          } catch (e) {}
-          return { original: s, ticker: s };
-        });
-
-        const resolved = await Promise.all(resolutionPromises);
-        const resolvedSymbols = {};
-        resolved.forEach(r => resolvedSymbols[r.original] = r.ticker);
-
-        const nonMfsTickers = Object.values(resolvedSymbols);
-        const newPrices = { ...currentPrices };
-        let changed = false;
-
-        // Sync Stocks/ETFs
-        if (nonMfsTickers.length > 0) {
-          const results = await marketService.getPrices(nonMfsTickers);
-          Object.entries(resolvedSymbols).forEach(([originalName, ticker]) => {
-            const price = results[ticker];
-            if (price != null && newPrices[originalName] !== price) {
-              newPrices[originalName] = price; changed = true;
-            }
-          });
-        }
-
-        // Sync Mutual Funds
-        if (mfs.length > 0) {
-          const navs = await marketService.getMFNAVs();
-          mfs.forEach(code => {
-            if (navs[code] && newPrices[code] !== navs[code]) {
-              newPrices[code] = navs[code]; changed = true;
-            }
-          });
-        }
-
-        if (changed) {
-          await updatePrices(newPrices, true);
-        } else {
-          // Update lastUpdated timestamp even if prices didn't change
-          await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').update({ lastUpdated: new Date().toISOString() });
-        }
-      };
 
       const addTx = async tx => {
         await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, createdAt: new Date().toISOString() });
@@ -4941,7 +4752,7 @@
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
-                    transactions={transactions} privacyMode={privacyMode} onSyncPrices={syncLivePrices}
+                    transactions={transactions} privacyMode={privacyMode}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} privacyMode={privacyMode} />}
