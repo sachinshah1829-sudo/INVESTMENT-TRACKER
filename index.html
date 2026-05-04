@@ -51,6 +51,73 @@
       --font-big: 'Outfit', sans-serif;
     }
 
+    /* Privacy Toggle Switch */
+    .privacy-toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.25rem;
+      border-top: 1px solid var(--border);
+      margin-top: 0.5rem;
+    }
+
+    .privacy-toggle-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border);
+      transition: .3s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: var(--accent);
+    }
+
+    input:focus+.slider {
+      box-shadow: 0 0 1px var(--accent);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(16px);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -177,7 +244,8 @@
       color: var(--text);
       outline: none;
       border-radius: 0px;
-      height: 42px; /* Ensure fixed height for all inputs */
+      height: 42px;
+      /* Ensure fixed height for all inputs */
       display: flex;
       align-items: center;
     }
@@ -185,7 +253,7 @@
     .form-input:focus,
     .select-input:focus {
       border-color: var(--accent);
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .btn-primary {
@@ -1655,10 +1723,14 @@
 
     // ── HELPERS ───────────────────────────────────────────────
     const todayISO = () => new Date().toISOString().split('T')[0];
-    const fmt = n => n == null || isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    const fmt = (n, privacy = false) => {
+      if (privacy) return '••••';
+      return n == null || isNaN(n) ? '—' : '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+    };
     const fmtPct = n => n == null || isNaN(n) ? '—' : (n >= 0 ? '+' : '') + Number(n).toFixed(2) + '%';
 
-    const fmtWords = (n) => {
+    const fmtWords = (n, privacy = false) => {
+      if (privacy) return '••••';
       if (n == null || isNaN(n)) return '—';
       const abs = Math.abs(n);
       const sign = n < 0 ? '-' : '';
@@ -2028,7 +2100,7 @@
 
 
     // ── CHART COMPONENTS ──────────────────────────────────────
-    function BarChart({ labels, datasets }) {
+    function BarChart({ labels, datasets, privacyMode }) {
       const ref = useRef(null); const chart = useRef(null);
       useEffect(() => {
         if (!ref.current) return;
@@ -2040,8 +2112,24 @@
             plugins: { legend: { labels: { font: { family: 'Courier Prime', size: 11 }, boxWidth: 12 } } },
             scales: {
               x: { ticks: { font: { family: 'Courier Prime', size: 10 }, maxRotation: 45 }, grid: { display: false } },
-              y: { ticks: { font: { family: 'Courier Prime', size: 10 }, callback: v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v) }, grid: { color: 'var(--border)' } }
-            }
+              y: { 
+                display: !privacyMode,
+                ticks: { font: { family: 'Courier Prime', size: 10 }, callback: v => '₹' + (v >= 100000 ? (v / 100000).toFixed(1) + 'L' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v) }, 
+                grid: { color: 'var(--border)' } 
+              }
+            },
+            plugins: {
+              legend: { labels: { font: { family: 'Courier Prime', size: 11 }, boxWidth: 12 } },
+              tooltip: {
+                callbacks: {
+                  label: ctx => {
+                    const label = ctx.dataset.label || '';
+                    if (privacyMode) return label + ': ••••';
+                    return label + ': ₹' + Number(ctx.parsed.y).toLocaleString('en-IN');
+                  }
+                }
+              }
+            },
           }
         });
         return () => { if (chart.current) chart.current.destroy(); };
@@ -2049,7 +2137,7 @@
       return <canvas ref={ref} />;
     }
 
-    function PieChart({ labels, data, colors, hideLegend, onClick }) {
+    function PieChart({ labels, data, colors, hideLegend, onClick, privacyMode }) {
       const ref = useRef(null); const chart = useRef(null);
       useEffect(() => {
         if (!ref.current) return;
@@ -2090,6 +2178,7 @@
                     const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                     const val = ctx.parsed;
                     const pct = ((val / total) * 100).toFixed(1) + '%';
+                    if (privacyMode) return [`${ctx.label}: ${pct}`, '••••'];
                     const amount = `₹${Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
                     return [`${ctx.label}: ${pct}`, amount];
                   }
@@ -2141,7 +2230,7 @@
     }
 
     // ── EDIT TX MODAL ─────────────────────────────────────────
-    function EditTxModal({ tx, persons, assetTypes, onSave, onDelete, onClose, assetTypeColors }) {
+    function EditTxModal({ tx, persons, assetTypes, onSave, onDelete, onClose, assetTypeColors, privacyMode }) {
       const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '', assetType: tx.assetType || 'STOCK' });
       const [saveState, setSaveState] = useState('idle');
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -2197,7 +2286,7 @@
     }
 
     // ── STOCK ALLOCATION MODAL ────────────────────────────────
-    function StockAllocationModal({ stockEntries, totalValue, onClose }) {
+    function StockAllocationModal({ stockEntries, totalValue, onClose, privacyMode }) {
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
           <div className="modal" style={{ maxWidth: 500 }}>
@@ -2213,8 +2302,8 @@
                         ={s}>
                         <td style={{ fontWeight: 700 }}>{s}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
-                          <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v)}</span><br />
-                          <span style={{ fontSize: 11, opacity: .7 }}>{fmt(v)}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700 }}>{fmtWords(v, privacyMode)}</span><br />
+                          <span style={{ fontSize: 11, opacity: .7 }}>{fmt(v, privacyMode)}</span>
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 700 }}>{pct.toFixed(1)}%</td>
                       </tr>
@@ -2230,7 +2319,7 @@
         </div>
       );
     }
-    function AssetTypeDrilldownModal({ type, rows, stockPrices, personColors, onClose }) {
+    function AssetTypeDrilldownModal({ type, rows, stockPrices, personColors, onClose, privacyMode }) {
       const [drilldown, setDrilldown] = useState(null);
       const now = new Date();
 
@@ -2309,11 +2398,11 @@
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
 
 
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.currentVal)}</td>
-                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy, privacyMode)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal, privacyMode)}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice, privacyMode) : '—'}</td>
+                      <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.currentVal, privacyMode)}</td>
+                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain, privacyMode)}</td>
                       <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
                       <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
@@ -2322,13 +2411,13 @@
                 </tbody>
               </table>
             </div>
-            {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
+            {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
           </div>
         </div>
       );
     }
 
-    function StockHoldersModal({ stockName, rows, stockPrices, personColors, onClose }) {
+    function StockHoldersModal({ stockName, rows, stockPrices, personColors, onClose, privacyMode }) {
       const [drilldown, setDrilldown] = useState(null);
 
       const consolidated = rows.map(r => {
@@ -2364,11 +2453,11 @@
                     <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                       <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>
-                      <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(r.currentVal)}</td>
-                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy, privacyMode)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(r.investedVal, privacyMode)}</td>
+                      <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice, privacyMode) : '—'}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(r.currentVal, privacyMode)}</td>
+                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain, privacyMode)}</td>
                       <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
                       <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : (r.cagr < 0 ? 'neg' : '')}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'normal' }}>{r.breakup}</td>
@@ -2377,13 +2466,13 @@
                 </tbody>
               </table>
             </div>
-            {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
+            {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
           </div>
         </div>
       );
     }
 
-    function PersonPortfolioModal({ person, rows, stockPrices, personColors, transactions, onClose, assetTypeColors }) {
+    function PersonPortfolioModal({ person, rows, stockPrices, personColors, transactions, onClose, assetTypeColors, privacyMode }) {
       const [drilldown, setDrilldown] = useState(null);
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2404,11 +2493,11 @@
                         <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
                         <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                         <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentVal ? fmt(r.currentVal) : '—'}</td>
-                        <td style={{ textAlign: 'right' }} className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain) : '—'}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy, privacyMode)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal, privacyMode)}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice, privacyMode) : '—'}</td>
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentVal ? fmt(r.currentVal, privacyMode) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={r.absGain != null ? (r.absGain >= 0 ? 'pos' : 'neg') : ''}>{r.absGain != null ? fmt(r.absGain, privacyMode) : '—'}</td>
                         <td style={{ textAlign: 'right' }} className={r.absGainPct != null ? (r.absGainPct >= 0 ? 'pos' : 'neg') : ''}>{r.absGainPct != null ? fmtPct(r.absGainPct) : '—'}</td>
                         <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup}</td>
@@ -2418,14 +2507,14 @@
                 </tbody>
               </table>
             </div>
-            {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
+            {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
           </div>
         </div>
       );
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick, dashboardDefaults, onShowSettings, filters, onFilterChange }) {
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick, dashboardDefaults, onShowSettings, filters, onFilterChange, privacyMode }) {
       const filterPersons = filters.persons || dashboardDefaults.persons;
       const filterAssetTypes = filters.assetTypes || dashboardDefaults.assetTypes;
       const allTypes = filterAssetTypes.includes('All');
@@ -2525,7 +2614,7 @@
 
       return (
         <div className="page" style={{ paddingBottom: '4rem' }}>
-          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} />}
+          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
           {drilldownAssetType && (
             <AssetTypeDrilldownModal
               type={drilldownAssetType}
@@ -2533,6 +2622,7 @@
               stockPrices={stockPrices}
               personColors={personColors}
               onClose={() => setDrilldownAssetType(null)}
+              privacyMode={privacyMode}
             />
           )}
           {drilldownStock && (
@@ -2542,6 +2632,7 @@
               stockPrices={stockPrices}
               personColors={personColors}
               onClose={() => setDrilldownStock(null)}
+              privacyMode={privacyMode}
             />
           )}
 
@@ -2587,11 +2678,11 @@
           </div>
 
           <div className="stats-grid">
-            <div className="stat-card"><div className="stat-label">Total Value</div><div className="stat-val">{fmtWords(totalCurrent)}</div></div>
-            <div className="stat-card"><div className="stat-label">Invested</div><div className="stat-val">{fmtWords(totalInvested)}</div></div>
+            <div className="stat-card"><div className="stat-label">Total Value</div><div className="stat-val">{fmtWords(totalCurrent, privacyMode)}</div></div>
+            <div className="stat-card"><div className="stat-label">Invested</div><div className="stat-val">{fmtWords(totalInvested, privacyMode)}</div></div>
             <div className="stat-card">
               <div className="stat-label">Total {totalGain >= 0 ? 'Profit' : 'Loss'}</div>
-              <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmtWords(totalGain)}</div>
+              <div className={`stat-val ${totalGain >= 0 ? 'pos' : 'neg'}`}>{fmtWords(totalGain, privacyMode)}</div>
               <div className={`stat-sub ${totalGain >= 0 ? 'pos' : 'neg'}`} style={{ fontSize: 13, fontWeight: 700 }}>{fmtPct(gainPct)}</div>
             </div>
             <div className="stat-card"><div className="stat-label">Unrealized CAGR</div><div className={`stat-val ${unrealizedCAGR >= 0 ? 'pos' : 'neg'}`}>{fmtPct(unrealizedCAGR)}</div></div>
@@ -2599,8 +2690,8 @@
           </div>
 
           <div className="cards-row">
-            {topGainer && <div className="top-gainer-card"><div className="card-title">Top Gainer</div><div style={{ fontWeight: 700 }}>{topGainer.stock}</div><div className="pos" style={{ fontSize: 20 }}>{fmt(topGainer.absGain)}</div></div>}
-            {topLoser && topLoser.stock !== (topGainer?.stock) && <div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{ fontWeight: 700 }}>{topLoser.stock}</div><div className="neg" style={{ fontSize: 20 }}>{fmt(topLoser.absGain)}</div></div>}
+            {topGainer && <div className="top-gainer-card"><div className="card-title">Top Gainer</div><div style={{ fontWeight: 700 }}>{topGainer.stock}</div><div className="pos" style={{ fontSize: 20 }}>{fmt(topGainer.absGain, privacyMode)}</div></div>}
+            {topLoser && topLoser.stock !== (topGainer?.stock) && <div className="top-loser-card"><div className="card-title">Top Loser</div><div style={{ fontWeight: 700 }}>{topLoser.stock}</div><div className="neg" style={{ fontSize: 20 }}>{fmt(topLoser.absGain, privacyMode)}</div></div>}
           </div>
 
           {/* Condition 1: Both All */}
@@ -2609,11 +2700,11 @@
               <div className="chart-card">
                 <div className="card-title">Wealth by Asset Type</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedTypesPie.map(([t, v]) => (
                       <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v, privacyMode)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
                       </div>
                     ))}
                   </div>
@@ -2622,11 +2713,11 @@
               <div className="chart-card">
                 <div className="card-title">Wealth by Person</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedFullPersons.map(([p]) => p)} data={sortedFullPersons.map(([, v]) => v.current)} colors={sortedFullPersons.map(([p]) => personColor(p, personColors))} hideLegend /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedFullPersons.map(([p]) => p)} data={sortedFullPersons.map(([, v]) => v.current)} colors={sortedFullPersons.map(([p]) => personColor(p, personColors))} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedFullPersons.map(([p, v]) => (
                       <div key={p} className="clickable" onClick={() => setDrilldownPerson(p)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{p}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v.current)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div></span>
+                        <span style={{ fontWeight: 700 }}>{p}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v.current, privacyMode)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v.current / totalCurrent * 100).toFixed(1)}%</div></span>
                       </div>
                     ))}
                   </div>
@@ -2641,34 +2732,34 @@
               <div className="chart-card">
                 <div className="card-title">Wealth by Asset Type</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedTypesPie.map(([t, v]) => (
                       <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        <span style={{ fontWeight: 700 }}>{t}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v, privacyMode)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-              <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
-            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
+              <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} privacyMode={privacyMode} /></div></div>
+            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} privacyMode={privacyMode} /></>
           )}
 
           {/* Condition 3: Person All, Selective Asset */}
           {allPersons && !allTypes && (
             <><div className="charts-row">
-              <div className="chart-card"><div className="card-title">{assetTypeLabel} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+              <div className="chart-card"><div className="card-title">{assetTypeLabel} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} privacyMode={privacyMode} /></div></div>
 
               <div className="chart-card">
                 <div className="card-title">Portfolio by Asset ({assetTypeLabel})</div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedAssetBreakdown.map(([s, v]) => (
                       <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v, privacyMode)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
                       </div>
                     ))}
                   </div>
@@ -2680,31 +2771,31 @@
           {/* Condition 4: Both Selective */}
           {!allPersons && !allTypes && (
             <><div className="charts-row">
-              <div className="chart-card"><div className="card-title">{assetTypeLabel} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} /></div></div>
+              <div className="chart-card"><div className="card-title">{assetTypeLabel} Value vs Invested</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} privacyMode={privacyMode} /></div></div>
 
               <div className="chart-card">
                 <div className="card-title">Portfolio by Asset ({assetTypeLabel})</div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedAssetBreakdown.map(([s]) => s)} data={sortedAssetBreakdown.map(([, v]) => v)} colors={PIE_COLORS} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedAssetBreakdown.map(([s, v]) => (
                       <div key={s} className="clickable" onClick={() => setDrilldownStock(s)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
+                        <span style={{ fontWeight: 700 }}>{s}</span><span style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmtWords(v, privacyMode)}</div><div style={{ fontSize: 9, opacity: 0.7 }}>{(v / totalCurrent * 100).toFixed(1)}%</div></span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} /></>
+            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} privacyMode={privacyMode} /></>
           )}
 
-          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
+          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
         </div>
       );
     }
 
-    function HoldingsTable({ portfolio, personColors, onSetDrilldown, assetTypeMap, assetTypeColors }) {
+    function HoldingsTable({ portfolio, personColors, onSetDrilldown, assetTypeMap, assetTypeColors, privacyMode }) {
       return (
         <div className="card" style={{ padding: 0 }}>
           <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Holdings Breakdown</div>
@@ -2721,11 +2812,11 @@
                       <td style={{ fontWeight: 700 }}>{r.stock}</td>
                       <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy)}</td>
-                      <td style={{ textAlign: 'right' }}>{fmt(r.investedVal)}</td>
-                      <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>
-                      <td style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div></td>
-                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy, privacyMode)}</td>
+                      <td style={{ textAlign: 'right' }}>{fmt(r.investedVal, privacyMode)}</td>
+                      <td style={{ textAlign: 'right' }}>{r.currentPrice ? fmt(r.currentPrice, privacyMode) : '—'}</td>
+                      <td style={{ textAlign: 'right' }}><div style={{ fontWeight: 700 }}>{fmt(r.currentVal, privacyMode)}</div></td>
+                      <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain, privacyMode)}</td>
                       <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
                       <td style={{ textAlign: 'right' }} className={r.cagr >= 0 ? 'pos' : (r.cagr < 0 ? 'neg' : '')}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                       <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.breakup}</td>
@@ -2742,7 +2833,7 @@
 
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange }) {
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange, privacyMode }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
@@ -2997,8 +3088,8 @@
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{tx.stock}</td>
                       <td><span className="tag" style={{ background: assetTypeColor(tx.assetType || 'STOCK', assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
                       <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
-                      <td style={{ whiteSpace: 'normal' }}>{fmt(tx.price)}</td>
-                      <td style={{ whiteSpace: 'normal' }}>{fmt(Math.abs(tx.qty) * tx.price)}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmt(tx.price, privacyMode)}</td>
+                      <td style={{ whiteSpace: 'normal' }}>{fmt(Math.abs(tx.qty) * tx.price, privacyMode)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -3006,13 +3097,13 @@
             </div>
           </div>
 
-          {editTx && <EditTxModal tx={editTx} persons={persons} assetTypes={assetTypes} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} assetTypeColors={assetTypeColors} />}
+          {editTx && <EditTxModal tx={editTx} persons={persons} assetTypes={assetTypes} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
         </div>
       );
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange }) {
+    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange, privacyMode }) {
       const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
       const [drilldown, setDrilldown] = useState(null);
       const [drilldownType, setDrilldownType] = useState(null);
@@ -3183,13 +3274,13 @@
                         {viewMode !== 'types' && <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>}
                         {viewMode === 'types' && <td style={{ textAlign: 'right' }}>{r.stockCount}</td>}
                         {viewMode !== 'types' && <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>}
-                        {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy)}</td>}
-                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal)}</td>
-                        {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice) : '—'}</td>}
+                        {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy, privacyMode)}</td>}
+                        <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal, privacyMode)}</td>
+                        {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{r.currentPrice ? fmt(r.currentPrice, privacyMode) : '—'}</td>}
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
-                          <div style={{ fontWeight: 700 }}>{fmt(r.currentVal)}</div>
+                          <div style={{ fontWeight: 700 }}>{fmt(r.currentVal, privacyMode)}</div>
                         </td>
-                        <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain)}</td>
+                        <td style={{ textAlign: 'right' }} className={r.absGain >= 0 ? 'pos' : 'neg'}>{fmt(r.absGain, privacyMode)}</td>
                         <td style={{ textAlign: 'right' }} className={r.absGainPct >= 0 ? 'pos' : 'neg'}>{fmtPct(r.absGainPct)}</td>
                         <td style={{ textAlign: 'right' }} className={r.cagr != null ? (r.cagr >= 0 ? 'pos' : 'neg') : ''}>{r.cagr != null ? fmtPct(r.cagr) : '—'}</td>
                         {viewMode !== 'types' && <td style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'normal' }}>{r.breakup || (viewMode === 'assets' ? 'Click for info' : '')}</td>}
@@ -3202,7 +3293,7 @@
               </table>
             </div>
           </div>
-          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} />}
+          {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
           {drilldownType && (
             <AssetTypeDrilldownModal
               type={drilldownType}
@@ -3210,6 +3301,7 @@
               stockPrices={stockPrices}
               personColors={personColors}
               onClose={() => setDrilldownType(null)}
+              privacyMode={privacyMode}
             />
           )}
         </div>
@@ -3217,7 +3309,7 @@
     }
 
     // ── FIFO RESULTS ─────────────────────────────────────────
-    function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors, filters, onFilterChange }) {
+    function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors, filters, onFilterChange, privacyMode }) {
       const { sells: allSells, unmatched: allUnmatched } = computeFIFO(transactions);
 
       const filterPersons = filters.persons;
@@ -3283,7 +3375,7 @@
           <div className="stats-grid" style={{ marginTop: '1rem' }}>
             <div className="stat-card">
               <div className="stat-label">Net Realized Gain</div>
-              <div className={`stat-val ${(netRealizedGain || 0) >= 0 ? 'pos' : 'neg'}`}>{fmt(netRealizedGain)}</div>
+              <div className={`stat-val ${(netRealizedGain || 0) >= 0 ? 'pos' : 'neg'}`}>{fmt(netRealizedGain, privacyMode)}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Net Realized CAGR</div>
@@ -3311,7 +3403,7 @@
                         <td><span className="tag" style={{ background: personColor(u.person, personColors), color: '#1a1a1a' }}>{u.person}</span></td>
                         <td style={{ fontWeight: 700 }}>{u.stock}</td>
                         <td className="neg">-{u.unmatchedQty}</td>
-                        <td>{fmt(u.price)}</td>
+                        <td>{fmt(u.price, privacyMode)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -3339,9 +3431,9 @@
                         <td style={{ fontWeight: 700 }}>{s.stock}</td>
                         <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                         <td>{s.qty}</td>
-                        <td>{fmt(s.buyPrice)}</td>
-                        <td>{fmt(s.sellPrice)}</td>
-                        <td className={s.realizedGain >= 0 ? 'pos' : 'neg'}>{fmt(s.realizedGain)}</td>
+                        <td>{fmt(s.buyPrice, privacyMode)}</td>
+                        <td>{fmt(s.sellPrice, privacyMode)}</td>
+                        <td className={s.realizedGain >= 0 ? 'pos' : 'neg'}>{fmt(s.realizedGain, privacyMode)}</td>
                         <td>{s.days}</td>
                       </tr>
                     );
@@ -3354,7 +3446,7 @@
       );
     }
 
-    function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose }) {
+    function PortfolioDrilldownModal({ data, stockPrices, personColors, onClose, privacyMode }) {
       if (!data) return null;
       const [subTab, setSubTab] = useState('holdings');
       const [filterPerson, setFilterPerson] = useState(null);
@@ -3446,11 +3538,11 @@
                           <td><span className="tag" style={{ background: personColor(l.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{l.person}</span></td>
                           <td>{fmtDate(l.date)}</td>
                           <td style={{ textAlign: 'right' }}>{l.qty}</td>
-                          <td style={{ textAlign: 'right' }}>{fmt(l.price)}</td>
-                          <td style={{ textAlign: 'right' }}>{fmt(invested)}</td>
-                          <td style={{ textAlign: 'right' }}>{cp ? fmt(cp) : '—'}</td>
-                          <td style={{ textAlign: 'right' }}>{cval ? fmt(cval) : '—'}</td>
-                          <td style={{ textAlign: 'right' }} className={gain >= 0 ? 'pos' : 'neg'}>{gain != null ? fmt(gain) : '—'}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(l.price, privacyMode)}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(invested, privacyMode)}</td>
+                          <td style={{ textAlign: 'right' }}>{cp ? fmt(cp, privacyMode) : '—'}</td>
+                          <td style={{ textAlign: 'right' }}>{cval ? fmt(cval, privacyMode) : '—'}</td>
+                          <td style={{ textAlign: 'right' }} className={gain >= 0 ? 'pos' : 'neg'}>{gain != null ? fmt(gain, privacyMode) : '—'}</td>
                           <td style={{ textAlign: 'right' }} className={gainPct >= 0 ? 'pos' : 'neg'}>{gainPct != null ? fmtPct(gainPct) : '—'}</td>
                           <td style={{ textAlign: 'right' }} className={cagr >= 0 ? 'pos' : 'neg'}>{cagr != null ? fmtPct(cagr) : '—'}</td>
                         </tr>
@@ -3470,11 +3562,11 @@
                       <tr key={i} className="clickable" onClick={() => { setFilterPerson(p.person); setSubTab('holdings'); }}>
                         <td><span className="tag" style={{ background: personColor(p.person, personColors), color: '#1a1a1a', fontSize: 10 }}>{p.person}</span></td>
                         <td style={{ textAlign: 'right' }}>{p.qty}</td>
-                        <td style={{ textAlign: 'right' }}>{fmt(p.avgBuy)}</td>
-                        <td style={{ textAlign: 'right' }}>{fmt(p.invested)}</td>
-                        <td style={{ textAlign: 'right' }}>{cp ? fmt(cp) : '—'}</td>
-                        <td style={{ textAlign: 'right' }}>{p.cval ? fmt(p.cval) : '—'}</td>
-                        <td style={{ textAlign: 'right' }} className={p.gain >= 0 ? 'pos' : 'neg'}>{p.gain != null ? fmt(p.gain) : '—'}</td>
+                        <td style={{ textAlign: 'right' }}>{fmt(p.avgBuy, privacyMode)}</td>
+                        <td style={{ textAlign: 'right' }}>{fmt(p.invested, privacyMode)}</td>
+                        <td style={{ textAlign: 'right' }}>{cp ? fmt(cp, privacyMode) : '—'}</td>
+                        <td style={{ textAlign: 'right' }}>{p.cval ? fmt(p.cval, privacyMode) : '—'}</td>
+                        <td style={{ textAlign: 'right' }} className={p.gain >= 0 ? 'pos' : 'neg'}>{p.gain != null ? fmt(p.gain, privacyMode) : '—'}</td>
                         <td style={{ textAlign: 'right' }} className={p.gainPct >= 0 ? 'pos' : 'neg'}>{p.gainPct != null ? fmtPct(p.gainPct) : '—'}</td>
                         <td style={{ textAlign: 'right' }} className={p.cagr >= 0 ? 'pos' : 'neg'}>{p.cagr != null ? fmtPct(p.cagr) : '—'}</td>
                         <td style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'normal' }}>{p.breakup}</td>
@@ -3538,7 +3630,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3556,7 +3648,7 @@
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
         </div>
       );
     }
@@ -3666,7 +3758,7 @@
       );
     }
 
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -3773,7 +3865,7 @@
               <div className="table-wrap">
                 <table className="preview-table">
                   <thead><tr><th>Stock</th><th>Price</th><th>Status</th></tr></thead>
-                  <tbody>{preview.map((r, i) => <tr key={i} className={r.ok ? 'preview-ok' : 'preview-err'}><td>{r.stock || r.raw}</td><td>{r.ok ? fmt(r.price) : '—'}</td><td>{r.ok ? '✓' : r.err}</td></tr>)}</tbody>
+                  <tbody>{preview.map((r, i) => <tr key={i} className={r.ok ? 'preview-ok' : 'preview-err'}><td>{r.stock || r.raw}</td><td>{r.ok ? fmt(r.price, privacyMode) : '—'}</td><td>{r.ok ? '✓' : r.err}</td></tr>)}</tbody>
                 </table>
               </div>
               {preview.some(r => r.ok) && <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem', marginTop: '.75rem' }} onClick={doImport} disabled={saving}>{saving ? '...' : `UPDATE ${preview.filter(r => r.ok).length} PRICES`}</button>}
@@ -3820,7 +3912,7 @@
                         {selectMode && <td onClick={ev => ev.stopPropagation()}><input type="checkbox" checked={selected.has(e.stock)} onChange={() => toggleSelect(e.stock)} /></td>}
                         <td style={{ fontWeight: 700 }}>{e.stock}</td>
                         <td><span className="tag" style={{ background: e.assetType !== '—' ? assetTypeColor(e.assetType, assetTypeColors) : '#e5e7eb', color: '#1a1a1a', fontSize: 10 }}>{e.assetType}</span></td>
-                        <td style={{ whiteSpace: 'normal' }}>{fmt(e.price)}</td>
+                        <td style={{ whiteSpace: 'normal' }}>{fmt(e.price, privacyMode)}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <button className="btn-sm" onClick={ev => { ev.stopPropagation(); setEditEntry({ stock: e.stock, price: e.price }); }}>EDIT</button>
                           {' '}
@@ -3976,7 +4068,7 @@
       );
     }
     // ── CORPORATE ACTIONS WIZARD ──────────────────────────────
-    function CorporateActionsTab({ transactions, onBulkAdd, personColors, assetTypes }) {
+    function CorporateActionsTab({ transactions, onBulkAdd, personColors, assetTypes, privacyMode }) {
       const [step, setStep] = useState(1);
       const [person, setPerson] = useState('');
       const [stock, setStock] = useState('');
@@ -4230,7 +4322,7 @@
                           <td><span className="tag" style={{ background: personColor(p.person, personColors), color: '#1a1a1a' }}>{p.person}</span></td>
                           <td>{p.stock}</td>
                           <td className={p.qty > 0 ? 'pos' : 'neg'}>{p.qty}</td>
-                          <td>{fmt(p.price)}</td>
+                          <td>{fmt(p.price, privacyMode)}</td>
                           <td style={{ fontSize: 10 }}>{p.note}</td>
                         </tr>
                       ))}
@@ -4272,6 +4364,7 @@
       const [fifoFilters, setFifoFilters] = useState({ persons: ['All'], types: ['All'], search: '' });
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
+      const [privacyMode, setPrivacyMode] = useState(false);
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
@@ -4341,6 +4434,7 @@
           if (snap.exists) {
             const data = snap.data();
             setVisibleTabs(data.visibleTabs || {});
+            setPrivacyMode(data.privacyMode || false);
             if (data.dashboardDefaults) {
               setDashboardDefaults(data.dashboardDefaults);
               // Only auto-apply defaults on first load if current filter is still 'All'
@@ -4471,6 +4565,13 @@
         setVisibleTabs(updated);
         if (uid) {
           await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ visibleTabs: updated }, { merge: true });
+        }
+      };
+
+      const updatePrivacyMode = async (val) => {
+        setPrivacyMode(val);
+        if (uid) {
+          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ privacyMode: val }, { merge: true });
         }
       };
 
@@ -4617,16 +4718,23 @@
                 </div>
                 <button onClick={() => setShowNavSettings(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '5px', marginLeft: 'auto' }} title="Sidebar Settings">⚙️</button>
               </div>
+              <div className="privacy-toggle-wrap">
+                <span className="privacy-toggle-label">Privacy Mode</span>
+                <label className="switch">
+                  <input type="checkbox" checked={privacyMode} onChange={e => updatePrivacyMode(e.target.checked)} />
+                  <span className="slider"></span>
+                </label>
+              </div>
               <button className="btn-logout" onClick={() => auth.signOut()}>Logout</button>
             </div>
           </aside>
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
                 {tab === 'manage' && (
                   <ManageTab
                     persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
@@ -4634,10 +4742,10 @@
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
-                    transactions={transactions}
+                    transactions={transactions} privacyMode={privacyMode}
                   />
                 )}
-                {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} />}
+                {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} privacyMode={privacyMode} />}
               </>
             )}
           </main>
