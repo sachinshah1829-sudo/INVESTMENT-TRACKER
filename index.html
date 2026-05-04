@@ -1794,34 +1794,46 @@
 
     // ── MARKET DATA SERVICE ──────────────────────────────────
     const marketService = {
-      proxy: (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+      // Use corsproxy.io for better reliability
+      proxy: (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
       
       async search(query) {
         if (!query || query.length < 2) return [];
+        console.log('Searching for:', query);
         try {
-          // Add region=IN and lang=en-IN to prioritize Indian markets
           const url = this.proxy(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0&lang=en-IN&region=IN`);
           const resp = await fetch(url);
-          const data = await resp.json();
-          if (!data.contents) return [];
-          const json = typeof data.contents === 'string' ? JSON.parse(data.contents) : data.contents;
-          return (json.quotes || []).map(q => ({
+          if (!resp.ok) throw new Error('Network response was not ok');
+          const json = await resp.json();
+          console.log('Search raw results:', json);
+          
+          const quotes = json.quotes || [];
+          return quotes.map(q => ({
             symbol: q.symbol,
             name: q.shortname || q.longname || q.symbol,
             type: q.quoteType,
             exchange: q.exchange
           }));
-        } catch (e) { console.error('Search error:', e); return []; }
+        } catch (e) { 
+          console.error('Search error:', e); 
+          // Fallback to query1 if query2 fails
+          try {
+             const url = this.proxy(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}`);
+             const resp = await fetch(url);
+             const json = await resp.json();
+             return (json.quotes || []).map(q => ({ symbol: q.symbol, name: q.shortname || q.symbol, type: q.quoteType, exchange: q.exchange }));
+          } catch (e2) { return []; }
+        }
       },
 
       async getPrices(symbols) {
         if (!symbols || symbols.length === 0) return {};
+        console.log('Fetching prices for:', symbols);
         try {
           const url = this.proxy(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`);
           const resp = await fetch(url);
-          const data = await resp.json();
-          if (!data.contents) return {};
-          const json = typeof data.contents === 'string' ? JSON.parse(data.contents) : data.contents;
+          const json = await resp.json();
+          console.log('Price raw results:', json);
           const prices = {};
           (json.quoteResponse?.result || []).forEach(r => {
             if (r.regularMarketPrice) prices[r.symbol] = r.regularMarketPrice;
