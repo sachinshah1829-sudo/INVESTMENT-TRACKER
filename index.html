@@ -1799,7 +1799,8 @@
       async search(query) {
         if (!query || query.length < 2) return [];
         try {
-          const url = this.proxy(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`);
+          // Add region=IN and lang=en-IN to prioritize Indian markets
+          const url = this.proxy(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0&lang=en-IN&region=IN`);
           const resp = await fetch(url);
           const data = await resp.json();
           if (!data.contents) return [];
@@ -4598,22 +4599,20 @@
         const mfs = stocks.filter(s => /^[0-9]+$/.test(s)); // Numeric codes are MFs
         const rawNonMfs = stocks.filter(s => !/^[0-9]+$/.test(s));
         
-        // Resolve symbols for full company names (e.g. "ADANI POWER LTD" -> "ADANIPOWER.NS")
-        const resolvedSymbols = {};
-        for (const s of rawNonMfs) {
+        // Resolve symbols in parallel for performance
+        const resolutionPromises = rawNonMfs.map(async s => {
           // If it looks like a ticker (no spaces, contains a dot or short uppercase), use as is
           if (!s.includes(' ') && (s.includes('.') || s.length <= 10)) {
-            resolvedSymbols[s] = s;
+            return { original: s, ticker: s };
           } else {
-            // Try to resolve the ticker from the name
             const matches = await marketService.search(s);
-            if (matches.length > 0) {
-              resolvedSymbols[s] = matches[0].symbol;
-            } else {
-              resolvedSymbols[s] = s; // Fallback
-            }
+            return { original: s, ticker: matches.length > 0 ? matches[0].symbol : s };
           }
-        }
+        });
+
+        const resolved = await Promise.all(resolutionPromises);
+        const resolvedSymbols = {};
+        resolved.forEach(r => resolvedSymbols[r.original] = r.ticker);
 
         const nonMfsTickers = Object.values(resolvedSymbols);
         const newPrices = { ...currentPrices };
