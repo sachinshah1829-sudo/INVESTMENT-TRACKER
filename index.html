@@ -1799,31 +1799,28 @@
       
       async search(query) {
         if (!query || query.length < 2) return [];
-        console.log('Searching for:', query);
         try {
-          const url = this.proxy(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0&lang=en-IN&region=IN`);
+          const url = this.proxy(`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=20&newsCount=0&lang=en-IN&region=IN`);
           const resp = await fetch(url);
-          if (!resp.ok) throw new Error('Network response was not ok');
+          if (!resp.ok) throw new Error('Search failed');
           const json = await resp.json();
-          console.log('Search raw results:', json);
           
-          const quotes = json.quotes || [];
-          return quotes.map(q => ({
-            symbol: q.symbol,
-            name: q.shortname || q.longname || q.symbol,
-            type: q.quoteType,
-            exchange: q.exchange
-          }));
-        } catch (e) { 
-          console.error('Search error:', e); 
-          // Fallback to query1 if query2 fails
-          try {
-             const url = this.proxy(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}`);
-             const resp = await fetch(url);
-             const json = await resp.json();
-             return (json.quotes || []).map(q => ({ symbol: q.symbol, name: q.shortname || q.symbol, type: q.quoteType, exchange: q.exchange }));
-          } catch (e2) { return []; }
-        }
+          // Filter for Indian Exchanges (NSE/BSE) or Mutual Funds
+          const indianQuotes = (json.quotes || []).filter(q => 
+            q.exchange === 'NSI' || q.exchange === 'BSE' || q.quoteType === 'MUTUALFUND' || q.symbol.endsWith('.NS') || q.symbol.endsWith('.BO')
+          );
+
+          // Group by type
+          const groups = { 'STOCKS': [], 'MF': [], 'ETF': [], 'BONDS': [] };
+          indianQuotes.forEach(q => {
+            const item = { symbol: q.symbol, name: q.longname || q.shortname || q.symbol, exchange: q.exchange };
+            if (q.quoteType === 'EQUITY') groups['STOCKS'].push(item);
+            else if (q.quoteType === 'MUTUALFUND') groups['MF'].push(item);
+            else if (q.quoteType === 'ETF') groups['ETF'].push(item);
+            else if (q.quoteType === 'BOND') groups['BONDS'].push(item);
+          });
+          return groups;
+        } catch (e) { console.error('Search error:', e); return {}; }
       },
 
       async getPrices(symbols) {
@@ -2145,12 +2142,12 @@
         if (onRemoteSearch) {
           if (timer.current) clearTimeout(timer.current);
           timer.current = setTimeout(async () => {
-            if (val.length < 2) { setRemoteOptions([]); return; }
+            if (val.length < 2) { setRemoteOptions({}); return; }
             setLoading(true);
             const res = await onRemoteSearch(val);
-            setRemoteOptions(res);
+            setRemoteOptions(res || {});
             setLoading(false);
-          }, 500);
+          }, 600);
         }
       };
 
@@ -2171,22 +2168,31 @@
               onKeyDown={onKeyDown}
               autoComplete="off"
             />
-            {open && (localFiltered.length > 0 || remoteOptions.length > 0 || loading) && (
-              <div className="multi-select-dropdown" style={{ minWidth: '100%' }}>
-                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-                  {loading && <div className="multi-select-opt" style={{ opacity: 0.6, fontSize: 11 }}>Searching markets...</div>}
-                  {remoteOptions.map(o => (
-                    <div key={'remote-' + o.symbol} className="multi-select-opt" onClick={() => { 
-                      onChange(o.symbol); 
-                      if (onSelectDetail) onSelectDetail(o);
-                      setOpen(false); 
-                    }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: 600 }}>{o.symbol}</span>
-                        <span style={{ fontSize: 10, opacity: 0.7 }}>{o.name} ({o.exchange})</span>
+            {open && (localFiltered.length > 0 || Object.values(remoteOptions).some(g => g.length > 0) || loading) && (
+              <div className="multi-select-dropdown" style={{ minWidth: '300px' }}>
+                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                  {loading && <div className="multi-select-opt" style={{ opacity: 0.6, fontSize: 11 }}>Searching Indian markets...</div>}
+                  
+                  {Object.entries(remoteOptions).map(([group, items]) => {
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={group}>
+                        <div style={{ background: 'var(--bg-card)', padding: '4px 10px', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{group}</div>
+                        {items.map(o => (
+                          <div key={'remote-' + o.symbol} className="multi-select-opt" onClick={() => { 
+                            onChange(o.symbol); 
+                            if (onSelectDetail) onSelectDetail({ ...o, group });
+                            setOpen(false); 
+                          }}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontWeight: 600, fontSize: 13 }}>{o.name}</span>
+                              <span style={{ fontSize: 10, opacity: 0.6 }}>{o.symbol} • {o.exchange}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -3095,8 +3101,8 @@
                   onKeyDown={e => handleQuickKey(e, focusQty)} 
                   onRemoteSearch={q => marketService.search(q)}
                   onSelectDetail={o => {
-                    const typeMap = { 'Equity': 'STOCK', 'ETF': 'ETF', 'Mutual Fund': 'MUTUAL FUND' };
-                    if (typeMap[o.type]) set('assetType', typeMap[o.type]);
+                    const typeMap = { 'STOCKS': 'STOCK', 'ETF': 'ETF', 'MF': 'MUTUAL FUND', 'BONDS': 'BONDS' };
+                    if (typeMap[o.group]) set('assetType', typeMap[o.group]);
                   }}
                 />
                 <div className="filter-group">
@@ -4613,13 +4619,20 @@
         
         // Resolve symbols in parallel for performance
         const resolutionPromises = rawNonMfs.map(async s => {
-          // If it looks like a ticker (no spaces, contains a dot or short uppercase), use as is
-          if (!s.includes(' ') && (s.includes('.') || s.length <= 10)) {
-            return { original: s, ticker: s };
-          } else {
-            const matches = await marketService.search(s);
-            return { original: s, ticker: matches.length > 0 ? matches[0].symbol : s };
-          }
+          // If it looks like a ticker (ends in .NS or .BO), use as is
+          if (s.endsWith('.NS') || s.endsWith('.BO')) return { original: s, ticker: s };
+          
+          // Otherwise try to find the ticker from the name
+          try {
+            const groups = await marketService.search(s);
+            const all = Object.values(groups).flat();
+            if (all.length > 0) {
+              // Exact name match priority
+              const exact = all.find(m => m.name.toUpperCase() === s.toUpperCase() || m.symbol.toUpperCase() === s.toUpperCase());
+              return { original: s, ticker: exact ? exact.symbol : all[0].symbol };
+            }
+          } catch (e) {}
+          return { original: s, ticker: s };
         });
 
         const resolved = await Promise.all(resolutionPromises);
