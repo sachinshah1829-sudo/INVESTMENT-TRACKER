@@ -1799,10 +1799,11 @@
       async search(query) {
         if (!query || query.length < 2) return [];
         try {
-          const url = this.proxy(`https://query1.finance.yahoo.com/v1/finance/search?q=${query}&quotesCount=10&newsCount=0`);
+          const url = this.proxy(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`);
           const resp = await fetch(url);
           const data = await resp.json();
-          const json = JSON.parse(data.contents);
+          if (!data.contents) return [];
+          const json = typeof data.contents === 'string' ? JSON.parse(data.contents) : data.contents;
           return (json.quotes || []).map(q => ({
             symbol: q.symbol,
             name: q.shortname || q.longname || q.symbol,
@@ -1815,10 +1816,11 @@
       async getPrices(symbols) {
         if (!symbols || symbols.length === 0) return {};
         try {
-          const url = this.proxy(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(',')}`);
+          const url = this.proxy(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(','))}`);
           const resp = await fetch(url);
           const data = await resp.json();
-          const json = JSON.parse(data.contents);
+          if (!data.contents) return {};
+          const json = typeof data.contents === 'string' ? JSON.parse(data.contents) : data.contents;
           const prices = {};
           (json.quoteResponse?.result || []).forEach(r => {
             if (r.regularMarketPrice) prices[r.symbol] = r.regularMarketPrice;
@@ -2160,11 +2162,6 @@
               <div className="multi-select-dropdown" style={{ minWidth: '100%' }}>
                 <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
                   {loading && <div className="multi-select-opt" style={{ opacity: 0.6, fontSize: 11 }}>Searching markets...</div>}
-                  {localFiltered.map(o => (
-                    <div key={'local-' + o} className="multi-select-opt" onClick={() => { onChange(o); setOpen(false); }}>
-                      <span style={{ fontWeight: 600 }}>{o}</span> <span style={{ fontSize: 10, opacity: 0.5 }}>(In Portfolio)</span>
-                    </div>
-                  ))}
                   {remoteOptions.map(o => (
                     <div key={'remote-' + o.symbol} className="multi-select-opt" onClick={() => { 
                       onChange(o.symbol); 
@@ -4599,16 +4596,37 @@
         if (stocks.length === 0) return;
         
         const mfs = stocks.filter(s => /^[0-9]+$/.test(s)); // Numeric codes are MFs
-        const nonMfs = stocks.filter(s => !/^[0-9]+$/.test(s));
+        const rawNonMfs = stocks.filter(s => !/^[0-9]+$/.test(s));
         
+        // Resolve symbols for full company names (e.g. "ADANI POWER LTD" -> "ADANIPOWER.NS")
+        const resolvedSymbols = {};
+        for (const s of rawNonMfs) {
+          // If it looks like a ticker (no spaces, contains a dot or short uppercase), use as is
+          if (!s.includes(' ') && (s.includes('.') || s.length <= 10)) {
+            resolvedSymbols[s] = s;
+          } else {
+            // Try to resolve the ticker from the name
+            const matches = await marketService.search(s);
+            if (matches.length > 0) {
+              resolvedSymbols[s] = matches[0].symbol;
+            } else {
+              resolvedSymbols[s] = s; // Fallback
+            }
+          }
+        }
+
+        const nonMfsTickers = Object.values(resolvedSymbols);
         const newPrices = { ...currentPrices };
         let changed = false;
 
         // Sync Stocks/ETFs
-        if (nonMfs.length > 0) {
-          const results = await marketService.getPrices(nonMfs);
-          Object.entries(results).forEach(([s, p]) => {
-            if (newPrices[s] !== p) { newPrices[s] = p; changed = true; }
+        if (nonMfsTickers.length > 0) {
+          const results = await marketService.getPrices(nonMfsTickers);
+          Object.entries(resolvedSymbols).forEach(([originalName, ticker]) => {
+            const price = results[ticker];
+            if (price != null && newPrices[originalName] !== price) {
+              newPrices[originalName] = price; changed = true;
+            }
           });
         }
 
