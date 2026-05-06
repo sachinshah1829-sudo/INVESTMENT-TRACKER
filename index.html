@@ -3630,8 +3630,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode,
-      groqKey, onUpdateGroqKey, onAIRefresh
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3649,7 +3648,7 @@
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} groqKey={groqKey} onUpdateGroqKey={onUpdateGroqKey} onAIRefresh={onAIRefresh} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
         </div>
       );
     }
@@ -3759,7 +3758,7 @@
       );
     }
 
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode, groqKey, onUpdateGroqKey, onAIRefresh }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -3822,12 +3821,6 @@
         setSelected(new Set()); setSelectMode(false); setDeleting(false);
       };
 
-      const handleAIRefresh = async () => {
-        setSaving(true);
-        await onAIRefresh(true);
-        setSaving(false);
-      };
-
       const typesList = (assetTypes || []).map(t => t.name).sort();
       const assetList = Object.keys(stockPrices || {}).sort();
       const getTypeForAsset = (stock) => {
@@ -3846,24 +3839,11 @@
           <div className="page-header">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div className="page-title">Asset Prices</div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="password"
-                  placeholder="Groq API Key..."
-                  className="form-input"
-                  style={{ width: '180px', height: '32px', fontSize: '11px' }}
-                  value={groqKey}
-                  onChange={e => onUpdateGroqKey(e.target.value)}
-                />
-                <button className="btn-primary" style={{ height: '32px', padding: '0 12px', fontSize: '11px', background: 'var(--indigo)' }} onClick={handleAIRefresh} disabled={saving}>
-                  {saving ? '...' : '✨ AI REFRESH'}
-                </button>
-                {priceMeta.lastUpdated && (
-                  <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '4px 10px', border: '1px solid #ffe082', fontWeight: 700, letterSpacing: '.05em' }}>
-                    SYNCED: {new Date(priceMeta.lastUpdated).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                )}
-              </div>
+              {priceMeta.lastUpdated && (
+                <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '4px 10px', border: '1px solid #ffe082', fontWeight: 700, letterSpacing: '.05em' }}>
+                  LAST SYNCED: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                </div>
+              )}
             </div>
             <div className="page-sub">Click any row to edit — paste CSV to bulk update</div>
           </div>
@@ -4385,7 +4365,6 @@
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
       const [privacyMode, setPrivacyMode] = useState(false);
-      const [groqKey, setGroqKey] = useState('');
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
@@ -4456,7 +4435,6 @@
             const data = snap.data();
             setVisibleTabs(data.visibleTabs || {});
             setPrivacyMode(data.privacyMode || false);
-            setGroqKey(data.groqKey || '');
             if (data.dashboardDefaults) {
               setDashboardDefaults(data.dashboardDefaults);
               // Only auto-apply defaults on first load if current filter is still 'All'
@@ -4606,60 +4584,6 @@
           await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ privacyMode: val }, { merge: true });
         }
       };
-
-      const updateGroqKey = async (val) => {
-        setGroqKey(val);
-        if (uid) {
-          await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ groqKey: val }, { merge: true });
-        }
-      };
-
-      const aiRefreshPrices = async (manual = false) => {
-        if (!groqKey || Object.keys(stockPrices).length === 0) return;
-        try {
-          const assets = Object.keys(stockPrices).map(s => {
-            const tx = transactions.slice().reverse().find(t => t.stock === s && t.assetType);
-            const type = tx?.assetType || 'STOCK';
-            return `${s} (${type})`;
-          }).join(', ');
-          
-          const prompt = `Return CURRENT market price (INR) for these assets as JSON object (keys=STOCK_NAME, values=NUMBER). Return ONLY JSON. Assets: ${assets}`;
-          const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-            body: JSON.stringify({
-              model: 'llama-3.1-8b-instant',
-              messages: [{ role: 'user', content: prompt }],
-              temperature: 0,
-              response_format: { type: 'json_object' }
-            })
-          });
-
-          const data = await resp.json();
-          if (data.error) throw new Error(data.error.message);
-          const parsed = JSON.parse(data.choices[0].message.content);
-          const updates = {};
-          Object.entries(parsed).forEach(([k, v]) => {
-            const clean = k.toUpperCase().trim();
-            if (stockPrices[clean] !== undefined && typeof v === 'number') updates[clean] = v;
-          });
-          if (Object.keys(updates).length > 0) {
-            await updatePrices(updates);
-            if (manual) alert(`✨ Updated ${Object.keys(updates).length} prices.`);
-          }
-        } catch (err) {
-          if (manual) alert('AI Error: ' + err.message);
-          console.error('AI Refresh failed:', err);
-        }
-      };
-
-      useEffect(() => {
-        if (!uid || !groqKey || loading || Object.keys(stockPrices).length === 0) return;
-        const last = priceMeta.lastUpdated ? new Date(priceMeta.lastUpdated).getTime() : 0;
-        if (new Date().getTime() - last > 1000 * 60 * 60 * 12) { // Auto refresh every 12 hours
-           aiRefreshPrices();
-        }
-      }, [uid, groqKey, loading, Object.keys(stockPrices).length]);
 
       if (user === undefined) return <div className="spinner">Loading...</div>;
       if (!user) return <AuthPage />;
@@ -4829,8 +4753,6 @@
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
                     transactions={transactions} privacyMode={privacyMode}
-                    groqKey={groqKey} onUpdateGroqKey={updateGroqKey}
-                    onAIRefresh={aiRefreshPrices}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} privacyMode={privacyMode} />}
