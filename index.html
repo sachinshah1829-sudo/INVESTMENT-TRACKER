@@ -1772,8 +1772,16 @@
       '#00D18E', '#FF3B6F', '#FFB800', '#2196F3', '#EDFF66'
     ];
 
+    const ASSET_CLASSES = [
+      { id: 'EQUITY', name: 'Equity', color: '#e2f3e3', icon: '📈' },
+      { id: 'DEBT', name: 'Debt', color: '#e3f2fd', icon: '📝' },
+      { id: 'REAL_ESTATE', name: 'Real Estate', color: '#efebe9', icon: '🏠' },
+      { id: 'COMMODITIES', name: 'Commodities', color: '#fffde7', icon: '🟡' },
+      { id: 'CASH', name: 'Cash', color: '#fce4ec', icon: '💵' }
+    ];
+
     const DEFAULT_ASSET_TYPE_COLORS = {
-      'STOCK': '#87BFDB', 'MUTUAL FUND': '#2B5F7A', 'ETF': '#A5D6A7', 'BONDS': '#BBDEFB', 'GOLD': '#FFF9C4', 'REAL ESTATE': '#D7CCC8'
+      'STOCK': '#e2f3e3', 'MUTUAL FUND': '#e2f3e3', 'ETF': '#e2f3e3', 'BONDS': '#e3f2fd', 'GOLD': '#fffde7', 'REAL ESTATE': '#efebe9'
     };
 
     const personColor = (name, customColors = {}) => {
@@ -3629,8 +3637,8 @@
     // ── MANAGE TAB (CONSOLIDATED) ──────────────────────────────
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
-      assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode
+      assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetClassColors, onAssetClassColorChange,
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode, typeToColorMap
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3647,15 +3655,16 @@
           </div>
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
-          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
+          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetClassColors={assetClassColors} onColorChange={onAssetClassColorChange} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={typeToColorMap} privacyMode={privacyMode} />}
         </div>
       );
     }
 
     // ── ASSET TYPES TAB ──────────────────────────────────────
-    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetTypeColors, onColorChange }) {
+    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetClassColors, onColorChange }) {
       const [newName, setNewName] = useState('');
+      const [newClass, setNewClass] = useState(ASSET_CLASSES[0].id);
       const [saving, setSaving] = useState(false);
       const [editItem, setEditItem] = useState(null);
       const [dupError, setDupError] = useState('');
@@ -3668,7 +3677,7 @@
         const upper = newName.toUpperCase().trim();
         if (assetTypes.some(t => t.name.toUpperCase() === upper)) { setDupError(`"${upper}" already exists!`); return; }
         setDupError(''); setSaving(true);
-        await onAdd({ name: upper });
+        await onAdd({ name: upper, assetClass: newClass });
         setNewName(''); setSaving(false);
       };
 
@@ -3684,14 +3693,32 @@
       return (
         <div>
           <div className="card">
+            <div className="card-title">Asset Class Colors</div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+              {ASSET_CLASSES.map(cls => (
+                <div key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', minWidth: '140px' }}>
+                  <span style={{ fontSize: 16 }}>{cls.icon}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{cls.name}</span>
+                  <ColorPicker name={cls.id} color={assetClassColors[cls.id] || cls.color} onChange={onColorChange} />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
             <div className="card-title">Add Asset Type</div>
-            <div style={{ display: 'flex', gap: '.5rem', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 200px' }}>
+                <label className="form-label">Asset Class</label>
+                <select className="select-input" value={newClass} onChange={e => setNewClass(e.target.value)}>
+                  {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: '2 1 250px' }}>
                 <label className="form-label">Type Name</label>
                 <input className="form-input" type="text" value={newName} onChange={e => { setNewName(e.target.value); setDupError(''); }} placeholder="E.g. MUTUAL FUND" onKeyDown={e => e.key === 'Enter' && handleAdd()} />
                 {dupError && <div className="dup-error">{dupError}</div>}
               </div>
-              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.25rem', flexShrink: 0 }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD'}</button>
+              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.25rem', flexShrink: 0, height: '42px' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD'}</button>
             </div>
           </div>
           <div className="card">
@@ -3719,36 +3746,35 @@
                   <thead><tr>
                     {selectMode && <th><input type="checkbox" checked={selected.size === assetTypes.length && assetTypes.length > 0} onChange={selectAll} /></th>}
                     <th>Asset Type</th>
-                    <th>Color</th>
+                    <th>Asset Class</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr></thead>
                   <tbody>
-                    {assetTypes.map(t => (
-                      <tr key={t.id} className="clickable" style={selected.has(t.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(t.id) : setEditItem(t)}>
-                        {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
-                        <td>
-                          <span className="tag" style={{ background: assetTypeColor(t.name, assetTypeColors), color: '#1a1a1a' }}>{t.name}</span>
-                        </td>
-                        <td onClick={e => e.stopPropagation()}>
-                          <ColorPicker
-                            name={t.name}
-                            color={assetTypeColor(t.name, assetTypeColors)}
-                            onChange={onColorChange}
-                          />
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
-                        </td>
-                      </tr>
-                    ))}
+                    {assetTypes.sort((a, b) => (a.assetClass || '').localeCompare(b.assetClass || '')).map(t => {
+                      const cls = ASSET_CLASSES.find(c => c.id === t.assetClass) || { name: '—', icon: '' };
+                      return (
+                        <tr key={t.id} className="clickable" style={selected.has(t.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(t.id) : setEditItem(t)}>
+                          {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
+                          <td>
+                            <span className="tag" style={{ background: assetClassColors[t.assetClass || 'EQUITY'] || (ASSET_CLASSES.find(c => c.id === t.assetClass)?.color || '#eee'), color: '#1a1a1a' }}>{t.name}</span>
+                          </td>
+                          <td>
+                            <span style={{ fontSize: 12, opacity: 0.8 }}>{cls.icon} {cls.name}</span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
           {editItem && (
-            <EditPersonModal
-              person={editItem}
+            <EditAssetTypeModal
+              type={editItem}
               onSave={(id, data) => onUpdate(id, data, editItem.name)}
               onDelete={onDelete}
               onClose={() => setEditItem(null)}
@@ -3927,6 +3953,51 @@
           </div>
 
           {editEntry && <EditPriceModal stock={editEntry.stock} price={editEntry.price} onSave={handleEditSave} onDelete={handleDelete} onClose={() => setEditEntry(null)} />}
+        </div>
+      );
+    }
+
+    // ── EDIT ASSET TYPE MODAL ────────────────────────────────
+    function EditAssetTypeModal({ type, onSave, onClose, onDelete }) {
+      const [name, setName] = useState(type.name || '');
+      const [assetClass, setAssetClass] = useState(type.assetClass || ASSET_CLASSES[0].id);
+      const [saveState, setSaveState] = useState('idle');
+      const handleSave = async () => {
+        if (!name.trim()) return; setSaveState('saving');
+        await onSave(type.id, { name: name.toUpperCase().trim(), assetClass }, type.name);
+        setSaveState('saved');
+        setTimeout(() => onClose(), 400);
+      };
+      const handleDelete = async () => {
+        if (!confirm(`Delete "${type.name}"?\nThis won't delete transactions using this type.`)) return;
+        await onDelete(type.id); onClose();
+      };
+      return (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+          <div className="modal">
+            <div className="modal-title">Edit Asset Type <button className="modal-close" onClick={onClose}>✕</button></div>
+            <div className="form-group">
+              <label className="form-label">Type Name</label>
+              <input className="form-input" type="text" value={name} onChange={e => setName(e.target.value)} autoFocus onKeyDown={e => e.key === 'Enter' && handleSave()} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Asset Class</label>
+              <select className="select-input" value={assetClass} onChange={e => setAssetClass(e.target.value)}>
+                {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+              </select>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '.6rem .75rem', marginBottom: '.75rem', border: '1px solid #ffe082' }}>
+              ⚠ Renaming will also update this type in all associated transactions.
+            </div>
+            <div className="modal-actions">
+              {saveState === 'saved'
+                ? <span className="save-feedback">✓ SAVED</span>
+                : <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleSave} disabled={saveState === 'saving'}>{saveState === 'saving' ? 'SAVING...' : 'SAVE & UPDATE'}</button>
+              }
+              <button className="btn-secondary" onClick={onClose}>CANCEL</button>
+              <button className="btn-sm-danger" style={{ marginLeft: 'auto' }} onClick={handleDelete}>DELETE</button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -4362,9 +4433,20 @@
       const [dashboardFilters, setDashboardFilters] = useState({ persons: null, assetTypes: null });
       const [transactionsFilters, setTransactionsFilters] = useState({ persons: ['All'], stocks: ['All'], types: ['All'], search: '' });
       const [fifoFilters, setFifoFilters] = useState({ persons: ['All'], types: ['All'], search: '' });
-      const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
       const [privacyMode, setPrivacyMode] = useState(false);
+
+      const typeToColorMap = useMemo(() => {
+        const map = {};
+        assetTypes.forEach(t => {
+          const clsId = t.assetClass || 'EQUITY';
+          const cls = ASSET_CLASSES.find(c => c.id === clsId);
+          if (cls) {
+            map[t.name.toUpperCase()] = assetTypeColors[clsId] || cls.color;
+          }
+        });
+        return map;
+      }, [assetTypes, assetTypeColors]);
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
@@ -4458,9 +4540,16 @@
             // Initialize Default Asset Types
             const existingTypes = await db.collection(`users/${uid}/inv_assetTypes`).get();
             if (existingTypes.empty) {
-              const defaults = ['STOCK', 'MUTUAL FUND', 'ETF', 'BONDS', 'GOLD', 'REAL ESTATE'];
+              const defaults = [
+                { name: 'STOCK', class: 'EQUITY' },
+                { name: 'MUTUAL FUND', class: 'EQUITY' },
+                { name: 'ETF', class: 'EQUITY' },
+                { name: 'BONDS', class: 'DEBT' },
+                { name: 'GOLD', class: 'COMMODITIES' },
+                { name: 'REAL ESTATE', class: 'REAL_ESTATE' }
+              ];
               const batch = db.batch();
-              defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), { name: t }));
+              defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), { name: t.name, assetClass: t.class }));
               await batch.commit();
             }
 
@@ -4741,18 +4830,19 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={typeToColorMap} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={typeToColorMap} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={typeToColorMap} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={typeToColorMap} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
                 {tab === 'manage' && (
                   <ManageTab
                     persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
                     personColors={personColors} onColorChange={updatePersonColor}
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
-                    assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
+                    assetClassColors={assetTypeColors} onAssetClassColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
                     transactions={transactions} privacyMode={privacyMode}
+                    typeToColorMap={typeToColorMap}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} privacyMode={privacyMode} />}
