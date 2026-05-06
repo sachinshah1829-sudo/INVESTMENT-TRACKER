@@ -1772,17 +1772,15 @@
       '#00D18E', '#FF3B6F', '#FFB800', '#2196F3', '#EDFF66'
     ];
 
-    const ASSET_CLASSES = [
-      { id: 'EQUITY', name: 'Equity', color: '#e2f3e3', icon: '📈' },
-      { id: 'DEBT', name: 'Debt', color: '#e3f2fd', icon: '📝' },
-      { id: 'REAL_ESTATE', name: 'Real Estate', color: '#efebe9', icon: '🏠' },
-      { id: 'COMMODITIES', name: 'Commodities', color: '#fffde7', icon: '🟡' },
-      { id: 'CASH', name: 'Cash', color: '#fce4ec', icon: '💵' }
-    ];
-
     const DEFAULT_ASSET_TYPE_COLORS = {
-      'STOCK': '#e2f3e3', 'MUTUAL FUND': '#e2f3e3', 'ETF': '#e2f3e3', 'BONDS': '#e3f2fd', 'GOLD': '#fffde7', 'REAL ESTATE': '#efebe9'
+      'STOCK': '#87BFDB', 'MUTUAL FUND': '#2B5F7A', 'ETF': '#A5D6A7', 'BONDS': '#BBDEFB', 'GOLD': '#FFF9C4', 'REAL ESTATE': '#D7CCC8'
     };
+    const ASSET_CLASSES = [
+      { id: 'EQUITY', name: 'EQUITY', color: '#87BFDB' },
+      { id: 'DEBT', name: 'DEBT', color: '#BBDEFB' },
+      { id: 'REAL_ESTATE', name: 'REAL ESTATE', color: '#D7CCC8' },
+      { id: 'COMMODITIES', name: 'COMMODITIES', color: '#FFF9C4' }
+    ];
 
     const personColor = (name, customColors = {}) => {
       const u = (name || '').toUpperCase().trim();
@@ -1792,8 +1790,13 @@
       return `hsl(${Math.abs(h) % 360},50%,80%)`;
     };
 
-    const assetTypeColor = (name, customColors = {}) => {
+    const assetTypeColor = (name, customColors = {}, assetTypes = []) => {
       const u = (name || '').toUpperCase().trim();
+      const typeObj = assetTypes.find(t => t.name.toUpperCase() === u);
+      if (typeObj && typeObj.assetClass) {
+        const cls = ASSET_CLASSES.find(c => c.id === typeObj.assetClass);
+        if (cls) return cls.color;
+      }
       if (customColors && customColors[u]) return customColors[u];
       if (DEFAULT_ASSET_TYPE_COLORS[u]) return DEFAULT_ASSET_TYPE_COLORS[u];
       let h = 0; for (let i = 0; i < u.length; i++) h = u.charCodeAt(i) + ((h << 5) - h);
@@ -2064,6 +2067,55 @@
       );
     }
 
+    function CategorizedSingleSelect({ label, groups, value, onChange, placeholder = "Select...", onKeyDown }) {
+      const [open, setOpen] = useState(false);
+      const [search, setSearch] = useState('');
+      const ref = useRef(null);
+      useEffect(() => {
+        if (!open) return;
+        const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
+      }, [open]);
+
+      const filteredGroups = groups.map(g => ({
+        ...g,
+        options: g.options.filter(o => o.toLowerCase().includes(search.toLowerCase()))
+      })).filter(g => g.options.length > 0);
+
+      return (
+        <div className="filter-group" ref={ref}>
+          {label && <div className="filter-label">{label}</div>}
+          <div className="multi-select-wrap">
+            <div className="form-input" onClick={() => setOpen(!open)} tabIndex={0}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(!open); if (onKeyDown) onKeyDown(e); }}>
+              <span style={{ color: value ? 'inherit' : 'var(--text-muted)', fontSize: '14px', fontWeight: 'normal' }}>{value || placeholder}</span>
+              <span style={{ fontSize: 10, opacity: 0.6 }}>▼</span>
+            </div>
+
+            {open && (
+              <div className="multi-select-dropdown">
+                <input className="multi-select-search" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                  {filteredGroups.map(g => (
+                    <div key={g.label}>
+                      <div style={{ padding: '8px 12px', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--bg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.label}</div>
+                      {g.options.map(o => (
+                        <div key={o} className="multi-select-opt" onClick={() => { onChange(o); setOpen(false); }}>
+                          <span style={{ paddingLeft: '8px' }}>{o}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  {filteredGroups.length === 0 && <div className="empty" style={{ padding: '10px' }}>No matches</div>}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     function SearchableInput({ label, options, value, onChange, placeholder, onKeyDown, inputRef }) {
       const [open, setOpen] = useState(false);
       const ref = useRef(null);
@@ -2260,18 +2312,19 @@
                 <label className="filter-label">Date</label>
                 <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} />
               </div>
-              <div className="filter-group">
-                <label className="filter-label">Person</label>
-                <select className="select-input" value={form.person} onChange={e => set('person', e.target.value)}>
-                  <option value="">Select...</option>{persons.map(p => <option key={p.name}>{p.name}</option>)}
-                </select>
-              </div>
-              <div className="filter-group">
-                <label className="filter-label">Asset Type</label>
-                <select className="select-input" value={form.assetType} onChange={e => set('assetType', e.target.value)}>
-                  {assetTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                </select>
-              </div>
+              <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} />
+              <CategorizedSingleSelect 
+                label="Asset Type" 
+                value={form.assetType} 
+                groups={ASSET_CLASSES.map(cls => ({
+                  label: cls.name,
+                  options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
+                })).concat(assetTypes.some(t => !t.assetClass) ? [{
+                  label: 'UNASSIGNED',
+                  options: assetTypes.filter(t => !t.assetClass).map(t => t.name)
+                }] : [])} 
+                onChange={val => set('assetType', val)} 
+              />
             </div>
             <div className="form-row">
               <div className="filter-group"><label className="filter-label">Asset Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
@@ -2499,7 +2552,7 @@
                     return (
                       <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                         <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
-                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                         <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy, privacyMode)}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal, privacyMode)}</td>
@@ -2708,7 +2761,7 @@
               <div className="chart-card">
                 <div className="card-title">Wealth by Asset Type</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend privacyMode={privacyMode} /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors, assetTypes))} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedTypesPie.map(([t, v]) => (
                       <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
@@ -2740,7 +2793,7 @@
               <div className="chart-card">
                 <div className="card-title">Wealth by Asset Type</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors))} hideLegend privacyMode={privacyMode} /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors, assetTypes))} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedTypesPie.map(([t, v]) => (
                       <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
@@ -2818,7 +2871,7 @@
                     <tr key={i} className="clickable" onClick={() => onSetDrilldown(r)}>
                       <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
                       <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                      <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                      <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
                       <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy, privacyMode)}</td>
                       <td style={{ textAlign: 'right' }}>{fmt(r.investedVal, privacyMode)}</td>
@@ -3005,7 +3058,19 @@
                   <label className="filter-label">Price ₹</label>
                   <input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
-                <SingleSelect label="Asset Type" value={form.assetType} options={assetTypes.map(t => t.name)} onChange={val => set('assetType', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
+                <CategorizedSingleSelect 
+                  label="Asset Type" 
+                  value={form.assetType} 
+                  groups={ASSET_CLASSES.map(cls => ({
+                    label: cls.name,
+                    options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
+                  })).concat(assetTypes.some(t => !t.assetClass) ? [{
+                    label: 'UNASSIGNED',
+                    options: assetTypes.filter(t => !t.assetClass).map(t => t.name)
+                  }] : [])} 
+                  onChange={val => set('assetType', val)} 
+                  onKeyDown={e => handleQuickKey(e, focusStock)} 
+                />
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
                 <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
@@ -3094,7 +3159,7 @@
                       <td style={{ whiteSpace: 'normal' }}>{fmtDate(tx.date)}</td>
                       <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{tx.person}</span></td>
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{tx.stock}</td>
-                      <td><span className="tag" style={{ background: assetTypeColor(tx.assetType || 'STOCK', assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
+                      <td><span className="tag" style={{ background: assetTypeColor(tx.assetType || 'STOCK', assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
                       <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(tx.price, privacyMode)}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(Math.abs(tx.qty) * tx.price, privacyMode)}</td>
@@ -3277,9 +3342,9 @@
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
 
 
-                        {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors), color: '#1a1a1a' }}>{r.type}</span></td>}
+                        {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors, assetTypes), color: '#1a1a1a' }}>{r.type}</span></td>}
                         {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
-                        {viewMode !== 'types' && <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>}
+                        {viewMode !== 'types' && <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>}
                         {viewMode === 'types' && <td style={{ textAlign: 'right' }}>{r.stockCount}</td>}
                         {viewMode !== 'types' && <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>}
                         {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy, privacyMode)}</td>}
@@ -3437,7 +3502,7 @@
                         <td>{fmtDate(s.sellDate)}</td>
                         <td><span className="tag" style={{ background: personColor(s.person, personColors), color: '#1a1a1a' }}>{s.person}</span></td>
                         <td style={{ fontWeight: 700 }}>{s.stock}</td>
-                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                         <td>{s.qty}</td>
                         <td>{fmt(s.buyPrice, privacyMode)}</td>
                         <td>{fmt(s.sellPrice, privacyMode)}</td>
@@ -3637,8 +3702,8 @@
     // ── MANAGE TAB (CONSOLIDATED) ──────────────────────────────
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
-      assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetClassColors, onAssetClassColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode, typeToColorMap
+      assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3655,22 +3720,23 @@
           </div>
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
-          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetClassColors={assetClassColors} onColorChange={onAssetClassColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={typeToColorMap} privacyMode={privacyMode} />}
+          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
         </div>
       );
     }
 
     // ── ASSET TYPES TAB ──────────────────────────────────────
-    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetClassColors, onColorChange }) {
+    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetTypeColors, onColorChange }) {
       const [newName, setNewName] = useState('');
-      const [newClass, setNewClass] = useState(ASSET_CLASSES[0].id);
+      const [newClass, setNewClass] = useState('EQUITY');
       const [saving, setSaving] = useState(false);
       const [editItem, setEditItem] = useState(null);
       const [dupError, setDupError] = useState('');
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
       const [deleting, setDeleting] = useState(false);
+      const [expandedClasses, setExpandedClasses] = useState(new Set(['EQUITY', 'DEBT', 'REAL_ESTATE', 'COMMODITIES', 'UNASSIGNED']));
 
       const handleAdd = async () => {
         if (!newName.trim()) return;
@@ -3679,6 +3745,14 @@
         setDupError(''); setSaving(true);
         await onAdd({ name: upper, assetClass: newClass });
         setNewName(''); setSaving(false);
+      };
+
+      const toggleClass = (cls) => {
+        setExpandedClasses(prev => {
+          const n = new Set(prev);
+          n.has(cls) ? n.delete(cls) : n.add(cls);
+          return n;
+        });
       };
 
       const toggleSelect = (id) => { setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }); };
@@ -3690,96 +3764,153 @@
         setSelected(new Set()); setSelectMode(false); setDeleting(false);
       };
 
+      const grouped = useMemo(() => {
+        const groups = {
+          EQUITY: [], DEBT: [], REAL_ESTATE: [], COMMODITIES: [], UNASSIGNED: []
+        };
+        assetTypes.forEach(t => {
+          const cls = t.assetClass || 'UNASSIGNED';
+          if (groups[cls]) groups[cls].push(t);
+          else groups.UNASSIGNED.push(t);
+        });
+        return groups;
+      }, [assetTypes]);
+
       return (
         <div>
           <div className="card">
-            <div className="card-title">Asset Class Colors</div>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-              {ASSET_CLASSES.map(cls => (
-                <div key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border)', minWidth: '140px' }}>
-                  <span style={{ fontSize: 16 }}>{cls.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>{cls.name}</span>
-                  <ColorPicker name={cls.id} color={assetClassColors[cls.id] || cls.color} onChange={onColorChange} />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="card">
             <div className="card-title">Add Asset Type</div>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px' }}>
-                <label className="form-label">Asset Class</label>
-                <select className="select-input" value={newClass} onChange={e => setNewClass(e.target.value)}>
-                  {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-                </select>
-              </div>
-              <div style={{ flex: '2 1 250px' }}>
+            <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap' }}>
+              <div style={{ flex: 2, minWidth: '200px' }}>
                 <label className="form-label">Type Name</label>
                 <input className="form-input" type="text" value={newName} onChange={e => { setNewName(e.target.value); setDupError(''); }} placeholder="E.g. MUTUAL FUND" onKeyDown={e => e.key === 'Enter' && handleAdd()} />
                 {dupError && <div className="dup-error">{dupError}</div>}
               </div>
-              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.25rem', flexShrink: 0, height: '42px' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD'}</button>
+              <div style={{ flex: 1, minWidth: '150px' }}>
+                <label className="filter-label">Asset Class</label>
+                <select className="select-input" value={newClass} onChange={e => setNewClass(e.target.value)}>
+                  {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.25rem', flexShrink: 0, marginTop: '22px' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD'}</button>
             </div>
           </div>
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <div className="card-title" style={{ margin: 0 }}>All Asset Types ({assetTypes.length})</div>
+
+          <div className="card" style={{ padding: '0.5rem 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem' }}>
+              <div className="card-title" style={{ margin: 0 }}>Asset Hierarchy</div>
               <button className="btn-sm" onClick={() => { setSelectMode(s => !s); setSelected(new Set()); }}>{selectMode ? 'CANCEL' : 'SELECT'}</button>
             </div>
 
             {selectMode && selected.size > 0 && (
-              <div className="bulk-bar">
+              <div className="bulk-bar" style={{ margin: '0 1.25rem 1rem' }}>
                 <span className="bulk-bar-text">{selected.size} selected</span>
                 <button className="btn-danger" onClick={deleteSelected} disabled={deleting}>{deleting ? 'DELETING...' : 'DELETE SELECTED'}</button>
                 <button className="btn-secondary" onClick={() => setSelected(new Set())}>CLEAR</button>
               </div>
             )}
-            {selectMode && (
-              <div style={{ marginBottom: '.5rem' }}>
-                <button className="btn-sm" onClick={selectAll}>{selected.size === assetTypes.length ? 'DESELECT ALL' : 'SELECT ALL'}</button>
-              </div>
-            )}
 
-            {assetTypes.length === 0 ? <div className="empty">No asset types yet.</div> : (
-              <div className="table-wrap">
-                <table>
-                  <thead><tr>
-                    {selectMode && <th><input type="checkbox" checked={selected.size === assetTypes.length && assetTypes.length > 0} onChange={selectAll} /></th>}
-                    <th>Asset Type</th>
-                    <th>Asset Class</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr></thead>
-                  <tbody>
-                    {assetTypes.sort((a, b) => (a.assetClass || '').localeCompare(b.assetClass || '')).map(t => {
-                      const cls = ASSET_CLASSES.find(c => c.id === t.assetClass) || { name: '—', icon: '' };
-                      return (
-                        <tr key={t.id} className="clickable" style={selected.has(t.id) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(t.id) : setEditItem(t)}>
-                          {selectMode && <td onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
-                          <td>
-                            <span className="tag" style={{ background: assetClassColors[t.assetClass || 'EQUITY'] || (ASSET_CLASSES.find(c => c.id === t.assetClass)?.color || '#eee'), color: '#1a1a1a' }}>{t.name}</span>
-                          </td>
-                          <td>
-                            <span style={{ fontSize: 12, opacity: 0.8 }}>{cls.icon} {cls.name}</span>
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <button className="btn-sm" onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {[...ASSET_CLASSES, { id: 'UNASSIGNED', name: 'UNASSIGNED', color: '#e5e7eb' }].map(cls => {
+              const types = grouped[cls.id];
+              if (types.length === 0 && cls.id === 'UNASSIGNED') return null;
+              const isExpanded = expandedClasses.has(cls.id);
+              return (
+                <div key={cls.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <div 
+                    onClick={() => toggleClass(cls.id)}
+                    style={{ 
+                      padding: '12px 1.25rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '12px', 
+                      cursor: 'pointer',
+                      background: isExpanded ? 'var(--bg)' : 'transparent',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <span style={{ fontSize: 14, fontWeight: 700, width: 20, textAlign: 'center', color: 'var(--accent)' }}>{isExpanded ? '−' : '+'}</span>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: cls.color }}></div>
+                    <span style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>{cls.name} <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: 6 }}>({types.length})</span></span>
+                  </div>
+
+                  {isExpanded && (
+                    <div style={{ padding: '0 0 1rem 3rem' }}>
+                      {types.length === 0 ? <div className="empty" style={{ padding: '10px 0', fontSize: 11 }}>No types under this class</div> : (
+                        <div className="table-wrap" style={{ border: 'none', boxShadow: 'none' }}>
+                          <table style={{ width: '100%' }}>
+                            <tbody>
+                              {types.map(t => (
+                                <tr key={t.id} className="clickable" style={{ border: 'none', background: selected.has(t.id) ? '#fffde7' : 'transparent' }} onClick={() => selectMode ? toggleSelect(t.id) : setEditItem(t)}>
+                                  {selectMode && <td style={{ padding: '8px 0', width: 30 }} onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
+                                  <td style={{ padding: '8px 0' }}>
+                                    <span className="tag" style={{ background: cls.color, color: '#1a1a1a', fontSize: 11 }}>{t.name}</span>
+                                  </td>
+                                  <td style={{ textAlign: 'right', padding: '8px 1.25rem 8px 0' }}>
+                                    <button className="btn-sm" style={{ padding: '4px 8px', fontSize: 10 }} onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
           {editItem && (
             <EditAssetTypeModal
-              type={editItem}
+              item={editItem}
               onSave={(id, data) => onUpdate(id, data, editItem.name)}
               onDelete={onDelete}
               onClose={() => setEditItem(null)}
             />
           )}
+        </div>
+      );
+    }
+
+    function EditAssetTypeModal({ item, onSave, onDelete, onClose }) {
+      const [name, setName] = useState(item.name);
+      const [assetClass, setAssetClass] = useState(item.assetClass || 'EQUITY');
+      const [saving, setSaving] = useState(false);
+
+      const handleSave = async () => {
+        if (!name.trim()) return;
+        setSaving(true);
+        await onSave(item.id, { name: name.toUpperCase().trim(), assetClass });
+        onClose();
+      };
+
+      const handleDelete = async () => {
+        if (!confirm(`Delete asset type "${item.name}"?`)) return;
+        await onDelete(item.id);
+        onClose();
+      };
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-title">Edit Asset Type <button className="modal-close" onClick={onClose}>✕</button></div>
+            <div className="form-group">
+              <label className="form-label">Type Name</label>
+              <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Asset Class</label>
+              <select className="select-input" value={assetClass} onChange={e => setAssetClass(e.target.value)}>
+                {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'SAVING...' : 'SAVE CHANGES'}</button>
+              <button className="btn-secondary" onClick={onClose}>CANCEL</button>
+              <button className="btn-sm-danger" style={{ marginLeft: 'auto' }} onClick={handleDelete}>DELETE</button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -3937,7 +4068,7 @@
                       <tr key={e.stock} className="clickable" style={selected.has(e.stock) ? { background: '#fffde7' } : {}} onClick={() => selectMode ? toggleSelect(e.stock) : setEditEntry({ stock: e.stock, price: e.price })}>
                         {selectMode && <td onClick={ev => ev.stopPropagation()}><input type="checkbox" checked={selected.has(e.stock)} onChange={() => toggleSelect(e.stock)} /></td>}
                         <td style={{ fontWeight: 700 }}>{e.stock}</td>
-                        <td><span className="tag" style={{ background: e.assetType !== '—' ? assetTypeColor(e.assetType, assetTypeColors) : '#e5e7eb', color: '#1a1a1a', fontSize: 10 }}>{e.assetType}</span></td>
+                        <td><span className="tag" style={{ background: e.assetType !== '—' ? assetTypeColor(e.assetType, assetTypeColors, assetTypes) : '#e5e7eb', color: '#1a1a1a', fontSize: 10 }}>{e.assetType}</span></td>
                         <td style={{ whiteSpace: 'normal' }}>{fmt(e.price, privacyMode)}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>
                           <button className="btn-sm" onClick={ev => { ev.stopPropagation(); setEditEntry({ stock: e.stock, price: e.price }); }}>EDIT</button>
@@ -3953,51 +4084,6 @@
           </div>
 
           {editEntry && <EditPriceModal stock={editEntry.stock} price={editEntry.price} onSave={handleEditSave} onDelete={handleDelete} onClose={() => setEditEntry(null)} />}
-        </div>
-      );
-    }
-
-    // ── EDIT ASSET TYPE MODAL ────────────────────────────────
-    function EditAssetTypeModal({ type, onSave, onClose, onDelete }) {
-      const [name, setName] = useState(type.name || '');
-      const [assetClass, setAssetClass] = useState(type.assetClass || ASSET_CLASSES[0].id);
-      const [saveState, setSaveState] = useState('idle');
-      const handleSave = async () => {
-        if (!name.trim()) return; setSaveState('saving');
-        await onSave(type.id, { name: name.toUpperCase().trim(), assetClass }, type.name);
-        setSaveState('saved');
-        setTimeout(() => onClose(), 400);
-      };
-      const handleDelete = async () => {
-        if (!confirm(`Delete "${type.name}"?\nThis won't delete transactions using this type.`)) return;
-        await onDelete(type.id); onClose();
-      };
-      return (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-          <div className="modal">
-            <div className="modal-title">Edit Asset Type <button className="modal-close" onClick={onClose}>✕</button></div>
-            <div className="form-group">
-              <label className="form-label">Type Name</label>
-              <input className="form-input" type="text" value={name} onChange={e => setName(e.target.value)} autoFocus onKeyDown={e => e.key === 'Enter' && handleSave()} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Asset Class</label>
-              <select className="select-input" value={assetClass} onChange={e => setAssetClass(e.target.value)}>
-                {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-              </select>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '.6rem .75rem', marginBottom: '.75rem', border: '1px solid #ffe082' }}>
-              ⚠ Renaming will also update this type in all associated transactions.
-            </div>
-            <div className="modal-actions">
-              {saveState === 'saved'
-                ? <span className="save-feedback">✓ SAVED</span>
-                : <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleSave} disabled={saveState === 'saving'}>{saveState === 'saving' ? 'SAVING...' : 'SAVE & UPDATE'}</button>
-              }
-              <button className="btn-secondary" onClick={onClose}>CANCEL</button>
-              <button className="btn-sm-danger" style={{ marginLeft: 'auto' }} onClick={handleDelete}>DELETE</button>
-            </div>
-          </div>
         </div>
       );
     }
@@ -4433,20 +4519,9 @@
       const [dashboardFilters, setDashboardFilters] = useState({ persons: null, assetTypes: null });
       const [transactionsFilters, setTransactionsFilters] = useState({ persons: ['All'], stocks: ['All'], types: ['All'], search: '' });
       const [fifoFilters, setFifoFilters] = useState({ persons: ['All'], types: ['All'], search: '' });
+      const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
       const [privacyMode, setPrivacyMode] = useState(false);
-
-      const typeToColorMap = useMemo(() => {
-        const map = {};
-        assetTypes.forEach(t => {
-          const clsId = t.assetClass || 'EQUITY';
-          const cls = ASSET_CLASSES.find(c => c.id === clsId);
-          if (cls) {
-            map[t.name.toUpperCase()] = assetTypeColors[clsId] || cls.color;
-          }
-        });
-        return map;
-      }, [assetTypes, assetTypeColors]);
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
@@ -4541,15 +4616,15 @@
             const existingTypes = await db.collection(`users/${uid}/inv_assetTypes`).get();
             if (existingTypes.empty) {
               const defaults = [
-                { name: 'STOCK', class: 'EQUITY' },
-                { name: 'MUTUAL FUND', class: 'EQUITY' },
-                { name: 'ETF', class: 'EQUITY' },
-                { name: 'BONDS', class: 'DEBT' },
-                { name: 'GOLD', class: 'COMMODITIES' },
-                { name: 'REAL ESTATE', class: 'REAL_ESTATE' }
+                { name: 'STOCK', assetClass: 'EQUITY' },
+                { name: 'MUTUAL FUND', assetClass: 'EQUITY' },
+                { name: 'ETF', assetClass: 'EQUITY' },
+                { name: 'BONDS', assetClass: 'DEBT' },
+                { name: 'GOLD', assetClass: 'COMMODITIES' },
+                { name: 'REAL ESTATE', assetClass: 'REAL_ESTATE' }
               ];
               const batch = db.batch();
-              defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), { name: t.name, assetClass: t.class }));
+              defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), t));
               await batch.commit();
             }
 
@@ -4830,19 +4905,18 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={typeToColorMap} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={typeToColorMap} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={typeToColorMap} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={typeToColorMap} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
                 {tab === 'manage' && (
                   <ManageTab
                     persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
                     personColors={personColors} onColorChange={updatePersonColor}
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
-                    assetClassColors={assetTypeColors} onAssetClassColorChange={updateAssetTypeColor}
+                    assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
                     transactions={transactions} privacyMode={privacyMode}
-                    typeToColorMap={typeToColorMap}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} privacyMode={privacyMode} />}
