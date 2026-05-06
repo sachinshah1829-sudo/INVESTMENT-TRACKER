@@ -2833,9 +2833,10 @@
 
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange, privacyMode }) {
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange, privacyMode, apiSettings }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
+      const [aiLoading, setAiLoading] = useState(false);
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -2895,6 +2896,34 @@
         setForm(f => ({ date: todayISO(), person: f.person, assetType: f.assetType, stock: '', qty: '', price: '' }));
         setSaving(false);
         focusStock();
+      };
+
+      const handleAINormalize = async () => {
+        if (!form.stock) return alert('Please enter a rough asset name first.');
+        if (!apiSettings.groqKey) return alert('Please set your Groq API Key in Manage > Settings tab first.');
+        setAiLoading(true);
+        try {
+          const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${apiSettings.groqKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "llama-3.1-8b-instant",
+              messages: [
+                { role: "system", content: "You are a financial asset naming expert. Convert the rough asset name into a proper listed name (ticker or official name). Return ONLY the name, no other text." },
+                { role: "user", content: `Rough Name: "${form.stock}", Asset Type: "${form.assetType || 'STOCK'}"` }
+              ],
+              temperature: 0
+            })
+          });
+          const data = await response.json();
+          if (data.error) throw new Error(data.error.message);
+          const normalized = data.choices[0].message.content.trim().toUpperCase();
+          set('stock', normalized);
+        } catch (err) {
+          alert("AI Error: " + err.message);
+        } finally {
+          setAiLoading(false);
+        }
       };
 
       const handleQuickKey = (e, next) => {
@@ -2988,7 +3017,28 @@
                   <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
                 <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
-                <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
+                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                  <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
+                  <button
+                    onClick={handleAINormalize}
+                    disabled={aiLoading}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '28px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '5px',
+                      opacity: aiLoading ? 0.5 : 1,
+                      zIndex: 10
+                    }}
+                    title="Normalize with AI"
+                  >
+                    {aiLoading ? '⌛' : '✨'}
+                  </button>
+                </div>
                 <div className="filter-group">
                   <label className="filter-label">Qty (- for Sell)</label>
                   <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} />
@@ -3627,10 +3677,48 @@
     }
 
     // ── MANAGE TAB (CONSOLIDATED) ──────────────────────────────
+    function AppSettingsTab({ apiSettings, onSave }) {
+      const [groqKey, setGroqKey] = useState(apiSettings.groqKey || '');
+      const [saving, setSaving] = useState(false);
+
+      const handleSave = async () => {
+        setSaving(true);
+        await onSave({ ...apiSettings, groqKey: groqKey.trim() });
+        setSaving(false);
+        alert('Settings saved!');
+      };
+
+      return (
+        <div className="card">
+          <div className="card-title">AI Settings</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+            Configure your AI providers for smart features like asset name normalization.
+          </div>
+          <div className="form-group" style={{ maxWidth: '500px' }}>
+            <label className="form-label">Groq API Key</label>
+            <input
+              type="password"
+              className="form-input"
+              value={groqKey}
+              onChange={e => setGroqKey(e.target.value)}
+              placeholder="gsk_..."
+            />
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: '5px' }}>
+              Your API key is saved to your account metadata and never shared.
+            </div>
+          </div>
+          <button className="btn-primary" style={{ width: 'auto', marginTop: '1rem' }} onClick={handleSave} disabled={saving}>
+            {saving ? 'SAVING...' : 'SAVE SETTINGS'}
+          </button>
+        </div>
+      );
+    }
+
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
-      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode
+      stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode,
+      apiSettings, onUpdateApiSettings
     }) {
       const [subTab, setSubTab] = useState('persons');
       return (
@@ -3644,11 +3732,13 @@
             <button className={`dock-btn ${subTab === 'persons' ? 'active' : ''}`} onClick={() => setSubTab('persons')}>Persons</button>
             <button className={`dock-btn ${subTab === 'assets' ? 'active' : ''}`} onClick={() => setSubTab('assets')}>Asset Types</button>
             <button className={`dock-btn ${subTab === 'prices' ? 'active' : ''}`} onClick={() => setSubTab('prices')}>Prices</button>
+            <button className={`dock-btn ${subTab === 'settings' ? 'active' : ''}`} onClick={() => setSubTab('settings')}>Settings</button>
           </div>
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
           {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
           {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
+          {subTab === 'settings' && <AppSettingsTab apiSettings={apiSettings} onSave={onUpdateApiSettings} />}
         </div>
       );
     }
@@ -4365,6 +4455,7 @@
       const [showDashboardSettings, setShowDashboardSettings] = useState(false);
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
       const [privacyMode, setPrivacyMode] = useState(false);
+      const [apiSettings, setApiSettings] = useState({ groqKey: '' });
 
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
@@ -4447,7 +4538,10 @@
             }
           }
         }, () => { });
-        return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t5(); };
+        const t6 = db.collection(`users/${uid}/inv_meta`).doc('inv_apiSettings').onSnapshot(snap => {
+          if (snap.exists) setApiSettings(snap.data() || { groqKey: '' });
+        }, () => { });
+        return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t5(); t6(); };
       }, [user]);
 
       // INITIALIZE DEFAULTS & MIGRATION
@@ -4575,6 +4669,13 @@
         setVisibleTabs(updated);
         if (uid) {
           await db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').set({ visibleTabs: updated }, { merge: true });
+        }
+      };
+
+      const updateApiSettings = async (settings) => {
+        setApiSettings(settings);
+        if (uid) {
+          await db.collection(`users/${uid}/inv_meta`).doc('inv_apiSettings').set(settings);
         }
       };
 
@@ -4742,7 +4843,7 @@
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
                 {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} apiSettings={apiSettings} />}
                 {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
                 {tab === 'manage' && (
@@ -4753,6 +4854,7 @@
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
                     transactions={transactions} privacyMode={privacyMode}
+                    apiSettings={apiSettings} onUpdateApiSettings={updateApiSettings}
                   />
                 )}
                 {tab === 'actions' && <CorporateActionsTab transactions={transactions} onBulkAdd={bulkAddTx} personColors={personColors} assetTypes={assetTypes} privacyMode={privacyMode} />}
