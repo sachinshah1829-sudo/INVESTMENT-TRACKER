@@ -2362,6 +2362,16 @@
       const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '', assetType: tx.assetType || 'STOCK' });
       const [saveState, setSaveState] = useState('idle');
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+      const selectedType = assetTypes.find(t => t.name === form.assetType);
+      const assetClass = selectedType ? selectedType.assetClass : 'EQUITY';
+
+      const labels = {
+        EQUITY: { stock: 'Asset Name', qty: 'Qty (- for Sell)', price: 'Price ₹', stockPh: 'E.g. ADANI POWER', qtyPh: '100', pricePh: '250.00' },
+        DEBT: { stock: 'Asset Name', qty: 'Qty / Units', price: 'Price / Face Value ₹', stockPh: 'E.g. HDFC BOND', qtyPh: '1', pricePh: '1000.00' },
+        REAL_ESTATE: { stock: 'Property Name', qty: 'Area / Units', price: 'Rate / Value ₹', stockPh: 'E.g. 2BHK FLAT', qtyPh: '1500', pricePh: '5000.00' },
+        COMMODITIES: { stock: 'Asset Name', qty: 'Qty (Grams/Units)', price: 'Price per Unit ₹', stockPh: 'E.g. GOLD', qtyPh: '10', pricePh: '6500.00' }
+      }[assetClass] || { stock: 'Asset Name', qty: 'Qty', price: 'Price', stockPh: '', qtyPh: '', pricePh: '' };
       const handleSave = async () => {
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
         setSaveState('saving');
@@ -2392,11 +2402,11 @@
               />
             </div>
             <div className="form-row">
-              <div className="filter-group"><label className="filter-label">Asset Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
-              <div className="filter-group"><label className="filter-label">Qty (- for Sell)</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
+              <div className="filter-group"><label className="filter-label">{labels.stock}</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
+              <div className="filter-group"><label className="filter-label">{labels.qty}</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
             </div>
             <div className="form-row">
-              <div className="filter-group"><label className="filter-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} /></div>
+              <div className="filter-group"><label className="filter-label">{labels.price}</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} /></div>
             </div>
             <div className="modal-actions">
               {saveState === 'saved'
@@ -2970,6 +2980,16 @@
       const [saving, setSaving] = useState(false);
       const [importProgress, setImportProgress] = useState(null);
 
+      const selectedType = assetTypes.find(t => t.name === form.assetType);
+      const assetClass = selectedType ? selectedType.assetClass : 'EQUITY';
+
+      const labels = {
+        EQUITY: { stock: 'Asset Name', qty: 'Qty (- for Sell)', price: 'Price ₹', stockPh: 'E.g. ADANI POWER', qtyPh: '100', pricePh: '250.00' },
+        DEBT: { stock: 'Asset Name', qty: 'Qty / Units', price: 'Price / Face Value ₹', stockPh: 'E.g. HDFC BOND', qtyPh: '1', pricePh: '1000.00' },
+        REAL_ESTATE: { stock: 'Property Name', qty: 'Area / Units', price: 'Rate / Value ₹', stockPh: 'E.g. 2BHK FLAT', qtyPh: '1500', pricePh: '5000.00' },
+        COMMODITIES: { stock: 'Asset Name', qty: 'Qty (Grams/Units)', price: 'Price per Unit ₹', stockPh: 'E.g. GOLD', qtyPh: '10', pricePh: '6500.00' }
+      }[assetClass] || { stock: 'Asset Name', qty: 'Qty', price: 'Price', stockPh: '', qtyPh: '', pricePh: '' };
+
       const search = filters.search;
       const filterPersons = filters.persons;
       const filterStocks = filters.stocks;
@@ -3130,14 +3150,14 @@
                   onChange={val => set('assetType', val)} 
                   onKeyDown={e => handleQuickKey(e, focusStock)} 
                 />
-                <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
+                <SearchableInput label={labels.stock} inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder={labels.stockPh} onKeyDown={e => handleQuickKey(e, focusQty)} />
                 <div className="filter-group">
-                  <label className="filter-label">Qty (- for Sell)</label>
-                  <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder="100" onKeyDown={e => handleQuickKey(e, focusPrice)} />
+                  <label className="filter-label">{labels.qty}</label>
+                  <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder={labels.qtyPh} onKeyDown={e => handleQuickKey(e, focusPrice)} />
                 </div>
                 <div className="filter-group">
-                  <label className="filter-label">Price ₹</label>
-                  <input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" onKeyDown={e => handleQuickKey(e, null)} />
+                  <label className="filter-label">{labels.price}</label>
+                  <input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder={labels.pricePh} onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
@@ -4733,11 +4753,24 @@
                 { name: 'FD', assetClass: 'DEBT' },
                 { name: 'REAL ESTATE', assetClass: 'REAL_ESTATE' },
                 { name: 'REITS', assetClass: 'REAL_ESTATE' },
+                { name: 'GOLD ETF', assetClass: 'COMMODITIES' },
                 { name: 'GOLD', assetClass: 'COMMODITIES' }
               ];
               const batch = db.batch();
               defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), t));
               await batch.commit();
+            }
+
+            // Initialize Default Asset Class Colors
+            const existingColors = await db.collection(`users/${uid}/inv_meta`).doc('inv_assetClassColors').get();
+            if (!existingColors.exists) {
+              const defaultColors = {
+                EQUITY: '#e2f9d7',
+                DEBT: '#fce4ec',
+                REAL_ESTATE: '#efebe9',
+                COMMODITIES: '#fff9c4'
+              };
+              await db.collection(`users/${uid}/inv_meta`).doc('inv_assetClassColors').set({ colors: defaultColors });
             }
 
             // Data Migration: Mark existing transactions as STOCK
