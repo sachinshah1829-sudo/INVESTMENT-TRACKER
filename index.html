@@ -4128,6 +4128,21 @@
         return (tx?.assetType || (transactions || []).find(t => t.stock === stock)?.assetType || '—');
       };
 
+      const copyAssetsForAI = () => {
+        const targets = allEntries.filter(e => {
+          const typeObj = assetTypes.find(t => t.name === e.assetType);
+          const cls = typeObj?.assetClass;
+          return cls === 'EQUITY' || e.assetType === 'LISTED BONDS' || e.assetType === 'REITS' || e.assetType === 'COMMODITY ETF';
+        });
+        if (targets.length === 0) return alert("No relevant assets found to copy.");
+        let text = "Asset Name, Asset Type\n";
+        targets.forEach(e => { text += `${e.stock}, ${e.assetType}\n`; });
+        text += "\nHello! Please provide the current market prices for the assets listed above. Return the information in a simple CSV format: Asset Name, Price. Thank you!";
+        navigator.clipboard.writeText(text).then(() => {
+          alert(`${targets.length} assets copied to clipboard! You can now paste this into an AI for price lookup.`);
+        });
+      };
+
       const allEntries = Object.entries(stockPrices).map(([s, p]) => ({ stock: s, price: p, assetType: getTypeForAsset(s) }));
       const filteredEntries = allEntries
         .filter(e => (filterAssets.includes('All') || filterAssets.includes(e.stock)))
@@ -4139,11 +4154,14 @@
           <div className="page-header">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div className="page-title">Asset Prices</div>
-              {priceMeta.lastUpdated && (
-                <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '4px 10px', border: '1px solid #ffe082', fontWeight: 700, letterSpacing: '.05em' }}>
-                  LAST SYNCED: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                <button className="btn-sm" onClick={copyAssetsForAI} title="Copy Equity & Bond names for AI price lookup">📋 COPY ASSETS FOR AI</button>
+                {priceMeta.lastUpdated && (
+                  <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '4px 10px', border: '1px solid #ffe082', fontWeight: 700, letterSpacing: '.05em' }}>
+                    LAST SYNCED: {new Date(priceMeta.lastUpdated).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="page-sub">Click any row to edit — paste CSV to bulk update</div>
           </div>
