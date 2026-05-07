@@ -2027,6 +2027,69 @@
       );
     }
 
+    function CategorizedMultiSelect({ label, groups, selected, onChange, placeholder = 'Select...' }) {
+      const [open, setOpen] = useState(false);
+      const [search, setSearch] = useState('');
+      const ref = useRef(null);
+
+      useEffect(() => {
+        if (!open) return;
+        const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h);
+      }, [open]);
+
+      const toggle = val => {
+        let next = [];
+        if (val === 'All') { next = ['All']; }
+        else {
+          next = selected.filter(x => x !== 'All');
+          if (next.includes(val)) next = next.filter(x => x !== val);
+          else next.push(val);
+          if (next.length === 0) next = ['All'];
+        }
+        onChange(next);
+      };
+
+      const filteredGroups = groups.map(g => ({
+        ...g,
+        options: g.options.filter(o => o.toLowerCase().includes(search.toLowerCase()))
+      })).filter(g => g.options.length > 0);
+
+      const display = selected.includes('All') ? 'All' : (selected.length === 1 ? selected[0] : `${selected.length} Selected`);
+
+      return (
+        <div className="filter-group" ref={ref}>
+          <div className="filter-label">{label}</div>
+          <div className="multi-select-wrap">
+            <div className="multi-select-trigger" onClick={() => setOpen(!open)}>
+              <span>{display}</span>
+              <span style={{ fontSize: 10 }}>▼</span>
+            </div>
+            {open && (
+              <div className="multi-select-dropdown">
+                <input className="multi-select-search" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+                <div className="multi-select-opt" onClick={() => toggle('All')}>
+                  <input type="checkbox" checked={selected.includes('All')} readOnly /> <span>All</span>
+                </div>
+                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                  {filteredGroups.map(g => (
+                    <div key={g.label}>
+                      <div style={{ padding: '8px 12px', fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', background: 'var(--bg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.label}</div>
+                      {g.options.map(o => (
+                        <div key={o} className="multi-select-opt" onClick={() => toggle(o)}>
+                          <input type="checkbox" checked={selected.includes(o)} readOnly /> <span>{o}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     function SingleSelect({ label, options, value, onChange, placeholder = "Select...", onKeyDown }) {
       const [open, setOpen] = useState(false);
       const [search, setSearch] = useState('');
@@ -2726,11 +2789,14 @@
               />
             </div>
             <div style={{ width: '280px', flexShrink: 0, minWidth: 0 }}>
-              <MultiSelect
-                label="Asset Type"
-                options={types}
-                selected={filterAssetTypes}
-                onChange={setFilterAssetTypes}
+              <CategorizedMultiSelect 
+                label="Asset Type" 
+                selected={filterAssetTypes} 
+                groups={ASSET_CLASSES.map(cls => ({
+                  label: cls.name,
+                  options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
+                }))} 
+                onChange={setFilterAssetTypes} 
               />
             </div>
 
@@ -3122,7 +3188,15 @@
                   <MultiSelect label="Asset" options={[...new Set(valid.map(t => t.stock))].sort()} selected={filterStocks} onChange={setFilterStocks} />
                 </div>
                 <div className="filter-col" style={{ width: '220px' }}>
-                  <MultiSelect label="Asset Type" options={[...new Set(valid.map(t => t.assetType || 'STOCK'))].sort()} selected={filterAssetType} onChange={setFilterAssetType} />
+                  <CategorizedMultiSelect 
+                    label="Asset Type" 
+                    selected={filterAssetType} 
+                    groups={ASSET_CLASSES.map(cls => ({
+                      label: cls.name,
+                      options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
+                    }))} 
+                    onChange={setFilterAssetType} 
+                  />
                 </div>
                 <div className="filter-col filter-group" style={{ width: '180px' }}>
                   <div className="filter-label">Search</div>
@@ -3284,14 +3358,14 @@
             {viewMode === 'persons' && <>
               <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Person" options={personsList} selected={filter.persons} onChange={val => onFilterChange({ ...filter, persons: val })} /></div>
               <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} /></div>
-              <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
+              <div className="filter-col" style={{ width: '220px' }}><CategorizedMultiSelect label="Asset Type" selected={filter.assetTypes || ['All']} groups={ASSET_CLASSES.map(cls => ({ label: cls.name, options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name) }))} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
             </>}
             {viewMode === 'assets' && <>
               <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Asset" options={stocksList} selected={filter.stocks} onChange={val => onFilterChange({ ...filter, stocks: val })} /></div>
-              <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
+              <div className="filter-col" style={{ width: '220px' }}><CategorizedMultiSelect label="Asset Type" selected={filter.assetTypes || ['All']} groups={ASSET_CLASSES.map(cls => ({ label: cls.name, options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name) }))} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
             </>}
             {viewMode === 'types' && <>
-              <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Asset Type" options={typesList} selected={filter.assetTypes || ['All']} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
+              <div className="filter-col" style={{ width: '220px' }}><CategorizedMultiSelect label="Asset Type" selected={filter.assetTypes || ['All']} groups={ASSET_CLASSES.map(cls => ({ label: cls.name, options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name) }))} onChange={val => onFilterChange({ ...filter, assetTypes: val })} /></div>
             </>}
             <div className="filter-col" style={{ width: 'auto' }}>
               <button className="btn-sm btn-reset" onClick={() => onFilterChange({ persons: ['All'], stocks: ['All'], assetTypes: ['All'] })} title="Reset Filters">↺</button>
@@ -3430,7 +3504,17 @@
           </div>
           <div className="filter-bar" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Person" options={persons} selected={filterPersons} onChange={setFilterPersons} /></div>
-            <div className="filter-col" style={{ width: '220px' }}><MultiSelect label="Asset Type" options={typesList} selected={filterAssetTypes} onChange={setFilterAssetTypes} /></div>
+            <div className="filter-col" style={{ width: '220px' }}>
+              <CategorizedMultiSelect 
+                label="Asset Type" 
+                selected={filterAssetTypes} 
+                groups={ASSET_CLASSES.map(cls => ({
+                  label: cls.name,
+                  options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
+                }))} 
+                onChange={setFilterAssetTypes} 
+              />
+            </div>
             <div className="filter-col filter-group" style={{ width: '200px' }}>
               <div className="filter-label">Stock Search</div>
               <input className="form-input" style={{ width: '100%', fontSize: 12, height: 42 }} placeholder="Search..." value={stockFilter} onChange={e => setStockFilter(e.target.value)} />
@@ -4047,7 +4131,15 @@
 
             <div className="filter-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '.75rem' }}>
               <MultiSelect label="Asset" options={assetList} selected={filterAssets} onChange={setFilterAssets} />
-              <MultiSelect label="Asset Type" options={typesList} selected={filterAssetTypes} onChange={setFilterAssetTypes} />
+              <CategorizedMultiSelect 
+                label="Asset Type" 
+                selected={filterAssetTypes} 
+                groups={ASSET_CLASSES.map(cls => ({
+                  label: cls.name,
+                  options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
+                }))} 
+                onChange={setFilterAssetTypes} 
+              />
               <button className="btn-sm btn-reset" onClick={() => { setFilterAssets(['All']); setFilterAssetTypes(['All']); }} title="Reset Filters">↺</button>
             </div>
 
