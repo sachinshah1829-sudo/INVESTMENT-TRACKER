@@ -2320,10 +2320,7 @@
                 groups={ASSET_CLASSES.map(cls => ({
                   label: cls.name,
                   options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
-                })).concat(assetTypes.some(t => !t.assetClass) ? [{
-                  label: 'UNASSIGNED',
-                  options: assetTypes.filter(t => !t.assetClass).map(t => t.name)
-                }] : [])} 
+                }))} 
                 onChange={val => set('assetType', val)} 
               />
             </div>
@@ -3065,10 +3062,7 @@
                   groups={ASSET_CLASSES.map(cls => ({
                     label: cls.name,
                     options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
-                  })).concat(assetTypes.some(t => !t.assetClass) ? [{
-                    label: 'UNASSIGNED',
-                    options: assetTypes.filter(t => !t.assetClass).map(t => t.name)
-                  }] : [])} 
+                  }))} 
                   onChange={val => set('assetType', val)} 
                   onKeyDown={e => handleQuickKey(e, focusStock)} 
                 />
@@ -3812,11 +3806,10 @@
               </div>
             )}
 
-            {[...ASSET_CLASSES, { id: 'UNASSIGNED', name: 'UNASSIGNED', color: '#e5e7eb' }].map(cls => {
+            {ASSET_CLASSES.map(cls => {
               const types = grouped[cls.id];
-              if (types.length === 0 && cls.id === 'UNASSIGNED') return null;
               const isExpanded = expandedClasses.has(cls.id);
-              const clsColor = cls.id === 'UNASSIGNED' ? '#e5e7eb' : (assetClassColors[cls.id] || cls.color);
+              const clsColor = assetClassColors[cls.id] || cls.color;
               return (
                 <div key={cls.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <div 
@@ -4630,12 +4623,18 @@
             const existingTypes = await db.collection(`users/${uid}/inv_assetTypes`).get();
             if (existingTypes.empty) {
               const defaults = [
-                { name: 'STOCK', assetClass: 'EQUITY' },
                 { name: 'MUTUAL FUND', assetClass: 'EQUITY' },
+                { name: 'STOCK', assetClass: 'EQUITY' },
+                { name: 'LIQUID FUNDS', assetClass: 'EQUITY' },
+                { name: 'US STOCKS', assetClass: 'EQUITY' },
                 { name: 'ETF', assetClass: 'EQUITY' },
                 { name: 'BONDS', assetClass: 'DEBT' },
-                { name: 'GOLD', assetClass: 'COMMODITIES' },
-                { name: 'REAL ESTATE', assetClass: 'REAL_ESTATE' }
+                { name: 'P2P LENDING', assetClass: 'DEBT' },
+                { name: 'PPF', assetClass: 'DEBT' },
+                { name: 'FD', assetClass: 'DEBT' },
+                { name: 'REAL ESTATE', assetClass: 'REAL_ESTATE' },
+                { name: 'REITS', assetClass: 'REAL_ESTATE' },
+                { name: 'GOLD', assetClass: 'COMMODITIES' }
               ];
               const batch = db.batch();
               defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), t));
