@@ -2362,16 +2362,6 @@
       const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '', assetType: tx.assetType || 'STOCK' });
       const [saveState, setSaveState] = useState('idle');
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-      const selectedType = assetTypes.find(t => t.name === form.assetType);
-      const assetClass = selectedType ? selectedType.assetClass : 'EQUITY';
-
-      const labels = {
-        EQUITY: { stock: 'Asset Name', qty: 'Qty (- for Sell)', price: 'Price ₹', stockPh: 'E.g. ADANI POWER', qtyPh: '100', pricePh: '250.00' },
-        DEBT: { stock: 'Asset Name', qty: 'Qty / Units', price: 'Price / Face Value ₹', stockPh: 'E.g. HDFC BOND', qtyPh: '1', pricePh: '1000.00' },
-        REAL_ESTATE: { stock: 'Property Name', qty: 'Area / Units', price: 'Rate / Value ₹', stockPh: 'E.g. 2BHK FLAT', qtyPh: '1500', pricePh: '5000.00' },
-        COMMODITIES: { stock: 'Asset Name', qty: 'Qty (Grams/Units)', price: 'Price per Unit ₹', stockPh: 'E.g. GOLD', qtyPh: '10', pricePh: '6500.00' }
-      }[assetClass] || { stock: 'Asset Name', qty: 'Qty', price: 'Price', stockPh: '', qtyPh: '', pricePh: '' };
       const handleSave = async () => {
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
         setSaveState('saving');
@@ -2402,11 +2392,11 @@
               />
             </div>
             <div className="form-row">
-              <div className="filter-group"><label className="filter-label">{labels.stock}</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
-              <div className="filter-group"><label className="filter-label">{labels.qty}</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
+              <div className="filter-group"><label className="filter-label">Asset Name</label><input className="form-input" type="text" value={form.stock} onChange={e => set('stock', e.target.value)} /></div>
+              <div className="filter-group"><label className="filter-label">Qty (- for Sell)</label><input className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} /></div>
             </div>
             <div className="form-row">
-              <div className="filter-group"><label className="filter-label">{labels.price}</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} /></div>
+              <div className="filter-group"><label className="filter-label">Price ₹</label><input className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} /></div>
             </div>
             <div className="modal-actions">
               {saveState === 'saved'
@@ -2980,16 +2970,6 @@
       const [saving, setSaving] = useState(false);
       const [importProgress, setImportProgress] = useState(null);
 
-      const selectedType = assetTypes.find(t => t.name === form.assetType);
-      const assetClass = selectedType ? selectedType.assetClass : 'EQUITY';
-
-      const labels = {
-        EQUITY: { stock: 'Asset Name', qty: 'Qty (- for Sell)', price: 'Price ₹', stockPh: 'E.g. ADANI POWER', qtyPh: '100', pricePh: '250.00' },
-        DEBT: { stock: 'Asset Name', qty: 'Qty / Units', price: 'Price / Face Value ₹', stockPh: 'E.g. HDFC BOND', qtyPh: '1', pricePh: '1000.00' },
-        REAL_ESTATE: { stock: 'Property Name', qty: 'Area / Units', price: 'Rate / Value ₹', stockPh: 'E.g. 2BHK FLAT', qtyPh: '1500', pricePh: '5000.00' },
-        COMMODITIES: { stock: 'Asset Name', qty: 'Qty (Grams/Units)', price: 'Price per Unit ₹', stockPh: 'E.g. GOLD', qtyPh: '10', pricePh: '6500.00' }
-      }[assetClass] || { stock: 'Asset Name', qty: 'Qty', price: 'Price', stockPh: '', qtyPh: '', pricePh: '' };
-
       const search = filters.search;
       const filterPersons = filters.persons;
       const filterStocks = filters.stocks;
@@ -3150,15 +3130,47 @@
                   onChange={val => set('assetType', val)} 
                   onKeyDown={e => handleQuickKey(e, focusStock)} 
                 />
-                <SearchableInput label={labels.stock} inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder={labels.stockPh} onKeyDown={e => handleQuickKey(e, focusQty)} />
-                <div className="filter-group">
-                  <label className="filter-label">{labels.qty}</label>
-                  <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder={labels.qtyPh} onKeyDown={e => handleQuickKey(e, focusPrice)} />
-                </div>
-                <div className="filter-group">
-                  <label className="filter-label">{labels.price}</label>
-                  <input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder={labels.pricePh} onKeyDown={e => handleQuickKey(e, null)} />
-                </div>
+                {(() => {
+                  const typeObj = assetTypes.find(t => t.name === form.assetType);
+                  const cls = typeObj?.assetClass;
+                  let labels = { stock: 'Asset Name', qty: 'Qty (- for Sell)', price: 'Price ₹', stockPh: 'E.g. ADANI POWER', qtyPh: '100', pricePh: '250.00' };
+                  
+                  if (cls === 'EQUITY') {
+                    // Defaults are fine
+                  } else if (cls === 'COMMODITIES') {
+                    if (form.assetType === 'COMMODITY ETF') {
+                      labels = { ...labels, stock: 'ETF Name', stockPh: 'E.g. GOLD BEES' };
+                    } else {
+                      labels = { ...labels, stock: 'Commodity Name', qty: 'Grams (- for Sell)', stockPh: 'E.g. GOLD 24K', qtyPh: '10.5' };
+                    }
+                  } else if (cls === 'REAL_ESTATE') {
+                    if (form.assetType === 'REITS') {
+                      labels = { ...labels, stock: 'REIT Name', stockPh: 'E.g. EMBASSY' };
+                    } else {
+                      labels = { ...labels, stock: 'Property Name', qty: 'Square Feet', stockPh: 'E.g. 2BHK FLAT', qtyPh: '1200' };
+                    }
+                  } else if (cls === 'DEBT') {
+                    if (form.assetType === 'LISTED BONDS') {
+                      labels = { ...labels, stock: 'Bond Name', stockPh: 'E.g. NHAI 8.2%' };
+                    } else {
+                      labels = { ...labels, stock: 'Asset Name', qty: 'Invested Amount', price: 'Interest Rate %', stockPh: 'E.g. SBI FD', qtyPh: '10000', pricePh: '7.5' };
+                    }
+                  }
+
+                  return (
+                    <>
+                      <SearchableInput label={labels.stock} inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder={labels.stockPh} onKeyDown={e => handleQuickKey(e, focusQty)} />
+                      <div className="filter-group">
+                        <label className="filter-label">{labels.qty}</label>
+                        <input ref={qtyRef} className="form-input" type="number" value={form.qty} onChange={e => set('qty', e.target.value)} placeholder={labels.qtyPh} onKeyDown={e => handleQuickKey(e, focusPrice)} />
+                      </div>
+                      <div className="filter-group">
+                        <label className="filter-label">{labels.price}</label>
+                        <input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder={labels.pricePh} onKeyDown={e => handleQuickKey(e, null)} />
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
                 <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
@@ -3761,10 +3773,25 @@
     }
 
     // ── EDIT PRICE MODAL ──────────────────────────────────────
-    function EditPriceModal({ stock, price, onSave, onDelete, onClose }) {
+    function EditPriceModal({ stock, price, onSave, onDelete, onClose, assetTypes, transactions }) {
       const [newStock, setNewStock] = useState(stock);
       const [newPrice, setNewPrice] = useState(String(price));
       const [saveState, setSaveState] = useState('idle');
+
+      const type = (transactions || []).slice().reverse().find(t => t.stock === stock && t.assetType)?.assetType || '—';
+      const typeObj = assetTypes.find(t => t.name === type);
+      const cls = typeObj?.assetClass;
+      
+      let assetLabel = "Asset Name";
+      let priceLabel = "Current Price ₹";
+      if (cls === 'DEBT' && type !== 'LISTED BONDS') {
+        assetLabel = "Asset Name"; priceLabel = "Current Balance ₹";
+      } else if (cls === 'COMMODITIES' && type !== 'COMMODITY ETF') {
+        assetLabel = "Commodity Name"; priceLabel = "Price per Gram ₹";
+      } else if (cls === 'REAL_ESTATE' && type !== 'REITS') {
+        assetLabel = "Property Name"; priceLabel = "Price per Sq Ft ₹";
+      }
+
       const handleSave = async () => {
         const p = parseFloat(newPrice); const s = newStock.toUpperCase().trim();
         if (isNaN(p) || p <= 0 || !s) return;
@@ -3780,17 +3807,17 @@
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
           <div className="modal" style={{ maxWidth: 380 }}>
-            <div className="modal-title">Edit Stock Entry <button className="modal-close" onClick={onClose}>✕</button></div>
+            <div className="modal-title">Edit Asset Entry <button className="modal-close" onClick={onClose}>✕</button></div>
             <div className="form-group">
-              <label className="form-label">Asset Name</label>
+              <label className="form-label">{assetLabel}</label>
               <input className="form-input" type="text" value={newStock} onChange={e => setNewStock(e.target.value)} autoFocus />
             </div>
             <div className="form-group">
-              <label className="form-label">Current Price ₹</label>
+              <label className="form-label">{priceLabel}</label>
               <input className="form-input" type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave()} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '.5rem', marginBottom: '1rem', border: '1px solid #ffe082' }}>
-              ⚠ Renaming the stock here will also update the name in all your existing transactions.
+              ⚠ Renaming the asset here will also update the name in all your existing transactions.
             </div>
             <div className="modal-actions">
               {saveState === 'saved'
@@ -4207,7 +4234,7 @@
             )}
           </div>
 
-          {editEntry && <EditPriceModal stock={editEntry.stock} price={editEntry.price} onSave={handleEditSave} onDelete={handleDelete} onClose={() => setEditEntry(null)} />}
+          {editEntry && <EditPriceModal stock={editEntry.stock} price={editEntry.price} onSave={handleEditSave} onDelete={handleDelete} onClose={() => setEditEntry(null)} assetTypes={assetTypes} transactions={transactions} />}
         </div>
       );
     }
@@ -4747,14 +4774,15 @@
                 { name: 'LIQUID FUNDS', assetClass: 'EQUITY' },
                 { name: 'US STOCKS', assetClass: 'EQUITY' },
                 { name: 'ETF', assetClass: 'EQUITY' },
-                { name: 'BONDS', assetClass: 'DEBT' },
+                { name: 'LISTED BONDS', assetClass: 'DEBT' },
                 { name: 'P2P LENDING', assetClass: 'DEBT' },
+                { name: 'NON LISTED BONDS', assetClass: 'DEBT' },
                 { name: 'PPF', assetClass: 'DEBT' },
                 { name: 'FD', assetClass: 'DEBT' },
                 { name: 'REAL ESTATE', assetClass: 'REAL_ESTATE' },
                 { name: 'REITS', assetClass: 'REAL_ESTATE' },
-                { name: 'GOLD ETF', assetClass: 'COMMODITIES' },
-                { name: 'GOLD', assetClass: 'COMMODITIES' }
+                { name: 'COMMODITY ETF', assetClass: 'COMMODITIES' },
+                { name: 'COMMODITY', assetClass: 'COMMODITIES' }
               ];
               const batch = db.batch();
               defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), t));
@@ -4792,8 +4820,63 @@
 
 
 
-      const syncStockPrice = async (stock, fallbackPrice) => {
-        if (!uid || !stock) return;
+      // Daily Interest Accrual for DEBT (excluding LISTED BONDS)
+      useEffect(() => {
+        if (!uid || loading || Object.keys(stockPrices).length === 0 || assetTypes.length === 0 || transactions.length === 0) return;
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const lastUpdateStr = priceMeta.lastUpdated ? priceMeta.lastUpdated.split('T')[0] : todayStr;
+
+        if (todayStr === lastUpdateStr) return;
+
+        const lastUpdateDate = new Date(lastUpdateStr);
+        const diffTime = today.getTime() - lastUpdateDate.getTime();
+        const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        if (days <= 0) return;
+
+        // Find all debt assets that are not listed bonds
+        const debtStocks = [...new Set(transactions.filter(t => {
+          const type = assetTypes.find(at => at.name === t.assetType);
+          return type?.assetClass === 'DEBT' && t.assetType !== 'LISTED BONDS';
+        }).map(t => t.stock.toUpperCase()))];
+
+        if (debtStocks.length === 0) {
+          // Update lastUpdated to today to avoid re-calculating
+          db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').update({ lastUpdated: new Date().toISOString() });
+          return;
+        }
+
+        const newPrices = { ...stockPrices };
+        let anyChange = false;
+
+        debtStocks.forEach(s => {
+          const currentBalance = Number(newPrices[s] || 0);
+          if (currentBalance <= 0) return;
+
+          // Use the LATEST transaction's interest rate for that stock
+          const stockTxs = transactions.filter(t => t.stock.toUpperCase() === s);
+          const lastTx = stockTxs.sort((a, b) => b.date.localeCompare(a.date))[0];
+          const rate = Number(lastTx?.price || 0);
+          if (rate <= 0) return;
+
+          // Simple interest applied daily: Balance = Balance * (1 + rate/365/100)^days
+          const dailyRate = rate / (365 * 100);
+          const nextBalance = currentBalance * Math.pow(1 + dailyRate, days);
+          
+          if (Math.abs(nextBalance - currentBalance) > 0.01) {
+            newPrices[s] = Number(nextBalance.toFixed(2));
+            anyChange = true;
+          }
+        });
+
+        db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').update({ 
+          prices: newPrices, 
+          lastUpdated: new Date().toISOString() 
+        });
+      }, [uid, loading, assetTypes, transactions]);
+
+      const syncStockPrice = async (stock, fallbackPrice, fallbackAssetType) => {
         const s = stock.toUpperCase().trim();
         const snap = await db.collection(`users/${uid}/inv_transactions`).where('stock', '==', s).get();
         let totalQty = 0;
@@ -4804,6 +4887,9 @@
         let prices = doc.exists ? (doc.data().prices || {}) : {};
         let changed = false;
 
+        const typeObj = assetTypes.find(t => t.name === (fallbackAssetType || transactions.find(tx => tx.stock.toUpperCase().trim() === s)?.assetType));
+        const isDebtNonListed = typeObj?.assetClass === 'DEBT' && typeObj?.name !== 'LISTED BONDS';
+
         if (Math.abs(totalQty) < 0.0001) {
           if (prices[s] !== undefined) {
             delete prices[s];
@@ -4811,7 +4897,13 @@
           }
         } else {
           if (prices[s] === undefined && fallbackPrice !== undefined) {
-            prices[s] = fallbackPrice;
+            if (isDebtNonListed) {
+              // For non-listed debt, initial balance is the sum of quantities (invested amounts)
+              // Actually, if we are just initializing, we use the fallbackPrice (Invested Amount of the first txn)
+              prices[s] = fallbackPrice;
+            } else {
+              prices[s] = fallbackPrice;
+            }
             changed = true;
           }
         }
@@ -4824,7 +4916,15 @@
       const addTx = async tx => {
         const s = tx.stock.toUpperCase().trim();
         await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, stock: s, createdAt: new Date().toISOString() });
-        await syncStockPrice(s, tx.price);
+        
+        const type = assetTypes.find(t => t.name === tx.assetType);
+        if (type?.assetClass === 'DEBT' && tx.assetType !== 'LISTED BONDS') {
+           const prices = { ...stockPrices };
+           prices[s] = (prices[s] || 0) + Number(tx.qty);
+           await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').update({ prices, lastUpdated: new Date().toISOString() });
+        } else {
+           await syncStockPrice(s, tx.price);
+        }
       };
       const bulkAddTx = async (txs) => {
         const batchSize = 500;
@@ -4846,18 +4946,45 @@
       };
       const updateTx = async (id, data) => { 
         const oldDoc = await db.collection(`users/${uid}/inv_transactions`).doc(id).get();
-        const oldStock = oldDoc.data()?.stock;
+        const oldData = oldDoc.data();
+        const oldStock = oldData?.stock;
         await db.collection(`users/${uid}/inv_transactions`).doc(id).update(data); 
-        if (oldStock) await syncStockPrice(oldStock);
-        if (data.stock && data.stock.toUpperCase().trim() !== oldStock?.toUpperCase().trim()) {
-          await syncStockPrice(data.stock, data.price);
+
+        const type = assetTypes.find(t => t.name === (data.assetType || oldData.assetType));
+        if (type?.assetClass === 'DEBT' && type.name !== 'LISTED BONDS') {
+           const prices = { ...stockPrices };
+           const s = (data.stock || oldStock).toUpperCase().trim();
+           // If stock changed, we need to handle old and new
+           if (data.stock && data.stock.toUpperCase().trim() !== oldStock?.toUpperCase().trim()) {
+              prices[oldStock.toUpperCase()] = (prices[oldStock.toUpperCase()] || 0) - Number(oldData.qty);
+              prices[s] = (prices[s] || 0) + Number(data.qty || oldData.qty);
+           } else {
+              // Same stock, just update delta
+              prices[s] = (prices[s] || 0) - Number(oldData.qty) + Number(data.qty || oldData.qty);
+           }
+           await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').update({ prices, lastUpdated: new Date().toISOString() });
+        } else {
+           if (oldStock) await syncStockPrice(oldStock);
+           if (data.stock && data.stock.toUpperCase().trim() !== oldStock?.toUpperCase().trim()) {
+             await syncStockPrice(data.stock, data.price);
+           }
         }
       };
       const deleteTx = async id => { 
         const doc = await db.collection(`users/${uid}/inv_transactions`).doc(id).get();
-        const stock = doc.data()?.stock;
+        const data = doc.data();
+        const stock = data?.stock;
         await db.collection(`users/${uid}/inv_transactions`).doc(id).delete(); 
-        if (stock) await syncStockPrice(stock);
+
+        const type = assetTypes.find(t => t.name === data.assetType);
+        if (type?.assetClass === 'DEBT' && type.name !== 'LISTED BONDS') {
+           const prices = { ...stockPrices };
+           const s = stock.toUpperCase().trim();
+           prices[s] = (prices[s] || 0) - Number(data.qty);
+           await db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices').update({ prices, lastUpdated: new Date().toISOString() });
+        } else {
+           if (stock) await syncStockPrice(stock);
+        }
       };
 
       const ensurePerson = useCallback(async (personName) => {
