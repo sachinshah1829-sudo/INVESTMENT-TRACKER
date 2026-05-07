@@ -2068,7 +2068,7 @@
       );
     }
 
-    function CategorizedSingleSelect({ label, groups, value, onChange, placeholder = "Select...", onKeyDown }) {
+    function CategorizedSingleSelect({ label, groups, value, onChange, placeholder = "Select...", onKeyDown, inputRef }) {
       const [open, setOpen] = useState(false);
       const [search, setSearch] = useState('');
       const ref = useRef(null);
@@ -2087,7 +2087,7 @@
         <div className="filter-group" ref={ref}>
           {label && <div className="filter-label">{label}</div>}
           <div className="multi-select-wrap">
-            <div className="form-input" onClick={() => setOpen(!open)} tabIndex={0}
+            <div ref={inputRef} className="form-input" onClick={() => setOpen(!open)} tabIndex={0}
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setOpen(!open); if (onKeyDown) onKeyDown(e); }}>
               <span style={{ color: value ? 'inherit' : 'var(--text-muted)', fontSize: '14px', fontWeight: 'normal' }}>{value || placeholder}</span>
@@ -2940,9 +2940,11 @@
       const stockRef = useRef(null);
       const qtyRef = useRef(null);
       const priceRef = useRef(null);
+      const typeRef = useRef(null);
       const focusStock = () => setTimeout(() => stockRef.current?.focus(), 0);
       const focusQty = () => setTimeout(() => qtyRef.current?.focus(), 0);
       const focusPrice = () => setTimeout(() => priceRef.current?.focus(), 0);
+      const focusType = () => setTimeout(() => typeRef.current?.focus(), 0);
 
       const handleAdd = async () => {
         if (!form.date || !form.person || !form.stock || !form.qty || !form.price) return;
@@ -3046,7 +3048,18 @@
                   <label className="filter-label">Date</label>
                   <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
-                <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusStock)} />
+                <SingleSelect label="Person" value={form.person} options={persons.map(p => p.name)} onChange={val => set('person', val)} onKeyDown={e => handleQuickKey(e, focusType)} />
+                <CategorizedSingleSelect 
+                  label="Asset Type" 
+                  inputRef={typeRef}
+                  value={form.assetType} 
+                  groups={ASSET_CLASSES.map(cls => ({
+                    label: cls.name,
+                    options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
+                  }))} 
+                  onChange={val => set('assetType', val)} 
+                  onKeyDown={e => handleQuickKey(e, focusStock)} 
+                />
                 <SearchableInput label="Asset Name" inputRef={stockRef} value={form.stock} options={uniqueStocks} onChange={val => set('stock', val)} placeholder="E.g. ADANI POWER" onKeyDown={e => handleQuickKey(e, focusQty)} />
                 <div className="filter-group">
                   <label className="filter-label">Qty (- for Sell)</label>
@@ -3056,16 +3069,6 @@
                   <label className="filter-label">Price ₹</label>
                   <input ref={priceRef} className="form-input" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="250.00" onKeyDown={e => handleQuickKey(e, null)} />
                 </div>
-                <CategorizedSingleSelect 
-                  label="Asset Type" 
-                  value={form.assetType} 
-                  groups={ASSET_CLASSES.map(cls => ({
-                    label: cls.name,
-                    options: assetTypes.filter(t => t.assetClass === cls.id).map(t => t.name)
-                  }))} 
-                  onChange={val => set('assetType', val)} 
-                  onKeyDown={e => handleQuickKey(e, focusStock)} 
-                />
               </div>
               <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', flexWrap: 'wrap' }}>
                 <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.5rem' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD TRANSACTION'}</button>
@@ -4660,27 +4663,73 @@
 
 
 
+      const syncStockPrice = async (stock, fallbackPrice) => {
+        if (!uid || !stock) return;
+        const s = stock.toUpperCase().trim();
+        const snap = await db.collection(`users/${uid}/inv_transactions`).where('stock', '==', s).get();
+        let totalQty = 0;
+        snap.forEach(doc => { totalQty += Number(doc.data().qty || 0); });
+
+        const docRef = db.collection(`users/${uid}/inv_meta`).doc('inv_stockPrices');
+        const doc = await docRef.get();
+        let prices = doc.exists ? (doc.data().prices || {}) : {};
+        let changed = false;
+
+        if (Math.abs(totalQty) < 0.0001) {
+          if (prices[s] !== undefined) {
+            delete prices[s];
+            changed = true;
+          }
+        } else {
+          if (prices[s] === undefined && fallbackPrice !== undefined) {
+            prices[s] = fallbackPrice;
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          await docRef.set({ prices, lastUpdated: new Date().toISOString() });
+        }
+      };
+
       const addTx = async tx => {
-        await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, createdAt: new Date().toISOString() });
-        const s = tx.stock.toUpperCase();
-        if (!stockPrices[s]) { await updatePrices({ [s]: tx.price }); }
+        const s = tx.stock.toUpperCase().trim();
+        await db.collection(`users/${uid}/inv_transactions`).add({ ...tx, stock: s, createdAt: new Date().toISOString() });
+        await syncStockPrice(s, tx.price);
       };
       const bulkAddTx = async (txs) => {
         const batchSize = 500;
+        const affectedStocks = new Set();
         for (let i = 0; i < txs.length; i += batchSize) {
           const batch = db.batch();
-          txs.slice(i, i + batchSize).forEach(tx => { const ref = db.collection(`users/${uid}/inv_transactions`).doc(); batch.set(ref, { ...tx, createdAt: new Date().toISOString() }); });
+          txs.slice(i, i + batchSize).forEach(tx => { 
+            const s = tx.stock.toUpperCase().trim();
+            affectedStocks.add(s);
+            const ref = db.collection(`users/${uid}/inv_transactions`).doc(); 
+            batch.set(ref, { ...tx, stock: s, createdAt: new Date().toISOString() }); 
+          });
           await batch.commit();
         }
-        const newPrices = {};
-        txs.forEach(tx => {
-          const s = tx.stock.toUpperCase();
-          if (!stockPrices[s] && !newPrices[s]) { newPrices[s] = tx.price; }
-        });
-        if (Object.keys(newPrices).length > 0) { await updatePrices(newPrices); }
+        for (const s of affectedStocks) {
+          const txForS = txs.find(tx => tx.stock.toUpperCase().trim() === s);
+          await syncStockPrice(s, txForS?.price);
+        }
       };
-      const updateTx = async (id, data) => { await db.collection(`users/${uid}/inv_transactions`).doc(id).update(data); };
-      const deleteTx = async id => { await db.collection(`users/${uid}/inv_transactions`).doc(id).delete(); };
+      const updateTx = async (id, data) => { 
+        const oldDoc = await db.collection(`users/${uid}/inv_transactions`).doc(id).get();
+        const oldStock = oldDoc.data()?.stock;
+        await db.collection(`users/${uid}/inv_transactions`).doc(id).update(data); 
+        if (oldStock) await syncStockPrice(oldStock);
+        if (data.stock && data.stock.toUpperCase().trim() !== oldStock?.toUpperCase().trim()) {
+          await syncStockPrice(data.stock, data.price);
+        }
+      };
+      const deleteTx = async id => { 
+        const doc = await db.collection(`users/${uid}/inv_transactions`).doc(id).get();
+        const stock = doc.data()?.stock;
+        await db.collection(`users/${uid}/inv_transactions`).doc(id).delete(); 
+        if (stock) await syncStockPrice(stock);
+      };
 
       const ensurePerson = useCallback(async (personName) => {
         const upper = personName.toUpperCase().trim(); if (!upper) return;
