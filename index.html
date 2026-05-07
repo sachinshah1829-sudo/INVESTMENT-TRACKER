@@ -1790,10 +1790,11 @@
       return `hsl(${Math.abs(h) % 360},50%,80%)`;
     };
 
-    const assetTypeColor = (name, customColors = {}, assetTypes = []) => {
+    const assetTypeColor = (name, customColors = {}, assetTypes = [], classColors = {}) => {
       const u = (name || '').toUpperCase().trim();
       const typeObj = assetTypes.find(t => t.name.toUpperCase() === u);
       if (typeObj && typeObj.assetClass) {
+        if (classColors[typeObj.assetClass]) return classColors[typeObj.assetClass];
         const cls = ASSET_CLASSES.find(c => c.id === typeObj.assetClass);
         if (cls) return cls.color;
       }
@@ -2290,7 +2291,7 @@
     }
 
     // ── EDIT TX MODAL ─────────────────────────────────────────
-    function EditTxModal({ tx, persons, assetTypes, onSave, onDelete, onClose, assetTypeColors, privacyMode }) {
+    function EditTxModal({ tx, persons, assetTypes, assetClassColors, onSave, onDelete, onClose, assetTypeColors, privacyMode }) {
       const [form, setForm] = useState({ date: tx.date || todayISO(), person: tx.person || '', stock: tx.stock || '', qty: tx.qty || '', price: tx.price || '', assetType: tx.assetType || 'STOCK' });
       const [saveState, setSaveState] = useState('idle');
       const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -2533,7 +2534,7 @@
       );
     }
 
-    function PersonPortfolioModal({ person, rows, stockPrices, personColors, transactions, onClose, assetTypeColors, privacyMode }) {
+    function PersonPortfolioModal({ person, rows, stockPrices, personColors, transactions, onClose, assetTypeColors, assetTypes, assetClassColors, privacyMode }) {
       const [drilldown, setDrilldown] = useState(null);
       return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -2552,7 +2553,7 @@
                     return (
                       <tr key={i} className="clickable" onClick={() => setDrilldown(r)}>
                         <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>
-                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes, assetClassColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                         <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy, privacyMode)}</td>
                         <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.investedVal, privacyMode)}</td>
@@ -2575,7 +2576,7 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, onPersonClick, dashboardDefaults, onShowSettings, filters, onFilterChange, privacyMode }) {
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, assetClassColors, onPersonClick, dashboardDefaults, onShowSettings, filters, onFilterChange, privacyMode }) {
       const filterPersons = filters.persons || dashboardDefaults.persons;
       const filterAssetTypes = filters.assetTypes || dashboardDefaults.assetTypes;
       const allTypes = filterAssetTypes.includes('All');
@@ -2675,7 +2676,7 @@
 
       return (
         <div className="page" style={{ paddingBottom: '4rem' }}>
-          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
+          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} assetTypes={assetTypes} assetClassColors={assetClassColors} privacyMode={privacyMode} />}
           {drilldownAssetType && (
             <AssetTypeDrilldownModal
               type={drilldownAssetType}
@@ -2761,7 +2762,7 @@
               <div className="chart-card">
                 <div className="card-title">Wealth by Asset Type</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors, assetTypes))} hideLegend privacyMode={privacyMode} /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors, assetTypes, assetClassColors))} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedTypesPie.map(([t, v]) => (
                       <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
@@ -2793,7 +2794,7 @@
               <div className="chart-card">
                 <div className="card-title">Wealth by Asset Type</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors, assetTypes))} hideLegend privacyMode={privacyMode} /></div>
+                  <div className="chart-wrap" style={{ flex: '1 1 200px', height: 260 }}><PieChart labels={sortedTypesPie.map(([t]) => t)} data={sortedTypesPie.map(([, v]) => v)} colors={sortedTypesPie.map(([t]) => assetTypeColor(t, assetTypeColors, assetTypes, assetClassColors))} hideLegend privacyMode={privacyMode} /></div>
                   <div style={{ flex: '1 1 200px', maxHeight: 260, overflowY: 'auto' }}>
                     {sortedTypesPie.map(([t, v]) => (
                       <div key={t} className="clickable" onClick={() => setDrilldownAssetType(t)} style={{ display: 'flex', justifyContent: 'space-between', padding: '.5rem 0', borderBottom: '1px solid var(--border)' }}>
@@ -2804,7 +2805,7 @@
                 </div>
               </div>
               <div className="chart-card"><div className="card-title">Value Comparison</div><div className="chart-wrap" style={{ height: 260 }}><BarChart labels={pLabels} datasets={barDatasets} privacyMode={privacyMode} /></div></div>
-            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} privacyMode={privacyMode} /></>
+            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} privacyMode={privacyMode} /></>
           )}
 
           {/* Condition 3: Person All, Selective Asset */}
@@ -2848,7 +2849,7 @@
                   </div>
                 </div>
               </div>
-            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypeColors={assetTypeColors} privacyMode={privacyMode} /></>
+            </div><HoldingsTable portfolio={portfolio} personColors={personColors} onSetDrilldown={setDrilldown} assetTypeMap={assetTypeMap} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} privacyMode={privacyMode} /></>
           )}
 
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
@@ -2856,7 +2857,7 @@
       );
     }
 
-    function HoldingsTable({ portfolio, personColors, onSetDrilldown, assetTypeMap, assetTypeColors, privacyMode }) {
+    function HoldingsTable({ portfolio, personColors, onSetDrilldown, assetTypeMap, assetTypes, assetTypeColors, assetClassColors, privacyMode }) {
       return (
         <div className="card" style={{ padding: 0 }}>
           <div className="card-title" style={{ padding: '1.25rem 1.25rem 0' }}>Holdings Breakdown</div>
@@ -2871,7 +2872,7 @@
                     <tr key={i} className="clickable" onClick={() => onSetDrilldown(r)}>
                       <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
                       <td style={{ fontWeight: 700 }}>{r.stock}</td>
-                      <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                      <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes, assetClassColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                       <td style={{ textAlign: 'right' }}>{r.totalQty}</td>
                       <td style={{ textAlign: 'right' }}>{fmt(r.avgBuy, privacyMode)}</td>
                       <td style={{ textAlign: 'right' }}>{fmt(r.investedVal, privacyMode)}</td>
@@ -2894,7 +2895,7 @@
 
 
     // ── TRANSACTIONS ──────────────────────────────────────────
-    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, filters, onFilterChange, privacyMode }) {
+    function TransactionsTab({ transactions, persons, assetTypes, onAdd, onBulkAdd, onUpdate, onDelete, onEnsurePerson, personColors, assetTypeColors, assetClassColors, filters, onFilterChange, privacyMode }) {
       const [form, setForm] = useState({ date: todayISO(), person: '', stock: '', qty: '', price: '', assetType: 'STOCK' });
       const [csvMode, setCsvMode] = useState(false);
       const [csvText, setCsvText] = useState('');
@@ -3159,7 +3160,7 @@
                       <td style={{ whiteSpace: 'normal' }}>{fmtDate(tx.date)}</td>
                       <td><span className="tag" style={{ background: personColor(tx.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{tx.person}</span></td>
                       <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{tx.stock}</td>
-                      <td><span className="tag" style={{ background: assetTypeColor(tx.assetType || 'STOCK', assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
+                      <td><span className="tag" style={{ background: assetTypeColor(tx.assetType || 'STOCK', assetTypeColors, assetTypes, assetClassColors), color: '#1a1a1a', fontSize: 10 }}>{tx.assetType || 'STOCK'}</span></td>
                       <td className={tx.qty > 0 ? 'pos' : 'neg'}>{tx.qty > 0 ? '+' : ''}{tx.qty}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(tx.price, privacyMode)}</td>
                       <td style={{ whiteSpace: 'normal' }}>{fmt(Math.abs(tx.qty) * tx.price, privacyMode)}</td>
@@ -3170,13 +3171,13 @@
             </div>
           </div>
 
-          {editTx && <EditTxModal tx={editTx} persons={persons} assetTypes={assetTypes} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
+          {editTx && <EditTxModal tx={editTx} persons={persons} assetTypes={assetTypes} assetClassColors={assetClassColors} onSave={onUpdate} onDelete={onDelete} onClose={() => setEditTx(null)} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
         </div>
       );
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, filter, onFilterChange, privacyMode }) {
+    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, assetClassColors, filter, onFilterChange, privacyMode }) {
       const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
       const [drilldown, setDrilldown] = useState(null);
       const [drilldownType, setDrilldownType] = useState(null);
@@ -3342,9 +3343,9 @@
                         {viewMode === 'persons' && <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a', whiteSpace: 'normal' }}>{r.person}</span></td>}
 
 
-                        {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors, assetTypes), color: '#1a1a1a' }}>{r.type}</span></td>}
+                        {viewMode === 'types' && <td><span className="tag" style={{ background: assetTypeColor(r.type, assetTypeColors, assetTypes, assetClassColors), color: '#1a1a1a' }}>{r.type}</span></td>}
                         {viewMode !== 'types' && <td style={{ fontWeight: 700, whiteSpace: 'normal' }}>{r.stock}</td>}
-                        {viewMode !== 'types' && <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>}
+                        {viewMode !== 'types' && <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes, assetClassColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>}
                         {viewMode === 'types' && <td style={{ textAlign: 'right' }}>{r.stockCount}</td>}
                         {viewMode !== 'types' && <td style={{ textAlign: 'right' }}>{r.totalQty || r.qty}</td>}
                         {viewMode !== 'types' && <td style={{ textAlign: 'right', whiteSpace: 'normal' }}>{fmt(r.avgBuy, privacyMode)}</td>}
@@ -3382,7 +3383,7 @@
     }
 
     // ── FIFO RESULTS ─────────────────────────────────────────
-    function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors, filters, onFilterChange, privacyMode }) {
+    function FIFOTab({ transactions, personColors, assetTypes, assetTypeColors, assetClassColors, filters, onFilterChange, privacyMode }) {
       const { sells: allSells, unmatched: allUnmatched } = computeFIFO(transactions);
 
       const filterPersons = filters.persons;
@@ -3502,7 +3503,7 @@
                         <td>{fmtDate(s.sellDate)}</td>
                         <td><span className="tag" style={{ background: personColor(s.person, personColors), color: '#1a1a1a' }}>{s.person}</span></td>
                         <td style={{ fontWeight: 700 }}>{s.stock}</td>
-                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
+                        <td><span className="tag" style={{ background: assetTypeColor(at, assetTypeColors, assetTypes, assetClassColors), color: '#1a1a1a', fontSize: 10 }}>{at}</span></td>
                         <td>{s.qty}</td>
                         <td>{fmt(s.buyPrice, privacyMode)}</td>
                         <td>{fmt(s.sellPrice, privacyMode)}</td>
@@ -3703,6 +3704,7 @@
     function ManageTab({
       persons, onAddPerson, onUpdatePerson, onDeletePerson, personColors, onColorChange,
       assetTypes, onAddAssetType, onUpdateAssetType, onDeleteAssetType, assetTypeColors, onAssetTypeColorChange,
+      assetClassColors, onAssetClassColorChange,
       stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, privacyMode
     }) {
       const [subTab, setSubTab] = useState('persons');
@@ -3720,14 +3722,14 @@
           </div>
 
           {subTab === 'persons' && <PersonsTab persons={persons} onAdd={onAddPerson} onUpdate={onUpdatePerson} onDelete={onDeletePerson} personColors={personColors} onColorChange={onColorChange} />}
-          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} />}
-          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} privacyMode={privacyMode} />}
+          {subTab === 'assets' && <AssetTypesTab assetTypes={assetTypes} onAdd={onAddAssetType} onUpdate={onUpdateAssetType} onDelete={onDeleteAssetType} assetTypeColors={assetTypeColors} onColorChange={onAssetTypeColorChange} assetClassColors={assetClassColors} onClassColorChange={onAssetClassColorChange} />}
+          {subTab === 'prices' && <StockPricesTab stockPrices={stockPrices} onUpdatePrices={onUpdatePrices} onDeletePrice={onDeletePrice} uid={uid} priceMeta={priceMeta} transactions={transactions} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} privacyMode={privacyMode} />}
         </div>
       );
     }
 
     // ── ASSET TYPES TAB ──────────────────────────────────────
-    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetTypeColors, onColorChange }) {
+    function AssetTypesTab({ assetTypes, onAdd, onUpdate, onDelete, assetTypeColors, onColorChange, assetClassColors, onClassColorChange }) {
       const [newName, setNewName] = useState('');
       const [newClass, setNewClass] = useState('EQUITY');
       const [saving, setSaving] = useState(false);
@@ -3814,6 +3816,7 @@
               const types = grouped[cls.id];
               if (types.length === 0 && cls.id === 'UNASSIGNED') return null;
               const isExpanded = expandedClasses.has(cls.id);
+              const clsColor = cls.id === 'UNASSIGNED' ? '#e5e7eb' : (assetClassColors[cls.id] || cls.color);
               return (
                 <div key={cls.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <div 
@@ -3829,8 +3832,17 @@
                     }}
                   >
                     <span style={{ fontSize: 14, fontWeight: 700, width: 20, textAlign: 'center', color: 'var(--accent)' }}>{isExpanded ? '−' : '+'}</span>
-                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: cls.color }}></div>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: clsColor }}></div>
                     <span style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>{cls.name} <span style={{ color: 'var(--text-muted)', fontWeight: 400, marginLeft: 6 }}>({types.length})</span></span>
+                    {cls.id !== 'UNASSIGNED' && (
+                      <div onClick={e => e.stopPropagation()}>
+                        <ColorPicker
+                          name={cls.id}
+                          color={clsColor}
+                          onChange={onClassColorChange}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {isExpanded && (
@@ -3843,7 +3855,7 @@
                                 <tr key={t.id} className="clickable" style={{ border: 'none', background: selected.has(t.id) ? '#fffde7' : 'transparent' }} onClick={() => selectMode ? toggleSelect(t.id) : setEditItem(t)}>
                                   {selectMode && <td style={{ padding: '8px 0', width: 30 }} onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
                                   <td style={{ padding: '8px 0' }}>
-                                    <span className="tag" style={{ background: cls.color, color: '#1a1a1a', fontSize: 11 }}>{t.name}</span>
+                                    <span className="tag" style={{ background: clsColor, color: '#1a1a1a', fontSize: 11 }}>{t.name}</span>
                                   </td>
                                   <td style={{ textAlign: 'right', padding: '8px 1.25rem 8px 0' }}>
                                     <button className="btn-sm" style={{ padding: '4px 8px', fontSize: 10 }} onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
@@ -3915,7 +3927,7 @@
       );
     }
 
-    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, privacyMode }) {
+    function StockPricesTab({ stockPrices, onUpdatePrices, onDeletePrice, uid, priceMeta, transactions, assetTypes, assetTypeColors, assetClassColors, privacyMode }) {
       const [csvText, setCsvText] = useState('');
       const [preview, setPreview] = useState(null);
       const [saving, setSaving] = useState(false);
@@ -4510,6 +4522,7 @@
       const [stockPrices, setStockPrices] = useState({});
       const [personColors, setPersonColors] = useState({});
       const [assetTypeColors, setAssetTypeColors] = useState({});
+      const [assetClassColors, setAssetClassColors] = useState({});
       const [sidebarOpen, setSidebarOpen] = useState(false);
       const [visibleTabs, setVisibleTabs] = useState({}); // { dashboard: true, transactions: true, ... }
       const [showNavSettings, setShowNavSettings] = useState(false);
@@ -4587,6 +4600,7 @@
         }, () => { });
         const t4 = db.collection(`users/${uid}/inv_meta`).doc('inv_personColors').onSnapshot(snap => { if (snap.exists) setPersonColors(snap.data().colors || {}); }, () => { });
         const t4_1 = db.collection(`users/${uid}/inv_meta`).doc('inv_assetTypeColors').onSnapshot(snap => { if (snap.exists) setAssetTypeColors(snap.data().colors || {}); }, () => { });
+        const t4_2 = db.collection(`users/${uid}/inv_meta`).doc('inv_assetClassColors').onSnapshot(snap => { if (snap.exists) setAssetClassColors(snap.data().colors || {}); }, () => { });
         const t5 = db.collection(`users/${uid}/inv_meta`).doc('inv_uiSettings').onSnapshot(snap => {
           if (snap.exists) {
             const data = snap.data();
@@ -4604,7 +4618,7 @@
             }
           }
         }, () => { });
-        return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t5(); };
+        return () => { t1(); t2(); t2_1(); t3(); t4(); t4_1(); t4_2(); t5(); };
       }, [user]);
 
       // INITIALIZE DEFAULTS & MIGRATION
@@ -4713,6 +4727,11 @@
         const upper = typeName.toUpperCase().trim();
         const updated = { ...assetTypeColors, [upper]: color };
         await db.collection(`users/${uid}/inv_meta`).doc('inv_assetTypeColors').set({ colors: updated });
+      };
+
+      const updateAssetClassColor = async (classId, color) => {
+        const updated = { ...assetClassColors, [classId]: color };
+        await db.collection(`users/${uid}/inv_meta`).doc('inv_assetClassColors').set({ colors: updated });
       };
 
       const addAssetType = async t => {
@@ -4905,16 +4924,17 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
-                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
-                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
+                {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
+                {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
                 {tab === 'manage' && (
                   <ManageTab
                     persons={personList} onAddPerson={addPerson} onUpdatePerson={updatePerson} onDeletePerson={deletePerson}
                     personColors={personColors} onColorChange={updatePersonColor}
                     assetTypes={assetTypes} onAddAssetType={addAssetType} onUpdateAssetType={updateAssetType} onDeleteAssetType={deleteAssetType}
                     assetTypeColors={assetTypeColors} onAssetTypeColorChange={updateAssetTypeColor}
+                    assetClassColors={assetClassColors} onAssetClassColorChange={updateAssetClassColor}
                     stockPrices={stockPrices} onUpdatePrices={updatePrices} onDeletePrice={deletePrice} uid={uid} priceMeta={priceMeta}
                     transactions={transactions} privacyMode={privacyMode}
                   />
