@@ -1437,6 +1437,10 @@
       padding: 4px;
     }
 
+    .multi-select-dropdown.no-scroll {
+      overflow-y: hidden;
+    }
+
     .multi-select-opt {
       padding: 6px 10px;
       font-size: 12px;
@@ -2066,7 +2070,7 @@
               <span style={{ fontSize: 10 }}>▼</span>
             </div>
             {open && (
-              <div className="multi-select-dropdown">
+              <div className="multi-select-dropdown no-scroll">
                 <input className="multi-select-search" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
                 <div className="multi-select-opt" onClick={() => toggle('All')}>
                   <input type="checkbox" checked={selected.includes('All')} readOnly /> <span>All</span>
@@ -2114,7 +2118,7 @@
             </div>
 
             {open && (
-              <div className="multi-select-dropdown">
+              <div className="multi-select-dropdown no-scroll">
                 <input className="multi-select-search" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                   {filtered.map(o => (
@@ -2158,7 +2162,7 @@
             </div>
 
             {open && (
-              <div className="multi-select-dropdown">
+              <div className="multi-select-dropdown no-scroll">
                 <input className="multi-select-search" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
                 <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
                   {filteredGroups.map(g => (
