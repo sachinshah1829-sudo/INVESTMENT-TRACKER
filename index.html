@@ -3870,6 +3870,7 @@
       const [selected, setSelected] = useState(new Set());
       const [selectMode, setSelectMode] = useState(false);
       const [deleting, setDeleting] = useState(false);
+      const [isML, setIsML] = useState(true);
       const [expandedClasses, setExpandedClasses] = useState(new Set(['EQUITY', 'DEBT', 'REAL_ESTATE', 'COMMODITIES', 'UNASSIGNED']));
 
       const handleAdd = async () => {
@@ -3877,7 +3878,7 @@
         const upper = newName.toUpperCase().trim();
         if (assetTypes.some(t => t.name.toUpperCase() === upper)) { setDupError(`"${upper}" already exists!`); return; }
         setDupError(''); setSaving(true);
-        await onAdd({ name: upper, assetClass: newClass });
+        await onAdd({ name: upper, assetClass: newClass, isMarketLinked: isML });
         setNewName(''); setSaving(false);
       };
 
@@ -3914,7 +3915,7 @@
         <div>
           <div className="card">
             <div className="card-title">Add Asset Type</div>
-            <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ flex: 2, minWidth: '200px' }}>
                 <label className="form-label">Type Name</label>
                 <input className="form-input" type="text" value={newName} onChange={e => { setNewName(e.target.value); setDupError(''); }} placeholder="E.g. MUTUAL FUND" onKeyDown={e => e.key === 'Enter' && handleAdd()} />
@@ -3925,6 +3926,10 @@
                 <select className="select-input" value={newClass} onChange={e => setNewClass(e.target.value)}>
                   {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '22px' }}>
+                <input type="checkbox" id="market-linked-new" checked={isML} onChange={e => setIsML(e.target.checked)} />
+                <label htmlFor="market-linked-new" style={{ fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Market Linked</label>
               </div>
               <button className="btn-primary" style={{ width: 'auto', padding: '.55rem 1.25rem', flexShrink: 0, marginTop: '22px' }} onClick={handleAdd} disabled={saving}>{saving ? '...' : '+ ADD'}</button>
             </div>
@@ -3987,6 +3992,7 @@
                                   {selectMode && <td style={{ padding: '8px 0', width: 30 }} onClick={e => e.stopPropagation()}><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>}
                                   <td style={{ padding: '8px 0' }}>
                                     <span className="tag" style={{ background: clsColor, color: '#1a1a1a', fontSize: 11 }}>{t.name}</span>
+                                    {t.isMarketLinked && <span style={{ marginLeft: 8, fontSize: 9, color: 'var(--text-muted)', border: '1px solid var(--border)', padding: '1px 4px' }}>MARKET LINKED</span>}
                                   </td>
                                   <td style={{ textAlign: 'right', padding: '8px 1.25rem 8px 0' }}>
                                     <button className="btn-sm" style={{ padding: '4px 8px', fontSize: 10 }} onClick={e => { e.stopPropagation(); setEditItem(t); }}>EDIT</button>
@@ -4019,12 +4025,13 @@
     function EditAssetTypeModal({ item, onSave, onDelete, onClose }) {
       const [name, setName] = useState(item.name);
       const [assetClass, setAssetClass] = useState(item.assetClass || 'EQUITY');
+      const [isML, setIsML] = useState(item.isMarketLinked || false);
       const [saving, setSaving] = useState(false);
 
       const handleSave = async () => {
         if (!name.trim()) return;
         setSaving(true);
-        await onSave(item.id, { name: name.toUpperCase().trim(), assetClass });
+        await onSave(item.id, { name: name.toUpperCase().trim(), assetClass, isMarketLinked: isML });
         onClose();
       };
 
@@ -4047,6 +4054,10 @@
               <select className="select-input" value={assetClass} onChange={e => setAssetClass(e.target.value)}>
                 {ASSET_CLASSES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+            </div>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '.5rem' }}>
+              <input type="checkbox" id="market-linked-edit" checked={isML} onChange={e => setIsML(e.target.checked)} />
+              <label htmlFor="market-linked-edit" style={{ fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>Market Linked Asset</label>
             </div>
             <div className="modal-actions">
               <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'SAVING...' : 'SAVE CHANGES'}</button>
@@ -4131,8 +4142,7 @@
       const copyAssetsForAI = () => {
         const targets = allEntries.filter(e => {
           const typeObj = assetTypes.find(t => t.name === e.assetType);
-          const cls = typeObj?.assetClass;
-          return cls === 'EQUITY' || e.assetType === 'LISTED BONDS' || e.assetType === 'REITS' || e.assetType === 'COMMODITY ETF';
+          return typeObj?.isMarketLinked;
         });
         if (targets.length === 0) return alert("No relevant assets found to copy.");
         let text = "Asset Name, Asset Type\n";
@@ -4787,20 +4797,20 @@
             const existingTypes = await db.collection(`users/${uid}/inv_assetTypes`).get();
             if (existingTypes.empty) {
               const defaults = [
-                { name: 'MUTUAL FUND', assetClass: 'EQUITY' },
-                { name: 'STOCK', assetClass: 'EQUITY' },
-                { name: 'LIQUID FUNDS', assetClass: 'EQUITY' },
-                { name: 'US STOCKS', assetClass: 'EQUITY' },
-                { name: 'ETF', assetClass: 'EQUITY' },
-                { name: 'LISTED BONDS', assetClass: 'DEBT' },
-                { name: 'P2P LENDING', assetClass: 'DEBT' },
-                { name: 'NON LISTED BONDS', assetClass: 'DEBT' },
-                { name: 'PPF', assetClass: 'DEBT' },
-                { name: 'FD', assetClass: 'DEBT' },
-                { name: 'REAL ESTATE', assetClass: 'REAL_ESTATE' },
-                { name: 'REITS', assetClass: 'REAL_ESTATE' },
-                { name: 'COMMODITY ETF', assetClass: 'COMMODITIES' },
-                { name: 'COMMODITY', assetClass: 'COMMODITIES' }
+                { name: 'MUTUAL FUND', assetClass: 'EQUITY', isMarketLinked: true },
+                { name: 'STOCK', assetClass: 'EQUITY', isMarketLinked: true },
+                { name: 'LIQUID FUNDS', assetClass: 'EQUITY', isMarketLinked: true },
+                { name: 'US STOCKS', assetClass: 'EQUITY', isMarketLinked: true },
+                { name: 'ETF', assetClass: 'EQUITY', isMarketLinked: true },
+                { name: 'LISTED BONDS', assetClass: 'DEBT', isMarketLinked: true },
+                { name: 'P2P LENDING', assetClass: 'DEBT', isMarketLinked: false },
+                { name: 'NON LISTED BONDS', assetClass: 'DEBT', isMarketLinked: false },
+                { name: 'PPF', assetClass: 'DEBT', isMarketLinked: false },
+                { name: 'FD', assetClass: 'DEBT', isMarketLinked: false },
+                { name: 'REAL ESTATE', assetClass: 'REAL_ESTATE', isMarketLinked: false },
+                { name: 'REITS', assetClass: 'REAL_ESTATE', isMarketLinked: true },
+                { name: 'COMMODITY ETF', assetClass: 'COMMODITIES', isMarketLinked: true },
+                { name: 'COMMODITY', assetClass: 'COMMODITIES', isMarketLinked: false }
               ];
               const batch = db.batch();
               defaults.forEach(t => batch.set(db.collection(`users/${uid}/inv_assetTypes`).doc(), t));
@@ -4818,6 +4828,20 @@
               };
               await db.collection(`users/${uid}/inv_meta`).doc('inv_assetClassColors').set({ colors: defaultColors });
             }
+
+            // Data Migration: Add isMarketLinked to existing types
+            const typeDocs = await db.collection(`users/${uid}/inv_assetTypes`).get();
+            const typeBatch = db.batch();
+            let typeCount = 0;
+            typeDocs.docs.forEach(doc => {
+              const data = doc.data();
+              if (data.isMarketLinked === undefined) {
+                const isML = data.assetClass === 'EQUITY' || data.name === 'LISTED BONDS' || data.name === 'REITS' || data.name === 'COMMODITY ETF';
+                typeBatch.update(doc.ref, { isMarketLinked: isML });
+                typeCount++;
+              }
+            });
+            if (typeCount > 0) await typeBatch.commit();
 
             // Data Migration: Mark existing transactions as STOCK
             const txSnap = await db.collection(`users/${uid}/inv_transactions`).get();
