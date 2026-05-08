@@ -1808,6 +1808,69 @@
       return `hsl(${Math.abs(h) % 360},70%,85%)`;
     };
 
+    // ── PPF LOGIC ──────────────────────────────────────────────
+    const PPF_RATES = [
+      { start: '2020-04-01', end: '2026-03-31', rate: 7.1 }
+    ];
+
+    function getPPFRate(date) {
+      const d = toJSDate(date);
+      const match = PPF_RATES.find(r => d >= toJSDate(r.start) && d <= toJSDate(r.end));
+      return match ? match.rate : 7.1;
+    }
+
+    function calculatePPFMetrics(lots) {
+      if (!lots || lots.length === 0) return { invested: 0, interest: 0, current: 0, fyInvested: 0, nextCredit: '31 Mar' };
+      const sorted = [...lots].sort((a, b) => toJSDate(a.date) - toJSDate(b.date));
+      const firstDate = toJSDate(sorted[0].date);
+      const today = new Date();
+      let principal = 0;
+      let totalInterest = 0;
+      let accruedInterest = 0;
+      let fyInvested = 0;
+      const currentYear = today.getMonth() < 3 ? today.getFullYear() - 1 : today.getFullYear();
+      const currentFYStart = new Date(currentYear, 3, 1);
+      let curr = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+      while (curr <= today) {
+        const year = curr.getFullYear();
+        const month = curr.getMonth();
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0);
+        let monthlyLowest = principal;
+        const monthTx = sorted.filter(t => {
+          const d = toJSDate(t.date);
+          return d >= monthStart && d <= monthEnd;
+        });
+        monthTx.forEach(t => {
+          const d = toJSDate(t.date);
+          if (d.getDate() <= 5) {
+            principal += t.qty;
+            monthlyLowest = principal;
+            if (d >= currentFYStart) fyInvested += t.qty;
+          } else {
+            principal += t.qty;
+            if (d >= currentFYStart) fyInvested += t.qty;
+          }
+        });
+        const rate = getPPFRate(monthStart);
+        const mInterest = (monthlyLowest * rate) / (12 * 100);
+        accruedInterest += mInterest;
+        if (month === 2) {
+          principal += accruedInterest;
+          totalInterest += accruedInterest;
+          accruedInterest = 0;
+        }
+        curr.setMonth(curr.getMonth() + 1);
+      }
+      return {
+        invested: lots.reduce((sum, t) => sum + t.qty, 0),
+        interest: totalInterest + accruedInterest,
+        current: principal + accruedInterest,
+        fyInvested,
+        nextCredit: `31 Mar ${today.getMonth() < 3 ? today.getFullYear() : today.getFullYear() + 1}`
+      };
+    }
+
     // ── FIFO ENGINE ───────────────────────────────────────────
     function computeFIFO(transactions) {
       const valid = transactions.filter(t => isValidDate(t.date) && t.stock && t.person && t.qty && t.price);
@@ -1847,10 +1910,37 @@
       return { sells, holdings, unmatched };
     }
 
-    function buildPortfolio(holdings, stockPrices) {
+    function buildPortfolio(holdings, stockPrices, assetTypes = [], assetTypeMap = {}) {
       const rows = [];
       Object.entries(holdings).forEach(([stock, persons]) => {
         Object.entries(persons).forEach(([person, lots]) => {
+          const at = assetTypeMap[`${person}|${stock}`] || 'STOCK';
+          const typeObj = assetTypes.find(t => t.name === at);
+          
+          if (typeObj && !typeObj.isMarketLinked) {
+            if (at === 'PPF') {
+              const metrics = calculatePPFMetrics(lots);
+              rows.push({
+                person, stock, 
+                totalQty: metrics.invested,
+                avgBuy: 1, 
+                investedVal: metrics.invested,
+                currentPrice: metrics.current / metrics.invested,
+                currentVal: metrics.current,
+                absGain: metrics.interest,
+                absGainPct: metrics.invested > 0 ? (metrics.interest / metrics.invested) * 100 : 0,
+                breakup: `Interest: ${fmt(metrics.interest)}`,
+                cagr: null,
+                weightedAge: 0, 
+                lots,
+                isNonMarket: true,
+                ppfMetrics: metrics,
+                assetType: at
+              });
+              return;
+            }
+          }
+
           const totalQty = lots.reduce((s, l) => s + l.qty, 0);
           const investedVal = lots.reduce((s, l) => s + l.qty * l.price, 0);
           const avgBuy = investedVal / totalQty;
@@ -1871,30 +1961,55 @@
           lots.forEach(l => { aggregated[l.price] = (aggregated[l.price] || 0) + l.qty; });
           const breakup = Object.entries(aggregated).map(([p, q]) => `${q}@${p}`).join(', ');
 
-          rows.push({ person, stock, totalQty, avgBuy, investedVal, currentPrice: cp, currentVal, absGain, absGainPct, breakup, cagr, weightedAge, lots });
+          rows.push({ person, stock, totalQty, avgBuy, investedVal, currentPrice: cp, currentVal, absGain, absGainPct, breakup, cagr, weightedAge, lots, assetType: at });
         });
       });
       return rows;
     }
 
-    function buildStockSheet(holdings, stockPrices) {
+    function buildStockSheet(holdings, stockPrices, assetTypes = [], assetTypeMap = {}) {
       const stocks = {};
       Object.entries(holdings).forEach(([stock, persons]) => {
-        if (!stocks[stock]) stocks[stock] = { stock, totalQty: 0, investedVal: 0, persons: {} };
         Object.entries(persons).forEach(([person, lots]) => {
-          const qty = lots.reduce((s, l) => s + l.qty, 0);
-          const inv = lots.reduce((s, l) => s + l.qty * l.price, 0);
-          stocks[stock].totalQty += qty; stocks[stock].investedVal += inv;
-          if (!stocks[stock].persons[person]) stocks[stock].persons[person] = { qty: 0, lots: [] };
-          stocks[stock].persons[person].qty += qty;
-          stocks[stock].persons[person].lots.push(...lots);
+          const at = assetTypeMap[`${person}|${stock}`] || 'STOCK';
+          const typeObj = assetTypes.find(t => t.name === at);
+
+          if (!stocks[stock]) {
+            stocks[stock] = { 
+              stock, totalQty: 0, investedVal: 0, currentVal: 0, 
+              persons: {}, isNonMarket: typeObj && !typeObj.isMarketLinked, assetType: at 
+            };
+          }
+          const s = stocks[stock];
+          const qty = lots.reduce((sum, l) => sum + l.qty, 0);
+          const inv = lots.reduce((sum, l) => sum + l.qty * l.price, 0);
+          
+          let cur = 0;
+          if (typeObj && !typeObj.isMarketLinked) {
+            if (at === 'PPF') {
+              const metrics = calculatePPFMetrics(lots);
+              cur = metrics.current;
+            } else {
+               cur = inv; // Fallback
+            }
+          } else {
+            const cp = stockPrices[stock] || stockPrices[stock.replace('NSE:', '')] || null;
+            cur = cp ? qty * cp : inv;
+          }
+
+          s.totalQty += qty; 
+          s.investedVal += inv;
+          s.currentVal += cur;
+
+          if (!s.persons[person]) s.persons[person] = { qty: 0, lots: [] };
+          s.persons[person].qty += qty;
+          s.persons[person].lots.push(...lots);
         });
       });
+
       return Object.values(stocks).map(s => {
-        const cp = stockPrices[s.stock] || stockPrices[s.stock.replace('NSE:', '')] || null;
-        const currentVal = cp ? s.totalQty * cp : null;
-        const absGain = currentVal != null ? currentVal - s.investedVal : null;
-        const absGainPct = absGain != null ? (absGain / s.investedVal) * 100 : null;
+        const absGain = s.currentVal - s.investedVal;
+        const absGainPct = s.investedVal > 0 ? (absGain / s.investedVal) * 100 : 0;
 
         let weightedAgeSum = 0; const now = new Date();
         Object.values(s.persons).forEach(p => {
@@ -1904,11 +2019,14 @@
           });
         });
         const stockAvgAge = s.investedVal > 0 ? weightedAgeSum / s.investedVal : 0;
-        const cagr = (currentVal != null && s.investedVal > 0 && stockAvgAge > 0) ? (Math.pow(currentVal / s.investedVal, 1 / stockAvgAge) - 1) * 100 : null;
+        const cagr = (s.currentVal > 0 && s.investedVal > 0 && stockAvgAge > 0) ? (Math.pow(s.currentVal / s.investedVal, 1 / stockAvgAge) - 1) * 100 : null;
 
-        return { ...s, avgBuy: s.investedVal / s.totalQty, currentPrice: cp, currentVal, absGain, absGainPct, cagr };
-
-
+        return { 
+          ...s, 
+          avgBuy: s.investedVal / s.totalQty, 
+          currentPrice: s.currentVal / s.totalQty,
+          absGain, absGainPct, cagr 
+        };
       });
     }
 
@@ -2445,6 +2563,48 @@
         </div>
       );
     }
+    function PPFDetailsModal({ rows, onClose, privacyMode, personColors }) {
+      const totalMetrics = calculatePPFMetrics(rows.flatMap(r => r.lots));
+      return (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+          <div className="modal" style={{ maxWidth: 800 }}>
+            <div className="modal-title" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <span>PPF Details Summary</span>
+              <button className="modal-close" onClick={onClose}>✕</button>
+            </div>
+            <div className="stats-grid" style={{ marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+              <div className="stat-card"><div className="stat-label">Total Invested</div><div className="stat-val">{fmt(totalMetrics.invested, privacyMode)}</div></div>
+              <div className="stat-card"><div className="stat-label">Interest Earned</div><div className="stat-val pos">{fmt(totalMetrics.interest, privacyMode)}</div></div>
+              <div className="stat-card"><div className="stat-label">Current Value</div><div className="stat-val" style={{ color: 'var(--accent)', fontWeight: 800 }}>{fmt(totalMetrics.current, privacyMode)}</div></div>
+              <div className="stat-card">
+                <div className="stat-label">FY Deposits</div>
+                <div className="stat-val">{fmt(totalMetrics.fyInvested, privacyMode)}</div>
+                <div className="stat-sub" style={{ fontSize: 10 }}>Limit: ₹1.5L (Rem: {fmt(150000 - totalMetrics.fyInvested)})</div>
+              </div>
+              <div className="stat-card"><div className="stat-label">Next Credit</div><div className="stat-val" style={{ fontSize: 14, marginTop: 4 }}>{totalMetrics.nextCredit}</div></div>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Person</th><th style={{ textAlign: 'right' }}>Invested</th><th style={{ textAlign: 'right' }}>Interest</th><th style={{ textAlign: 'right' }}>Current Value</th></tr></thead>
+                <tbody>
+                  {rows.map((r, i) => {
+                    const m = calculatePPFMetrics(r.lots);
+                    return (
+                      <tr key={i}>
+                        <td><span className="tag" style={{ background: personColor(r.person, personColors), color: '#1a1a1a' }}>{r.person}</span></td>
+                        <td style={{ textAlign: 'right' }}>{fmt(m.invested, privacyMode)}</td>
+                        <td style={{ textAlign: 'right' }} className="pos">{fmt(m.interest, privacyMode)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 700 }}>{fmt(m.current, privacyMode)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
     function AssetTypeDrilldownModal({ type, rows, stockPrices, personColors, onClose, privacyMode }) {
       const [drilldown, setDrilldown] = useState(null);
       const now = new Date();
@@ -2640,7 +2800,7 @@
     }
 
     // ── DASHBOARD ─────────────────────────────────────────────
-    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, assetClassColors, onPersonClick, dashboardDefaults, onShowSettings, filters, onFilterChange, privacyMode }) {
+    function DashboardTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, assetClassColors, onPersonClick, dashboardDefaults, onShowSettings, filters, onFilterChange, privacyMode, assetTypeMap }) {
       const filterPersons = filters.persons || dashboardDefaults.persons;
       const filterAssetTypes = filters.assetTypes || dashboardDefaults.assetTypes;
       const allTypes = filterAssetTypes.includes('All');
@@ -2655,7 +2815,7 @@
       const [drilldown, setDrilldown] = useState(null);
 
       const { sells, holdings } = computeFIFO(transactions);
-      const allPortfolio = buildPortfolio(holdings, stockPrices);
+      const allPortfolio = buildPortfolio(holdings, stockPrices, assetTypes, assetTypeMap);
 
       const allPersons = filterPersons.includes('All');
 
@@ -2920,6 +3080,15 @@
           )}
 
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
+          {drilldownPerson && <PersonPortfolioModal person={drilldownPerson} rows={allPortfolio.filter(r => r.person === drilldownPerson)} stockPrices={stockPrices} personColors={personColors} transactions={transactions} onClose={() => setDrilldownPerson(null)} assetTypeColors={assetTypeColors} assetTypes={assetTypes} assetClassColors={assetClassColors} privacyMode={privacyMode} />}
+          {drilldownAssetType && (
+            drilldownAssetType === 'PPF' ? (
+              <PPFDetailsModal rows={allPortfolio.filter(r => r.assetType === 'PPF')} onClose={() => setDrilldownAssetType(null)} privacyMode={privacyMode} personColors={personColors} />
+            ) : (
+              <AssetTypeDrilldownModal type={drilldownAssetType} rows={allPortfolio.filter(r => r.assetType === drilldownAssetType)} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldownAssetType(null)} privacyMode={privacyMode} />
+            )
+          )}
+          {drilldownStock && <StockHoldersModal stockName={drilldownStock} rows={allPortfolio.filter(r => r.stock === drilldownStock)} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldownStock(null)} privacyMode={privacyMode} />}
         </div>
       );
     }
@@ -3284,42 +3453,31 @@
     }
 
     // ── PORTFOLIO ─────────────────────────────────────────────
-    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, assetClassColors, filter, onFilterChange, privacyMode }) {
+    function PortfolioTab({ transactions, stockPrices, personColors, assetTypes, assetTypeColors, assetClassColors, filter, onFilterChange, privacyMode, assetTypeMap }) {
       const [viewMode, setViewMode] = useState('persons'); // 'persons', 'assets', 'types'
+      const [marketTab, setMarketTab] = useState('market'); // 'market', 'non-market'
       const [drilldown, setDrilldown] = useState(null);
       const [drilldownType, setDrilldownType] = useState(null);
       const { holdings, sells } = computeFIFO(transactions);
 
-      // Optimization: Index asset types for fast lookup
-      const assetTypeMap = useMemo(() => {
-        const map = {};
-        transactions.forEach(t => {
-          if (t.stock && t.person) {
-            map[`${t.person}|${t.stock}`] = t.assetType || 'STOCK';
-          }
-        });
-        return map;
-      }, [transactions]);
-
       // Pre-process for different views
-      const allAssetRows = buildStockSheet(holdings, stockPrices); // By Asset
-      const allPersonRows = buildPortfolio(holdings, stockPrices); // By Person
+      const allAssetRows = buildStockSheet(holdings, stockPrices, assetTypes, assetTypeMap); // By Asset
+      const allPersonRows = buildPortfolio(holdings, stockPrices, assetTypes, assetTypeMap); // By Person
 
       // By Asset Type View
       const buildTypeSheet = (h, prices) => {
         const types = {};
         allPersonRows.forEach(r => {
-          const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+          const at = r.assetType || 'STOCK';
           if (!types[at]) types[at] = { type: at, investedVal: 0, currentVal: 0, stocks: new Set() };
           types[at].investedVal += r.investedVal;
           types[at].currentVal += (r.currentVal || r.investedVal);
           types[at].stocks.add(r.stock);
         });
 
-        // Combined Net CAGR per type (active + realized)
         const rowsByType = {};
         allPersonRows.forEach(r => {
-          const at = assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK';
+          const at = r.assetType || 'STOCK';
           if (!rowsByType[at]) rowsByType[at] = [];
           rowsByType[at].push(r);
         });
@@ -3333,15 +3491,12 @@
         return Object.values(types).map(t => {
           const activeRows = rowsByType[t.type] || [];
           const typeSells = sellsByType[t.type] || [];
-
           const activeInvested = activeRows.reduce((sum, r) => sum + (r.investedVal || 0), 0);
           const activeCurrent = activeRows.reduce((sum, r) => sum + (r.currentVal || r.investedVal || 0), 0);
           const activeWeightedAgeSum = activeRows.reduce((sum, r) => sum + (r.weightedAge || 0), 0);
-
           const realizedCostSum = typeSells.reduce((sum, r) => sum + (r.qty * r.buyPrice), 0);
           const realizedValueSum = typeSells.reduce((sum, r) => sum + (r.qty * r.sellPrice), 0);
           const realizedWeightedAgeSum = typeSells.reduce((sum, r) => sum + (r.qty * r.buyPrice * (r.yrs || 0)), 0);
-
           const totalCostCombined = activeInvested + realizedCostSum;
           const totalValueCombined = activeCurrent + realizedValueSum;
           const totalWeightedAgeCombined = activeWeightedAgeSum + realizedWeightedAgeSum;
@@ -3370,9 +3525,13 @@
         const at =
           viewMode === 'types'
             ? r.type
-            : viewMode === 'persons'
-              ? (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK')
-              : (transactions.find(t => t.stock === r.stock)?.assetType || 'STOCK');
+            : r.assetType || 'STOCK';
+
+        const typeObj = assetTypes.find(t => t.name === at);
+        const isML = typeObj ? typeObj.isMarketLinked : true;
+        
+        if (marketTab === 'market' && !isML) return false;
+        if (marketTab === 'non-market' && isML) return false;
 
         const matchesPerson = (filter.persons.includes('All') || (viewMode === 'persons' ? filter.persons.includes(r.person) : true));
         const matchesAsset = (filter.stocks.includes('All') || (viewMode !== 'types' ? filter.stocks.includes(r.stock) : true));
@@ -3384,10 +3543,17 @@
           <div className="page-header">
             <div className="page-title">Portfolio</div>
           </div>
-          <div className="premium-dock" style={{ marginBottom: '1.5rem' }}>
-            <button className={`dock-btn ${viewMode === 'persons' ? 'active' : ''}`} onClick={() => setViewMode('persons')}>By Person</button>
-            <button className={`dock-btn ${viewMode === 'assets' ? 'active' : ''}`} onClick={() => setViewMode('assets')}>By Asset</button>
-            <button className={`dock-btn ${viewMode === 'types' ? 'active' : ''}`} onClick={() => setViewMode('types')}>By Type</button>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+            <div className="premium-dock" style={{ margin: 0 }}>
+              <button className={`dock-btn ${viewMode === 'persons' ? 'active' : ''}`} onClick={() => setViewMode('persons')}>By Person</button>
+              <button className={`dock-btn ${viewMode === 'assets' ? 'active' : ''}`} onClick={() => setViewMode('assets')}>By Asset</button>
+              <button className={`dock-btn ${viewMode === 'types' ? 'active' : ''}`} onClick={() => setViewMode('types')}>By Type</button>
+            </div>
+
+            <div className="premium-dock" style={{ margin: 0 }}>
+              <button className={`dock-btn ${marketTab === 'market' ? 'active' : ''}`} onClick={() => setMarketTab('market')}>Market Linked</button>
+              <button className={`dock-btn ${marketTab === 'non-market' ? 'active' : ''}`} onClick={() => setMarketTab('non-market')}>Non Market Linked</button>
+            </div>
           </div>
 
           <div className="filter-bar" style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -3410,6 +3576,29 @@
               <div className="filter-label" style={{ opacity: 0 }}>.</div><span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: '32px' }}>{filtered.length} rows</span>
             </div>
           </div>
+          {marketTab === 'non-market' && (
+            <div className="stats-grid" style={{ marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+              {allTypeRows.filter(r => {
+                const typeObj = assetTypes.find(at => at.name === r.type);
+                return typeObj && !typeObj.isMarketLinked;
+              }).map(r => (
+                <div key={r.type} className="stat-card clickable" onClick={() => setDrilldownType(r.type)} style={{ border: '1px solid var(--border)', transition: 'all 0.2s', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: 40, height: 40, background: assetTypeColor(r.type, assetTypeColors, assetTypes, assetClassColors), opacity: 0.1, borderRadius: '0 0 0 100%' }} />
+                  <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: assetTypeColor(r.type, assetTypeColors, assetTypes, assetClassColors) }} />
+                    {r.type}
+                  </div>
+                  <div className="stat-val">{fmt(r.currentVal, privacyMode)}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '0.5rem' }}>
+                    <div className="stat-sub" style={{ color: r.absGain >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
+                      {fmt(r.absGain, privacyMode)} ({fmtPct(r.absGainPct)})
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.stockCount} Assets</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="card" style={{ padding: 0 }}>
             <div className="table-wrap">
               <table>
@@ -3476,14 +3665,23 @@
           </div>
           {drilldown && <PortfolioDrilldownModal data={drilldown} stockPrices={stockPrices} personColors={personColors} onClose={() => setDrilldown(null)} privacyMode={privacyMode} />}
           {drilldownType && (
-            <AssetTypeDrilldownModal
-              type={drilldownType}
-              rows={allPersonRows.filter(r => (assetTypeMap[`${r.person}|${r.stock}`] || 'STOCK') === drilldownType)}
-              stockPrices={stockPrices}
-              personColors={personColors}
-              onClose={() => setDrilldownType(null)}
-              privacyMode={privacyMode}
-            />
+            drilldownType === 'PPF' ? (
+              <PPFDetailsModal 
+                rows={allPersonRows.filter(r => r.assetType === 'PPF')} 
+                onClose={() => setDrilldownType(null)} 
+                privacyMode={privacyMode} 
+                personColors={personColors} 
+              />
+            ) : (
+              <AssetTypeDrilldownModal
+                type={drilldownType}
+                rows={allPersonRows.filter(r => (r.assetType || 'STOCK') === drilldownType)}
+                stockPrices={stockPrices}
+                personColors={personColors}
+                onClose={() => setDrilldownType(null)}
+                privacyMode={privacyMode}
+              />
+            )
           )}
         </div>
       );
@@ -4703,6 +4901,15 @@
       const [priceMeta, setPriceMeta] = useState({ lastUpdated: null });
       const [privacyMode, setPrivacyMode] = useState(false);
 
+      const assetTypeMap = useMemo(() => {
+        const map = {};
+        const sorted = [...transactions].sort((a, b) => toJSDate(a.date) - toJSDate(b.date));
+        sorted.forEach(t => {
+          map[`${t.person}|${t.stock}`] = t.assetType;
+        });
+        return map;
+      }, [transactions]);
+
       const touchStartX = useRef(null);
       const touchStartY = useRef(null);
       const ignoreSwipe = useRef(false);
@@ -5270,9 +5477,9 @@
           <main className="main">
             {loading ? <div className="spinner">Loading data...</div> : (
               <>
-                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} />}
+                {tab === 'dashboard' && <DashboardTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} onPersonClick={handlePersonDrilldown} dashboardDefaults={dashboardDefaults} onShowSettings={() => setShowDashboardSettings(true)} filters={dashboardFilters} onFilterChange={setDashboardFilters} privacyMode={privacyMode} assetTypeMap={assetTypeMap} />}
                 {tab === 'transactions' && <TransactionsTab transactions={transactions} persons={personList} assetTypes={assetTypes} onAdd={addTx} onBulkAdd={bulkAddTx} onUpdate={updateTx} onDelete={deleteTx} onEnsurePerson={ensurePerson} personColors={personColors} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} filters={transactionsFilters} onFilterChange={setTransactionsFilters} privacyMode={privacyMode} />}
-                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} />}
+                {tab === 'portfolio' && <PortfolioTab transactions={transactions} stockPrices={stockPrices} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} filter={portfolioFilter} onFilterChange={setPortfolioFilter} privacyMode={privacyMode} assetTypeMap={assetTypeMap} />}
                 {tab === 'fifo' && <FIFOTab transactions={transactions} personColors={personColors} assetTypes={assetTypes} assetTypeColors={assetTypeColors} assetClassColors={assetClassColors} filters={fifoFilters} onFilterChange={setFifoFilters} privacyMode={privacyMode} />}
                 {tab === 'manage' && (
                   <ManageTab
